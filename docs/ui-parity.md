@@ -1,6 +1,6 @@
 # Stato di parità UI — dBX vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (Ondata 5)
+Aggiornato: 2026-11-22 (Checkpoint B, dopo Ondata 6)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire; `mancante` = non implementato.
 
@@ -16,9 +16,9 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Form Expert | `22`–`26` | `dbx/designers/form_expert.py` | fatto (O4) | O4 | query non disponibili; miniatura layout strutturale |
 | Form Designer | `27`–`31`, `40` | `dbx/designers/form_builder.py` | fatto (O4) | O4 | palette in pannello ridimensionabile, non flottante |
 | Properties Inspector | `30`, `31`, `40` | `dbx/ui/widgets.py` | fatto (O4) | O4 | inspector condiviso anche col Report Designer in O5 |
-| Program Editor | `31`, `32` | `dbx/designers/script_builder.py` | parziale | O6 | niente numeri di riga/syntax |
-| Menu Designer | — | `dbx/designers/menu_builder.py` | parziale | O6 | chrome e anteprima |
-| Project Editor/Builder | — | `dbx/designers/project_builder.py` | parziale | O6 | chrome e validazione visiva |
+| Program Editor | `31`, `32` | `dbx/designers/script_builder.py` | fatto (O6) | O6 | nessuna esecuzione passo-passo |
+| Menu Designer | — | `dbx/designers/menu_builder.py` | fatto (O6) | O6 | anteprima come menu bar, non popup aperto |
+| Project Editor/Builder | — | `dbx/designers/project_builder.py` | fatto (O6) | O6 | build sincrono, senza barra di avanzamento |
 | Report Designer | `32`–`38`, `41` | `dbx/designers/report_builder.py` | fatto (O5) | O5 | selezione singola; ordine bande di flusso fisso |
 | Report Preview | `39` | `dbx/ui/report_preview.py` | fatto (O5) | O5 | zoom persistente per sessione; pagina singola/continua |
 | Label Designer | — | — | mancante | 0.3 | non implementato |
@@ -31,4 +31,5 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - O1 aggiunge `10-desktop-mdi.png` con Browse e Form Designer aperti nell'area MDI.
 - O4 aggiorna `05-form-designer.png` (tre zone, righelli, Inspector ad albero) e `06-form-runtime.png` (runtime con barra di navigazione).
 - O5 aggiorna `07-report-designer.png` (foglio a bande impilate, due toolbar) e `08-report-preview.png` (toolbar inferiore completa).
+- O6 aggiunge `11-script-editor.png`, `12-menu-designer.png` e `13-project-editor.png`.
 - Ogni ondata aggiorna questa tabella.

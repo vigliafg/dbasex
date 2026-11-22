@@ -28,7 +28,10 @@ from PyQt6.QtWidgets import QApplication, QWidget  # noqa: E402
 
 from dbx.core.form_model import FormSpec  # noqa: E402
 from dbx.designers.form_builder import FormDesignerWidget  # noqa: E402
+from dbx.designers.menu_builder import MenuBuilderWidget  # noqa: E402
+from dbx.designers.project_builder import ProjectEditorWidget  # noqa: E402
 from dbx.designers.report_builder import ReportBuilderDialog  # noqa: E402
+from dbx.designers.script_builder import ScriptBuilderWidget  # noqa: E402
 from dbx.designers.table_builder import TableBuilderDialog  # noqa: E402
 from dbx.runtime.form_runtime import FormRuntime  # noqa: E402
 from dbx.runtime.report_engine import ReportSpec  # noqa: E402
@@ -116,6 +119,24 @@ def run(theme: str = "silver") -> int:
         command_window = CommandWindow(project)
         widgets.append(command_window)
         captured.append(_capture(app, command_window, "09-command-window.png", (760, 520)))
+
+        script_artifact = project.artifact("scripts", "riepilogo_fatture")
+        if script_artifact is None:
+            raise RuntimeError("riepilogo_fatture non presente nel progetto demo")
+        script_editor = ScriptBuilderWidget(project, script_artifact)
+        widgets.append(script_editor)
+        captured.append(_capture(app, script_editor, "11-script-editor.png", (1040, 700)))
+
+        menu_artifact = project.artifact("menus", "principale")
+        if menu_artifact is None:
+            raise RuntimeError("principale non presente nel progetto demo")
+        menu_designer = MenuBuilderWidget(project, menu_artifact)
+        widgets.append(menu_designer)
+        captured.append(_capture(app, menu_designer, "12-menu-designer.png", (860, 560)))
+
+        project_editor = ProjectEditorWidget(project)
+        widgets.append(project_editor)
+        captured.append(_capture(app, project_editor, "13-project-editor.png", (900, 640)))
     finally:
         for widget in reversed(widgets):
             widget.close()

@@ -15,10 +15,11 @@ def run_smoke() -> int:
     from .core.form_model import FormSpec
     from .designers.form_builder import FormDesignerWidget
     from .designers.form_expert import FormExpert
-    from .designers.menu_builder import MenuBuilderDialog
     from .designers.project_builder import build_project, validate_project
+    from .designers.menu_builder import MenuBuilderWidget
+    from .designers.project_builder import ProjectEditorWidget
     from .designers.report_builder import ReportDesignerWidget
-    from .designers.script_builder import ScriptBuilderDialog
+    from .designers.script_builder import ScriptBuilderWidget
     from .designers.table_builder import TableBuilderDialog
     from .io.pdf_export import export_pdf, page_pixmap
     from .runtime.form_runtime import FormRuntime
@@ -81,11 +82,18 @@ def run_smoke() -> int:
     assert len(report_dialog.canvas.band_tops()) == 7
     checks.append("report designer a bande")
 
-    ScriptBuilderDialog(project, project.artifact("scripts", "riepilogo_fatture"))
-    checks.append("script builder")
+    script_editor = ScriptBuilderWidget(project, project.artifact("scripts", "riepilogo_fatture"))
+    assert script_editor.tree.topLevelItemCount() > 0
+    assert script_editor.text_view.line_number_width() > 0
+    checks.append("program editor")
 
-    MenuBuilderDialog(project, project.artifact("menus", "principale"))
-    checks.append("menu builder")
+    menu_designer = MenuBuilderWidget(project, project.artifact("menus", "principale"))
+    assert menu_designer.tree.topLevelItemCount() == len(menu_designer.items)
+    checks.append("menu designer")
+
+    project_editor = ProjectEditorWidget(project)
+    assert project_editor.tree.topLevelItemCount() == 5
+    checks.append("project editor")
 
     spec = ReportSpec.from_dict(report_artifact)
     from .ui.project_runner import ProjectRunner
@@ -122,7 +130,7 @@ def run_smoke() -> int:
     print("SMOKE OK")
     for check in checks:
         print("  -", check)
-    del table_dialog, report_dialog, form_designer, expert, runtime
+    del table_dialog, report_dialog, form_designer, expert, runtime, script_editor, menu_designer, project_editor
     app.processEvents()
     return 0
 

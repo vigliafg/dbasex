@@ -31,10 +31,10 @@ from ..core.form_model import FormSpec
 from ..core.project import CATEGORY_LABELS, Project, ProjectError
 from ..designers.form_builder import FormDesignerWidget
 from ..designers.form_expert import FormExpert
-from ..designers.menu_builder import MenuBuilderDialog
-from ..designers.project_builder import BuildError, build_project, validate_project
+from ..designers.menu_builder import MenuBuilderWidget
+from ..designers.project_builder import BuildError, ProjectEditorWidget, build_project, validate_project
 from ..designers.report_builder import ReportDesignerWidget
-from ..designers.script_builder import QtScriptUI, ScriptBuilderDialog
+from ..designers.script_builder import QtScriptUI, ScriptBuilderWidget
 from ..designers.table_builder import TableBuilderDialog
 from ..runtime.form_runtime import FormRuntime
 from ..runtime.report_engine import ReportSpec
@@ -63,7 +63,10 @@ MODES = {
     "ReportBuilderDialog": "Design",
     "ReportDesignerWidget": "Design",
     "ScriptBuilderDialog": "Modifica",
+    "ScriptBuilderWidget": "Modifica",
     "MenuBuilderDialog": "Design",
+    "MenuBuilderWidget": "Design",
+    "ProjectEditorWidget": "Progetto",
     "FormRuntime": "Esecuzione",
     "FormPreviewDialog": "Esecuzione",
     "ReportPreviewDialog": "Anteprima",
@@ -321,6 +324,8 @@ class MainWindow(QMainWindow):
     def _build_properties_actions(self) -> None:
         self.act_settings = icons.make_action("Impostazioni…", "impostazioni", self)
         self.act_settings.triggered.connect(self.edit_settings)
+        self.act_project = icons.make_action("Modifica progetto…", "elenco", self)
+        self.act_project.triggered.connect(self.open_project_editor)
 
     def _build_window_actions(self) -> None:
         self.act_cascade = icons.make_action("Sovrapponi", "cascata", self)
@@ -347,6 +352,8 @@ class MainWindow(QMainWindow):
         for action in (self.act_new, self.act_open, self.act_save):
             file_menu.addAction(action)
         self._recent_menu = file_menu.addMenu("Progetti recenti")
+        file_menu.addSeparator()
+        file_menu.addAction(self.act_project)
         file_menu.addSeparator()
         file_menu.addAction(self.act_close)
         file_menu.addAction(self.act_quit)
@@ -579,22 +586,22 @@ class MainWindow(QMainWindow):
             self._open_designer(f"reports:new:{id(designer)}", designer, category)
             return
         if category == "scripts":
-            dialog = ScriptBuilderDialog(
+            widget = ScriptBuilderWidget(
                 self.project,
                 {"name": self._unique_name("scripts", "script"), "steps": []},
                 self,
             )
-            dialog.accepted.connect(self._refresh_navigator)
-            self._open_designer(f"scripts:new:{id(dialog)}", dialog, category)
+            self._wire_script_designer(widget)
+            self._open_designer(f"scripts:new:{id(widget)}", widget, category)
             return
         if category == "menus":
-            dialog = MenuBuilderDialog(
+            widget = MenuBuilderWidget(
                 self.project,
                 {"name": self._unique_name("menus", "principale"), "items": []},
                 self,
             )
-            dialog.accepted.connect(self._refresh_navigator)
-            self._open_designer(f"menus:new:{id(dialog)}", dialog, category)
+            self._wire_menu_designer(widget)
+            self._open_designer(f"menus:new:{id(widget)}", widget, category)
 
     def _after_new_table(self, dialog: TableBuilderDialog) -> None:
         self._refresh_navigator()
@@ -761,6 +768,90 @@ class MainWindow(QMainWindow):
             return
         self._show_report_preview(dialog)
 
+    def _wire_script_designer(self, designer: ScriptBuilderWidget) -> None:
+        designer.saved.connect(self._refresh_navigator)
+        designer.status_message.connect(
+            lambda text: self.statusBar().showMessage(text, 4000)
+        )
+
+    def open_script_designer(self, name: str) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        artifact = self.project.artifact("scripts", name)
+        if artifact is None:
+            QMessageBox.warning(self, "Script", f"Script inesistente: {name}")
+            return
+        key = f"scripts:{name}"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        designer = ScriptBuilderWidget(self.project, artifact, self)
+        self._wire_script_designer(designer)
+        sub = self.editors.open(
+            key,
+            f"Program Editor ({name})",
+            designer,
+            icon=icons.icon("script"),
+            size=QSize(1140, 740),
+        )
+        designer.windowTitleChanged.connect(sub.setWindowTitle)
+
+    def _wire_menu_designer(self, designer: MenuBuilderWidget) -> None:
+        designer.saved.connect(self._refresh_navigator)
+        designer.status_message.connect(
+            lambda text: self.statusBar().showMessage(text, 4000)
+        )
+
+    def open_menu_designer(self, name: str) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        artifact = self.project.artifact("menus", name)
+        if artifact is None:
+            QMessageBox.warning(self, "Menu", f"Menu inesistente: {name}")
+            return
+        key = f"menus:{name}"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        designer = MenuBuilderWidget(self.project, artifact, self)
+        self._wire_menu_designer(designer)
+        sub = self.editors.open(
+            key,
+            f"Menu Designer ({name})",
+            designer,
+            icon=icons.icon("menu"),
+            size=QSize(860, 560),
+        )
+        designer.windowTitleChanged.connect(sub.setWindowTitle)
+
+    def open_project_editor(self) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        key = "project:editor"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        editor = ProjectEditorWidget(self.project, self)
+        editor.open_object.connect(self.open_object)
+        editor.saved.connect(self._refresh_navigator)
+        editor.status_message.connect(
+            lambda text: self.statusBar().showMessage(text, 4000)
+        )
+        sub = self.editors.open(
+            key,
+            f"Project Editor ({self.project.name})",
+            editor,
+            icon=icons.icon("impostazioni"),
+            size=QSize(900, 620),
+        )
+        editor.windowTitleChanged.connect(sub.setWindowTitle)
+
     def open_table_structure(self, name: str) -> None:
         if not self._require_project():
             return
@@ -832,11 +923,11 @@ class MainWindow(QMainWindow):
                 self.open_report_designer(name)
                 return
             if category == "scripts":
-                dialog = ScriptBuilderDialog(self.project, artifact, self)
-            else:
-                dialog = MenuBuilderDialog(self.project, artifact, self)
-            dialog.accepted.connect(self._refresh_navigator)
-            self._open_designer(key, dialog, category)
+                self.open_script_designer(name)
+                return
+            if category == "menus":
+                self.open_menu_designer(name)
+                return
         except ValueError as exc:
             QMessageBox.warning(self, "Oggetto non apribile", str(exc))
 
@@ -1166,6 +1257,7 @@ class MainWindow(QMainWindow):
             getattr(self, "act_print", None),
             getattr(self, "act_close", None),
             getattr(self, "act_settings", None),
+            getattr(self, "act_project", None),
             getattr(self, "act_table", None),
             getattr(self, "act_form", None),
             getattr(self, "act_report", None),

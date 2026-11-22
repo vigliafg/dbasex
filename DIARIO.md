@@ -13,7 +13,7 @@
 | O3 — Table Structure | completata (2026-11-22) | A |
 | O4 — Form Designer/Expert/Runtime | completata (2026-11-22) | — |
 | O5 — Report Designer/Preview | completata (2026-11-22) | — |
-| O6 — Script/Menu/Project | da iniziare | B |
+| O6 — Script/Menu/Project | completata (2026-11-22) | B |
 | O7 — QA e release 0.2 | da iniziare | C |
 
 ## Registro
@@ -202,6 +202,42 @@
   - Il canvas non visualizza immagini né anteprime reali dei dati.
 - **Prossimo passo:** Ondata 6 — Script, Menu, Project Builder; poi **Checkpoint B**.
 
+### 2026-11-22 — Ondata 6 — avvio
+- **Stato:** in corso
+- **Obiettivo:** allineare Program Editor, Menu Designer e Project Editor, poi fermarsi al Checkpoint B.
+- **File previsti:** `dbx/designers/script_builder.py`, `dbx/designers/menu_builder.py`, `dbx/designers/project_builder.py`, `dbx/ui/main_window.py`, `dbx/smoke.py`, `tools/capture_ui.py`, test.
+
+### 2026-11-22 — Ondata 6 — chiusura
+- **Stato:** completata
+- **Branch/commit:** `main` — commit dell'ondata
+- **Obiettivo:** Program Editor con numeri di riga e sintassi, Menu Designer ad albero con anteprima, Project Editor con validazione e build.
+- **File toccati:** `dbx/designers/script_builder.py` (riscritto), `dbx/designers/menu_builder.py` (riscritto), `dbx/designers/project_builder.py`, `dbx/ui/main_window.py`, `dbx/smoke.py`, `tools/capture_ui.py`, `tests/test_ui_script_editor.py` (nuovo), `tests/test_ui_menu_designer.py` (nuovo), `tests/test_ui_project_editor.py` (nuovo), `docs/ui-parity.md`, rendering.
+- **Scelte/deviazioni:**
+  - `ScriptBuilderDialog` diventa `ScriptBuilderWidget` (`QWidget`) in MDI, con alias storico. L'editor usa un `CodeEditor` con area dei numeri di riga, riga corrente evidenziata, tab a due spazi e `ScriptHighlighter` per parole chiave, stringhe, commenti e numeri.
+  - La vista azioni e la vista sorgente restano bidirezionali: l'albero rigenera il testo, «Dal testo alle azioni» lo reimporta; il log di esecuzione sta sotto l'editor. L'Inspector a destra modifica i parametri del passo selezionato.
+  - I dati del passo sono indirizzati con un percorso `(contenitore, indice)` invece dell'oggetto Python: Qt copia i dizionari nei `QVariant`, quindi l'identità non è affidabile. Il percorso rende stabili modifiche, spostamenti e rimozioni anche nei blocchi annidati.
+  - `MenuBuilderDialog` diventa `MenuBuilderWidget`: albero voci/separatori, proprietà tipizzate, destinazione filtrata per azione, spostamento su/giù, anteprima come `QMenuBar` con conteggio voci.
+  - Nuovo `ProjectEditorWidget`: albero oggetti per categoria con doppio clic verso l'oggetto, impostazioni (`title`, `main_form`, `main_menu`), validazione visiva e build distribuibile con zip invariato.
+  - `Progetto → Modifica progetto…` apre il Project Editor in MDI; l'azione di build globale del menu resta disponibile.
+  - Program Editor, Menu Designer e Project Editor usano lo stesso chrome dei designer O4/O5: toolbar icona+testo, `status_message`, `saved`, chiusura con conferma se `is_dirty()`.
+  - I dizionari di Qt importati in `project_builder` sono a livello di modulo: il modulo resta importabile senza QApplication e la build headless non cambia.
+- **Test:** `197 passed`; smoke headless OK con Program Editor, Menu Designer e Project Editor; `tools/capture_ui.py` OK in Silver e Dark.
+- **Screenshot:** nuovi `11-script-editor.png`, `12-menu-designer.png`, `13-project-editor.png`; gli altri rendering rigenerati.
+- **Problemi aperti:**
+  - L'anteprima del menu mostra la barra con il titolo; le voci compaiono nel popup, non in un pannello sempre visibile.
+  - La build del Project Editor è sincrona e non ha barra di avanzamento.
+  - Il Program Editor non offre esecuzione passo-passo né breakpoint.
+  - Il Project Editor non modifica le proprietà degli oggetti: apre i rispettivi designer.
+- **Prossimo passo:** **Checkpoint B**; poi Ondata 7 — QA e release 0.2.
+
+## Checkpoint B — fine Ondata 6 (2026-11-22)
+
+- **Stato ondate:** O0–O6 completate; O7 da iniziare.
+- **Test eseguiti:** `197 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK; `python tools/capture_ui.py` OK in Silver e Dark.
+- **Screenshot:** `11-script-editor.png`, `12-menu-designer.png`, `13-project-editor.png` aggiunti; rendering `01`–`10` rigenerati.
+- **Decisioni rimandate all'utente:** nessuna bloccante.
+- **RIPRESA:** checkpoint B attivo. Dopo il comando `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare `git status`/`git log` e iniziare l'**Ondata 7 — QA e release 0.2**, senza ripartire da O1–O6. O7 chiude con il Checkpoint C.
+
 ## Checkpoint A — fine Ondata 3 (2026-11-22)
 
 - **Stato ondate:** O0, O1, O2, O3 completate; O4, O5, O6, O7 da iniziare.
@@ -213,9 +249,9 @@
 ## Checkpoint
 
 - **A** — raggiunto il 2026-11-22 (fine O3).
-- **B** — previsto a fine O6.
+- **B** — raggiunto il 2026-11-22 (fine O6).
 - **C** — previsto a fine O7 (release 0.2).
 
 ## Ripresa
 
-**Ondata 5 completata.** Prossima azione: **Ondata 6 — Script, Menu, Project Builder**, poi fermarsi al **Checkpoint B**. Non ripartire da O0–O5.
+**Checkpoint B attivo.** Dopo `continua`: **Ondata 7 — QA e release 0.2**, poi **Checkpoint C**. Non ripartire da O0–O6.

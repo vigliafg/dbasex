@@ -7,6 +7,24 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import (
+    QComboBox,
+    QFileDialog,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QSplitter,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
 from ..core.form_model import FormSpec, form_references
 from ..core.metadata import validate_project_tables
 from ..core.project import Project
@@ -163,3 +181,189 @@ def package_with_pyinstaller(project: Project, target: Path) -> Path:
     if result.returncode != 0:
         raise BuildError(result.stderr[-2000:] or "PyInstaller non riuscito")
     return target / f"dbx_{project.name}"
+
+
+# --------------------------------------------------------------------------- #
+# Project Editor (O6)
+# --------------------------------------------------------------------------- #
+CATEGORY_LABELS = {
+    "tables": "Tabelle",
+    "forms": "Form",
+    "reports": "Report",
+    "scripts": "Programmi",
+    "menus": "Menu",
+}
+
+
+class ProjectEditorWidget(QWidget):
+    """Project Editor: oggetti, impostazioni, validazione e build distribuibile."""
+
+    open_object = pyqtSignal(str, str)
+    saved = pyqtSignal()
+    status_message = pyqtSignal(str)
+
+    def __init__(self, project: Project, parent=None) -> None:
+        super().__init__(parent)
+        self.project = project
+        self.setWindowTitle(f"Project Editor ({project.name})")
+        self.resize(900, 620)
+        self._build_ui()
+        self.refresh()
+
+    def _build_ui(self) -> None:
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)
+        header = QHBoxLayout()
+        header.addWidget(QLabel(f"Progetto: {self.project.name}"))
+        self.path_label = QLabel(str(self.project.path))
+        self.path_label.setObjectName("nav_hint")
+        header.addWidget(self.path_label, 1)
+        layout.addLayout(header)
+
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabels(["Oggetto", "Tipo"])
+        self.tree.setColumnWidth(0, 240)
+        self.tree.itemDoubleClicked.connect(self._activate)
+        splitter.addWidget(self.tree)
+
+        right = QWidget()
+        right_layout = QVBoxLayout(right)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(6)
+
+        settings = QWidget()
+        form = QFormLayout(settings)
+        form.setContentsMargins(0, 0, 0, 0)
+        self.title_edit = QLineEdit(str(self.project.settings.get("title", self.project.caption)))
+        form.addRow("Titolo applicazione", self.title_edit)
+        self.form_combo = QComboBox()
+        self.form_combo.addItem("(nessuno)", "")
+        form.addRow("Form principale", self.form_combo)
+        self.menu_combo = QComboBox()
+        self.menu_combo.addItem("(nessuno)", "")
+        form.addRow("Menu principale", self.menu_combo)
+        right_layout.addWidget(settings)
+        save_settings = QPushButton("Salva impostazioni")
+        save_settings.clicked.connect(self.save_settings)
+        right_layout.addWidget(save_settings)
+
+        right_layout.addWidget(QLabel("Validazione"))
+        self.validation = QPlainTextEdit()
+        self.validation.setReadOnly(True)
+        self.validation.setFixedHeight(130)
+        right_layout.addWidget(self.validation)
+        validate = QPushButton("Valida progetto")
+        validate.clicked.connect(self.validate_now)
+        right_layout.addWidget(validate)
+
+        right_layout.addWidget(QLabel("Build distribuibile"))
+        build_row = QHBoxLayout()
+        self.destination_edit = QLineEdit()
+        self.destination_edit.setPlaceholderText("Cartella di destinazione")
+        build_row.addWidget(self.destination_edit, 1)
+        browse = QPushButton("…")
+        browse.clicked.connect(self.choose_destination)
+        build_row.addWidget(browse)
+        right_layout.addLayout(build_row)
+        build_button = QPushButton("Build distribuibile…")
+        build_button.clicked.connect(self.build)
+        right_layout.addWidget(build_button)
+        right_layout.addStretch(1)
+        splitter.addWidget(right)
+        splitter.setSizes([430, 430])
+        layout.addWidget(splitter, 1)
+        self.status_label = QLabel("")
+        self.status_label.setObjectName("nav_hint")
+        layout.addWidget(self.status_label)
+
+    # ------------------------------------------------------------------ dati
+    def refresh(self) -> None:
+        self.tree.clear()
+        for category, label in CATEGORY_LABELS.items():
+            names = self.project.names(category)
+            parent = QTreeWidgetItem([f"{label} ({len(names)})", ""])
+            parent.setData(0, Qt.ItemDataRole.UserRole, ("", ""))
+            self.tree.addTopLevelItem(parent)
+            for name in names:
+                child = QTreeWidgetItem([name, label])
+                child.setData(0, Qt.ItemDataRole.UserRole, (category, name))
+                parent.addChild(child)
+            parent.setExpanded(True)
+        self.path_label.setText(str(self.project.path))
+        self.form_combo.clear()
+        self.form_combo.addItem("(nessuno)", "")
+        for name in self.project.names("forms"):
+            self.form_combo.addItem(name, name)
+        index = self.form_combo.findData(str(self.project.settings.get("main_form", "")))
+        self.form_combo.setCurrentIndex(max(0, index))
+        self.menu_combo.clear()
+        self.menu_combo.addItem("(nessuno)", "")
+        for name in self.project.names("menus"):
+            self.menu_combo.addItem(name, name)
+        index = self.menu_combo.findData(str(self.project.settings.get("main_menu", "")))
+        self.menu_combo.setCurrentIndex(max(0, index))
+        self.validate_now()
+
+    def _activate(self, item, _column: int) -> None:
+        category, name = item.data(0, Qt.ItemDataRole.UserRole) or ("", "")
+        if category and name:
+            self.open_object.emit(str(category), str(name))
+
+    # -------------------------------------------------------------- impostazioni
+    def save_settings(self) -> None:
+        self.project.settings["title"] = self.title_edit.text().strip()
+        self.project.settings["main_form"] = str(self.form_combo.currentData() or "")
+        self.project.settings["main_menu"] = str(self.menu_combo.currentData() or "")
+        try:
+            self.project.save()
+        except OSError as exc:
+            QMessageBox.warning(self, "Salvataggio non riuscito", str(exc))
+            return
+        self.saved.emit()
+        self.status_message.emit("Impostazioni del progetto salvate")
+        self.status_label.setText("Impostazioni salvate")
+
+    def is_dirty(self) -> bool:
+        settings = self.project.settings
+        return (
+            self.title_edit.text().strip() != str(settings.get("title", self.project.caption))
+            or str(self.form_combo.currentData() or "") != str(settings.get("main_form", ""))
+            or str(self.menu_combo.currentData() or "") != str(settings.get("main_menu", ""))
+        )
+
+    # ------------------------------------------------------------------ azioni
+    def validate_now(self) -> list[str]:
+        errors = validate_project(self.project)
+        if errors:
+            self.validation.setPlainText("\n".join(errors))
+            self.status_label.setText(f"{len(errors)} problemi rilevati")
+        else:
+            self.validation.setPlainText("Nessun problema rilevato.")
+            self.status_label.setText("Progetto valido")
+        return errors
+
+    def choose_destination(self) -> str:
+        folder = QFileDialog.getExistingDirectory(
+            self, "Cartella di destinazione del build", self.destination_edit.text()
+        )
+        if folder:
+            self.destination_edit.setText(folder)
+        return folder
+
+    def build(self) -> Path | None:
+        folder = self.destination_edit.text().strip()
+        if not folder:
+            folder = self.choose_destination()
+        if not folder:
+            return None
+        try:
+            target = build_project(self.project, Path(folder))
+        except BuildError as exc:
+            QMessageBox.warning(self, "Build non riuscita", str(exc))
+            self.status_label.setText("Build non riuscita")
+            return None
+        self.status_message.emit(f"Build creata: {target.name}")
+        self.status_label.setText(f"Build creata: {target}")
+        return target
