@@ -23,7 +23,7 @@ def test_demo_is_valid_and_run_without_errors(demo):
     assert demo.names("reports") == ["fatture_clienti_report", "fatture_per_cliente"]
     assert demo.names("diagrams") == ["schema"]
     assert demo.names("queries") == ["clienti_attivi", "fatture_clienti"]
-    assert demo.names("scripts") == ["riepilogo_fatture"]
+    assert demo.names("scripts") == ["fatture_sopra_soglia", "riepilogo_fatture"]
     assert demo.settings["main_form"] == "form_clienti"
 
 
@@ -56,6 +56,14 @@ def test_demo_script(demo):
     assert result.error is None
     assert any("Fattura 2" in line for line in result.log)
     assert any("Fattura 3" in line for line in result.log)
+
+
+def test_demo_parameterized_script_and_global(demo):
+    result = ScriptEngine(demo).run_named("fatture_sopra_soglia")
+    assert result.error is None
+    assert result.variables["soglia"] == "1000"
+    assert any("Fatture sopra 1000" in line for line in result.log)
+    assert demo.globals.get("ultima_soglia") == "1000"
 
 
 def test_build_creates_directory_and_zip(demo, tmp_path):

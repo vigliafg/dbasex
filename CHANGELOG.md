@@ -3,6 +3,22 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
+## [Non rilasciato]
+
+### Aggiunto
+
+- **Parametri di script** (O10): ogni oggetto script può dichiarare parametri con nome, etichetta e
+  valore predefinito; diventano variabili locali `:nome` e possono essere usati in espressioni,
+  messaggi e filtri.
+- **Esecuzione con parametri**: Navigator, menu del progetto e Program Editor chiedono i valori prima
+  di eseguire lo script; in headless valgono i predefiniti. La forma testuale accetta
+  `SET GLOBAL`, `CLEAR GLOBAL`, `BEGIN TRANSACTION`, `COMMIT TRANSACTION` e `ROLLBACK TRANSACTION`.
+- **Variabili globali**: `SET GLOBAL :nome = espressione` salva un valore nel manifest del progetto,
+  condiviso da tutti gli script e persistente tra le sessioni; `CLEAR GLOBAL :nome` lo rimuove.
+- **Transazioni esplicite**: `BEGIN/COMMIT/ROLLBACK TRANSACTION` raggruppano più scritture; una
+  transazione rimasta aperta viene annullata automaticamente quando lo script termina o fallisce.
+- Rendering `37-script-parameters.png`.
+
 ## [0.8.0] — 2026-11-22
 
 ### Aggiunto

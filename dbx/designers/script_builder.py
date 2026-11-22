@@ -55,9 +55,12 @@ from ..runtime.script_engine import (
     count_steps,
     from_text,
     new_step,
+    parameter_values,
+    script_parameters,
     to_text,
 )
 from ..ui import design, icons
+from ..ui.script_params import ScriptParametersDialog
 from ..ui.widgets import PropertyInspector
 from .step_picker import StepPickerDialog
 
@@ -436,10 +439,12 @@ class ScriptBuilderWidget(QWidget):
         self.project = project
         self.name = str(artifact.get("name", "script"))
         self.steps: list[dict[str, Any]] = copy.deepcopy(list(artifact.get("steps", [])))
+        self.params: list[dict[str, str]] = script_parameters(artifact)
         self.selected_step: dict[str, Any] | None = None
         self._source_dirty = False
         self._loading = False
         self._saved_state = copy.deepcopy(self.steps)
+        self._saved_params = copy.deepcopy(self.params)
         self._saved_name = self.name
         self.setWindowTitle(f"Program Editor ({self.name})")
         self.resize(1140, 740)
@@ -478,6 +483,15 @@ class ScriptBuilderWidget(QWidget):
             bar.addWidget(icons.make_button(text, glyph, slot, self, tip))
         bar.addSpacing(8)
         bar.addWidget(icons.make_button("Esegui", "esegui", self.run_script, self, "Esegui lo script (F5)"))
+        bar.addWidget(
+            icons.make_button(
+                "Parametri",
+                "impostazioni",
+                self.edit_parameters,
+                self,
+                "Dichiara i parametri dello script (:nome)",
+            )
+        )
         bar.addStretch(1)
         self.save_button = icons.make_button("Salva", "salva", self.save, self, "Salva lo script (Ctrl+S)")
         self.save_button.setEnabled(False)
@@ -648,6 +662,14 @@ class ScriptBuilderWidget(QWidget):
                         [
                             ("name", "Name", "text", self.name, None),
                             ("steps", "Azioni", "ro", str(count_steps(self.steps)), None),
+                            (
+                                "params",
+                                "Parametri",
+                                "ro",
+                                ", ".join(entry["name"] for entry in self.params)
+                                or "(nessuno)",
+                                None,
+                            ),
                         ],
                     )
                 ]
@@ -812,12 +834,24 @@ class ScriptBuilderWidget(QWidget):
         self._refresh_actions()
 
     # ----------------------------------------------------------- esecuzione
+    def edit_parameters(self) -> None:
+        dialog = ScriptParametersDialog(self.params, self, self.name)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        self.params = dialog.parameters()
+        self._show_step_properties()
+        self._refresh_actions()
+        self.status_message.emit(
+            f"{len(self.params)} parametri dichiarati" if self.params else "Nessun parametro"
+        )
+
     def run_script(self) -> None:
         if self._source_dirty:
             self.apply_text()
         ui = QtScriptUI(self.project, self)
         engine = ScriptEngine(self.project, ui)
-        result = engine.run(self.steps)
+        values = parameter_values({"params": self.params})
+        result = engine.run(self.steps, params=values)
         self.log.clear()
         for line in result.log:
             self.log.appendPlainText(line)
@@ -830,11 +864,15 @@ class ScriptBuilderWidget(QWidget):
 
     # ------------------------------------------------------------- salvataggio
     def is_dirty(self) -> bool:
-        return self.steps != self._saved_state or self.name != self._saved_name
+        return (
+            self.steps != self._saved_state
+            or self.params != self._saved_params
+            or self.name != self._saved_name
+        )
 
     def save(self) -> bool:
         name = self.name_edit.text().strip() or self.name
-        artifact = {"name": name, "steps": self.steps}
+        artifact = {"name": name, "params": copy.deepcopy(self.params), "steps": self.steps}
         try:
             self.project.put_object("scripts", artifact, previous_name=self.name)
             self.project.save()
@@ -844,6 +882,7 @@ class ScriptBuilderWidget(QWidget):
         self.name = name
         self._saved_name = name
         self._saved_state = copy.deepcopy(self.steps)
+        self._saved_params = copy.deepcopy(self.params)
         self._refresh_actions()
         self.saved.emit(name)
         self.status_message.emit(f"Script {name} salvato")

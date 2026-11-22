@@ -316,6 +316,34 @@ def run_smoke() -> int:
     assert core.error is None, core.error
     checks.append("script core actions")
 
+    param_engine = ScriptEngine(project)
+    param_result = param_engine.run_named(
+        "fatture_sopra_soglia", params={"soglia": "1000"}
+    )
+    assert param_result.error is None, param_result.error
+    assert any("Fattura" in line for line in param_result.log), param_result.log
+    assert project.globals.get("ultima_soglia") == "1000"
+    assert param_engine.globals.get("ultima_soglia") == "1000"
+    checks.append("parametri e variabili globali")
+
+    tx_engine = ScriptEngine(project)
+    tx_result = tx_engine.run(
+        [
+            {"action": "begin_transaction", "params": {}},
+            {
+                "action": "sql",
+                "params": {
+                    "statement": "UPDATE clienti SET note = 'tx' WHERE codice = 'C001'"
+                },
+            },
+            {"action": "rollback_transaction", "params": {}},
+        ]
+    )
+    assert tx_result.error is None, tx_result.error
+    note = project.db.query("SELECT note FROM clienti WHERE codice = 'C001'")[0][0]
+    assert note != "tx"
+    checks.append("transazioni script")
+
     imported_table = Table(
         name="import_smoke",
         fields=[

@@ -48,6 +48,7 @@ l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `do
 | `34-report-chart-designer.png` | Controllo grafico selezionato nel Report Designer |
 | `35-form-list.png` | Form runtime in vista Lista con selezione del record |
 | `36-form-portal.png` | Portale fatture ordinato e filtrato nel form |
+| `37-script-parameters.png` | Parametri dichiarati di uno script (nome, etichetta, predefinito) |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.

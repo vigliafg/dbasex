@@ -16,8 +16,9 @@ from ..core.form_model import FormSpec
 from ..core.project import Project
 from ..designers.script_builder import QtScriptUI
 from ..runtime.form_runtime import FormRuntime
-from ..runtime.script_engine import ScriptEngine
+from ..runtime.script_engine import ScriptEngine, ScriptError, script_parameters
 from .report_preview import ReportPreviewDialog
+from .script_params import ScriptArgumentsDialog
 
 
 class ProjectRunner(QDialog):
@@ -87,12 +88,23 @@ class ProjectRunner(QDialog):
             except ValueError as exc:
                 QMessageBox.warning(self, "Report", str(exc))
         elif action == "run_script":
-            engine = ScriptEngine(self.project, QtScriptUI(self.project, self))
             artifact = self.project.artifact("scripts", target)
             if artifact is None:
                 QMessageBox.warning(self, "Script", f"Script inesistente: {target}")
                 return
-            result = engine.run(artifact.get("steps", []))
+            try:
+                parameters = script_parameters(artifact)
+            except ScriptError as exc:
+                QMessageBox.warning(self, "Script", str(exc))
+                return
+            values = None
+            if parameters:
+                dialog = ScriptArgumentsDialog(parameters, self, target)
+                if dialog.exec() != QDialog.DialogCode.Accepted:
+                    return
+                values = dialog.values()
+            engine = ScriptEngine(self.project, QtScriptUI(self.project, self))
+            result = engine.run_named(target, params=values)
             if result.error:
                 QMessageBox.warning(self, "Script", result.error)
 

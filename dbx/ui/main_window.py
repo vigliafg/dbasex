@@ -47,7 +47,7 @@ from ..designers.table_builder import TableBuilderDialog
 from ..designers.table_expert import TableExpert
 from ..runtime.form_runtime import FormRuntime
 from ..runtime.report_engine import ReportSpec
-from ..runtime.script_engine import ScriptEngine
+from ..runtime.script_engine import ScriptEngine, ScriptError, script_parameters
 from . import design, icons
 from .command_window import CommandWindow
 from .data_view import DataView
@@ -57,6 +57,7 @@ from .menu import DescriptiveMenu, add_entry, add_submenu_entry
 from .navigator import Navigator
 from .query_results import QueryResultsWidget
 from .report_preview import ReportPreviewDialog
+from .script_params import ScriptArgumentsDialog
 from .theme import apply_theme
 
 OBJECT_ICONS = {
@@ -1182,7 +1183,12 @@ class MainWindow(QMainWindow):
         if existing is not None:
             self.mdi.setActiveSubWindow(existing)
             return
-        designer = ScriptBuilderWidget(self.project, artifact, self)
+        designer = None
+        try:
+            designer = ScriptBuilderWidget(self.project, artifact, self)
+        except ScriptError as exc:
+            QMessageBox.warning(self, "Script", str(exc))
+            return
         self._wire_script_designer(designer)
         sub = self.editors.open(
             key,
@@ -1387,8 +1393,19 @@ class MainWindow(QMainWindow):
         elif category == "scripts":
             artifact = self.project.artifact("scripts", name)
             if artifact:
+                try:
+                    parameters = script_parameters(artifact)
+                except ScriptError as exc:
+                    QMessageBox.warning(self, "Script", str(exc))
+                    return
+                values = None
+                if parameters:
+                    dialog = ScriptArgumentsDialog(parameters, self, name)
+                    if dialog.exec() != QDialog.DialogCode.Accepted:
+                        return
+                    values = dialog.values()
                 engine = ScriptEngine(self.project, QtScriptUI(self.project, self))
-                result = engine.run(artifact.get("steps", []))
+                result = engine.run_named(name, params=values)
                 if result.error:
                     QMessageBox.warning(self, "Script", result.error)
                 else:

@@ -18,6 +18,9 @@ La 0.8 aggiunge **etichette e mail merge** con Label Designer leggero, preset A4
 filtro/ordinamento e stampa o PDF su più fogli, **grafici** barre/linee/torta nei report e la
 **vista Lista** dei form con portali ordinati e filtrati.
 
+La 0.9 (in corso) aggiunge **automazione**: parametri dichiarati per gli script, variabili globali
+persistite nel progetto e transazioni esplicite con avvio, conferma e annullamento.
+
 ## Funzioni
 
 | Strumento | Cosa fa |
@@ -42,7 +45,7 @@ filtro/ordinamento e stampa o PDF su più fogli, **grafici** barre/linee/torta n
 | **Report Designer** | Foglio unico a bande impilate ed etichettate, delimitatori trascinabili, due toolbar, zoom 50–200%, dialoghi Insert Field / Edit Text / Record Sort Order / Insert Group / Total / Chart; grafici barre, linee e torta; sorgente tabella o query |
 | **Report Preview** | Pagina singola o continua, fit-width, zoom persistente, totale pagine, aggiornamento, stampa ed export PDF |
 | **Label Designer** | Etichette e mail merge con preset A4/Avery, griglia colonne/righe, margini, modello `[campo]`/`{{espressione}}`, filtro, ordine e salto etichette |
-| **Program Editor** | MiniScript con numeri di riga, evidenziazione di parole chiave/stringhe/commenti/numeri, vista azioni ↔ sorgente bidirezionale, catalogo categorizzato con Step Picker, inspector dei parametri e log di esecuzione; passi core per controllo, tabelle, record, campi, query, report e dialoghi |
+| **Program Editor** | MiniScript con numeri di riga, evidenziazione di parole chiave/stringhe/commenti/numeri, vista azioni ↔ sorgente bidirezionale, catalogo categorizzato con Step Picker, inspector, parametri dichiarati, variabili globali, transazioni esplicite e log di esecuzione; passi core per controllo, tabelle, record, campi, query, report e dialoghi |
 | **Menu Designer** | Albero di voci e separatori, azioni tipizzate, filtro delle destinazioni, anteprima del menu |
 | **Project Editor / Builder** | Albero oggetti, impostazioni (`title`, `main_form`, `main_menu`), validazione dei riferimenti, build in cartella + zip, helper PyInstaller |
 | **Navigator, menu e status bar** | Sequenza menu dBASE, tooltip e icone coerenti, chiusura con conferma delle finestre modificate |

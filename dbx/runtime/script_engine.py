@@ -27,6 +27,8 @@ __all__ = [
     "ScriptEngine",
     "ScriptError",
     "NullUI",
+    "parameter_values",
+    "script_parameters",
     "to_text",
     "from_text",
     "new_step",
@@ -66,6 +68,21 @@ ACTIONS: dict[str, dict[str, Any]] = {
         "category": "Variabili",
         "description": "Assegna il risultato di un'espressione a una variabile.",
         "params": [("variable", "Variabile", "var"), ("expr", "Espressione", "expr")],
+    },
+    "set_global": {
+        "label": "Imposta variabile globale",
+        "category": "Variabili",
+        "description": "Salva un valore nel progetto, disponibile anche agli altri script.",
+        "params": [
+            ("variable", "Variabile globale", "var"),
+            ("expr", "Espressione", "expr"),
+        ],
+    },
+    "unset_global": {
+        "label": "Cancella variabile globale",
+        "category": "Variabili",
+        "description": "Rimuove una variabile globale salvata nel progetto.",
+        "params": [("variable", "Variabile globale", "var")],
     },
     "if": {
         "label": "Se…Altrimenti",
@@ -195,6 +212,24 @@ ACTIONS: dict[str, dict[str, Any]] = {
         "description": "Ricarica il record corrente dopo le scritture immediate.",
         "params": [],
     },
+    "begin_transaction": {
+        "label": "Avvia transazione",
+        "category": "Dati",
+        "description": "Apre una transazione esplicita per raggruppare più scritture.",
+        "params": [],
+    },
+    "commit_transaction": {
+        "label": "Conferma transazione",
+        "category": "Dati",
+        "description": "Conferma definitivamente le scritture della transazione aperta.",
+        "params": [],
+    },
+    "rollback_transaction": {
+        "label": "Annulla transazione",
+        "category": "Dati",
+        "description": "Annulla tutte le scritture della transazione aperta.",
+        "params": [],
+    },
     "revert_record": {
         "label": "Ripristina record",
         "category": "Record",
@@ -273,6 +308,55 @@ def new_step(action: str, **params: Any) -> dict[str, Any]:
     return step
 
 
+PARAM_NAME = re.compile(r"^[A-Za-z_]\w*$")
+
+
+def script_parameters(artifact: dict[str, Any] | None) -> list[dict[str, str]]:
+    """Parametri dichiarati da uno script: nome, etichetta e valore predefinito.
+
+    Accetta sia la forma completa ``{"name", "label", "default"}`` sia una
+    semplice lista di nomi, così gli script 0.8 restano validi.
+    """
+    if not isinstance(artifact, dict):
+        return []
+    raw = artifact.get("params") or []
+    if not isinstance(raw, list):
+        return []
+    result: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for entry in raw:
+        if isinstance(entry, str):
+            name, label, default = entry.strip(), entry.strip(), ""
+        elif isinstance(entry, dict):
+            name = str(entry.get("name") or "").strip()
+            label = str(entry.get("label") or name).strip() or name
+            default = "" if entry.get("default") is None else str(entry.get("default"))
+        else:
+            continue
+        if not PARAM_NAME.match(name):
+            raise ScriptError(f"Nome di parametro non valido: {name!r}")
+        key = name.lower()
+        if key in seen:
+            raise ScriptError(f"Parametro duplicato: {name}")
+        seen.add(key)
+        result.append({"name": name, "label": label, "default": default})
+    return result
+
+
+def parameter_values(
+    artifact: dict[str, Any] | None,
+    overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Valori iniziali dei parametri: predefiniti più eventuali sostituzioni."""
+    values: dict[str, Any] = {
+        entry["name"]: entry["default"] for entry in script_parameters(artifact)
+    }
+    for key, value in (overrides or {}).items():
+        name = str(key).lstrip(":")
+        values[name] = value
+    return values
+
+
 class NullUI:
     """Interfaccia utente silenziosa per test e build headless."""
 
@@ -330,6 +414,7 @@ class ScriptEngine:
         self.project = project
         self.ui = ui or NullUI()
         self.variables: dict[str, Any] = dict(variables or {})
+        self.globals: dict[str, Any] = dict(getattr(project, "globals", {}) or {})
         self.log: list[str] = []
         self.max_steps = max_steps
         self._executed = 0
@@ -339,17 +424,25 @@ class ScriptEngine:
         self._loop_flags: list[bool] = []
         self._depth = 0
         self._stop = False
+        self._in_transaction = False
+        self._globals_dirty = False
 
     # ------------------------------------------------------------------ utils
     def _log(self, message: str) -> None:
         self.log.append(message)
+
+    def _scope(self) -> dict[str, Any]:
+        """Variabili locali sopra le globali: il locale ha la precedenza."""
+        return {**self.globals, **self.variables}
 
     def _eval(self, source: str, record: dict[str, Any] | None = None) -> Any:
         context = dict(self._record)
         if record:
             context.update(record)
         try:
-            return Expression(source).evaluate(context, self.variables, self._current_table or None)
+            return Expression(source).evaluate(
+                context, self._scope(), self._current_table or None
+            )
         except ExpressionError as exc:
             raise ScriptError(str(exc)) from exc
 
@@ -358,15 +451,29 @@ class ScriptEngine:
         source = "" if text is None else str(text)
         if not source:
             return ""
+        scope = self._scope()
         try:
-            value = Expression(source).evaluate(self._record, self.variables, self._current_table or None)
+            value = Expression(source).evaluate(
+                self._record, scope, self._current_table or None
+            )
             return "" if value is None else str(value)
         except ExpressionError:
-            pass
+            return self._substitute(source)
+
+    def _substitute(self, text: Any) -> str:
+        """Sostituisce solo ``:variabile`` e ``[campo]``, senza valutare il testo.
+
+        Serve per filtri e ordinamenti SQL, dove un'espressione valida non deve
+        essere trasformata nel suo risultato booleano.
+        """
+        source = "" if text is None else str(text)
+        if not source:
+            return ""
+        scope = self._scope()
 
         def replace_variable(match: re.Match[str]) -> str:
             name = match.group(1)
-            for key, value in self.variables.items():
+            for key, value in scope.items():
                 if str(key).lower() == name.lower():
                     return str(value)
             return match.group(0)
@@ -380,8 +487,7 @@ class ScriptEngine:
             return "" if value is None else str(value)
 
         result = re.sub(r":([A-Za-z_]\w*)", replace_variable, source)
-        result = re.sub(r"\[([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)\]", replace_field, result)
-        return result
+        return re.sub(r"\[([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)\]", replace_field, result)
 
     def _tick(self) -> None:
         self._executed += 1
@@ -439,7 +545,12 @@ class ScriptEngine:
         self.ui.refresh()
 
     # -------------------------------------------------------------- esecuzione
-    def run(self, steps: Iterable[dict[str, Any]], record: dict[str, Any] | None = None) -> ScriptResult:
+    def run(
+        self,
+        steps: Iterable[dict[str, Any]],
+        record: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> ScriptResult:
         self.log = []
         self._executed = 0
         self._stop = False
@@ -447,6 +558,11 @@ class ScriptEngine:
         self._loop_flags = []
         self._rowset = None
         self._record = dict(record or {})
+        self._in_transaction = False
+        self._globals_dirty = False
+        if params:
+            for key, value in params.items():
+                self.variables[str(key).lstrip(":")] = value
         error: str | None = None
         try:
             self._run_steps(list(steps))
@@ -455,13 +571,39 @@ class ScriptEngine:
         except ScriptError as exc:
             error = str(exc)
             self._log(f"ERRORE: {exc}")
+        finally:
+            if self._in_transaction:
+                self._in_transaction = False
+                try:
+                    self.project.db.con.execute("ROLLBACK")
+                    self._log("Transazione aperta annullata automaticamente")
+                except Exception as exc:  # pragma: no cover - difensivo
+                    self._log(f"Rollback automatico non riuscito: {exc}")
+            if self._globals_dirty:
+                self._save_globals()
         return ScriptResult(log=list(self.log), variables=dict(self.variables), error=error)
 
-    def run_named(self, name: str, record: dict[str, Any] | None = None) -> ScriptResult:
+    def run_named(
+        self,
+        name: str,
+        record: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> ScriptResult:
         artifact = self.project.artifact("scripts", name)
         if artifact is None:
             raise ScriptError(f"Script sconosciuto: {name}")
-        return self.run(artifact.get("steps", []), record)
+        values = parameter_values(artifact, params)
+        return self.run(artifact.get("steps", []), record, values)
+
+    def _save_globals(self) -> None:
+        self._globals_dirty = False
+        try:
+            current = self.project.globals
+            current.clear()
+            current.update(self.globals)
+            self.project.save()
+        except Exception as exc:  # pragma: no cover - difensivo
+            self._log(f"Variabili globali non salvate: {exc}")
 
     def _run_steps(self, steps: list[dict[str, Any]]) -> None:
         for step in steps:
@@ -507,6 +649,26 @@ class ScriptEngine:
         self.variables[variable] = self._eval(str(params.get("expr", "")))
         self._log(f":{variable} = {self.variables[variable]!r}")
 
+    def _do_set_global(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        variable = str(params.get("variable") or "").lstrip(":")
+        if not variable:
+            raise ScriptError("Variabile globale mancante nell'azione 'set_global'")
+        value = self._eval(str(params.get("expr", "")))
+        self.project.set_global(variable, value)
+        self.globals[variable] = self.project.globals[variable]
+        self.variables.pop(variable, None)
+        self._globals_dirty = True
+        self._log(f"globale :{variable} = {self.globals[variable]!r}")
+
+    def _do_unset_global(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        variable = str(params.get("variable") or "").lstrip(":")
+        if not variable:
+            raise ScriptError("Variabile globale mancante nell'azione 'unset_global'")
+        self.globals.pop(variable, None)
+        self.project.unset_global(variable)
+        self._globals_dirty = True
+        self._log(f"globale :{variable} cancellata")
+
     def _do_if(self, params: dict[str, Any], step: dict[str, Any]) -> None:
         condition = bool(self._eval(str(params.get("expr", ""))))
         branch = step.get("then", step.get("steps", [])) if condition else step.get("else", [])
@@ -521,7 +683,7 @@ class ScriptEngine:
 
     def _do_foreach(self, params: dict[str, Any], step: dict[str, Any]) -> None:
         table_name = str(params.get("table") or "")
-        where = str(params.get("filter") or "")
+        where = self._substitute(str(params.get("filter") or ""))
         rows = self._rows(table_name, where)
         previous_record = self._record
         previous_table = self._current_table
@@ -556,7 +718,7 @@ class ScriptEngine:
         table = self.project.table(table_name)
         if table is None:
             raise ScriptError(f"Tabella sconosciuta: {table_name}")
-        rows = self._rows(table_name, str(params.get("filter") or ""))
+        rows = self._rows(table_name, self._substitute(str(params.get("filter") or "")))
         path = self._interpolate(params.get("path", ""))
         if not path:
             raise ScriptError("Percorso di destinazione mancante per l'export CSV")
@@ -638,8 +800,8 @@ class ScriptEngine:
             raise ScriptError("Tabella mancante in SELECT TABLE")
         rowset = self._open_cursor(
             table_name,
-            where=str(params.get("filter") or ""),
-            order=str(params.get("order") or ""),
+            where=self._substitute(str(params.get("filter") or "")),
+            order=self._substitute(str(params.get("order") or "")),
         )
         self._log(f"Tabella {rowset.table.name}: {len(rowset)} record · {self._position_log()}")
         self._refresh_ui()
@@ -765,6 +927,47 @@ class ScriptEngine:
         self._log(f"Record confermato · {self._position_log()}")
         self._refresh_ui()
 
+    # ------------------------------------------------------------ transazioni
+    def _do_begin_transaction(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        if self._in_transaction:
+            raise ScriptError("Transazione già aperta")
+        try:
+            self.project.db.con.execute("BEGIN")
+        except Exception as exc:
+            raise ScriptError(f"Transazione non avviata: {exc}") from exc
+        self._in_transaction = True
+        self._log("Transazione avviata")
+
+    def _do_commit_transaction(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        if not self._in_transaction:
+            raise ScriptError("Nessuna transazione aperta da confermare")
+        try:
+            self.project.db.con.execute("COMMIT")
+        except Exception as exc:
+            raise ScriptError(f"Transazione non confermata: {exc}") from exc
+        finally:
+            self._in_transaction = False
+        self._log("Transazione confermata")
+        self._refresh_ui()
+
+    def _do_rollback_transaction(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        if not self._in_transaction:
+            raise ScriptError("Nessuna transazione aperta da annullare")
+        try:
+            self.project.db.con.execute("ROLLBACK")
+        except Exception as exc:
+            raise ScriptError(f"Transazione non annullata: {exc}") from exc
+        finally:
+            self._in_transaction = False
+        if self._rowset is not None:
+            try:
+                self._rowset.refresh()
+                self._sync_record()
+            except RowsetError:
+                pass
+        self._log("Transazione annullata")
+        self._refresh_ui()
+
     def _do_revert_record(self, params: dict[str, Any], step: dict[str, Any]) -> None:
         rowset = self._require_cursor()
         rowset.refresh()
@@ -839,6 +1042,12 @@ def to_text(steps: Iterable[dict[str, Any]], indent: int = 0) -> str:
             )
         elif action == "set":
             lines.append(f"{pad}SET :{params.get('variable', '')} = {params.get('expr', '')}")
+        elif action == "set_global":
+            lines.append(
+                f"{pad}SET GLOBAL :{params.get('variable', '')} = {params.get('expr', '')}"
+            )
+        elif action == "unset_global":
+            lines.append(f"{pad}CLEAR GLOBAL :{params.get('variable', '')}")
         elif action == "if":
             lines.append(f"{pad}IF {params.get('expr', '')}")
             lines.append(to_text(step.get("then", step.get("steps", [])), indent + 1))
@@ -902,6 +1111,12 @@ def to_text(steps: Iterable[dict[str, Any]], indent: int = 0) -> str:
             lines.append(f"{pad}DELETE RECORD{suffix}")
         elif action == "commit_record":
             lines.append(f"{pad}COMMIT RECORD")
+        elif action == "begin_transaction":
+            lines.append(f"{pad}BEGIN TRANSACTION")
+        elif action == "commit_transaction":
+            lines.append(f"{pad}COMMIT TRANSACTION")
+        elif action == "rollback_transaction":
+            lines.append(f"{pad}ROLLBACK TRANSACTION")
         elif action == "revert_record":
             lines.append(f"{pad}REVERT RECORD")
         elif action == "open_query":
@@ -1011,6 +1226,25 @@ def _parse_line(text: str, line_no: int) -> dict[str, Any]:
     upper = text.upper()
     if upper.startswith("COMMENT "):
         return {"action": "comment", "params": {"text": _unquote(text[8:])}}
+    if upper.startswith("SET GLOBAL "):
+        rest = text[11:].strip()
+        match = re.match(r"^:(\w+)\s*=\s*(.+)$", rest)
+        if not match:
+            raise ScriptError(
+                f"SET GLOBAL malformato alla riga {line_no}: usa SET GLOBAL :var = espressione"
+            )
+        return {
+            "action": "set_global",
+            "params": {"variable": match.group(1), "expr": match.group(2).strip()},
+        }
+    if upper.startswith("CLEAR GLOBAL "):
+        rest = text[13:].strip()
+        match = re.match(r"^:?(\w+)$", rest)
+        if not match:
+            raise ScriptError(
+                f"CLEAR GLOBAL malformato alla riga {line_no}: usa CLEAR GLOBAL :var"
+            )
+        return {"action": "unset_global", "params": {"variable": match.group(1)}}
     if upper.startswith("SET FIELD "):
         rest = text[10:].strip()
         match = re.match(
@@ -1061,6 +1295,12 @@ def _parse_line(text: str, line_no: int) -> dict[str, Any]:
             "action": "delete_record",
             "params": {"confirm": "no" if rest == "NOCONFIRM" else ""},
         }
+    if upper.startswith("BEGIN TRANSACTION"):
+        return {"action": "begin_transaction", "params": {}}
+    if upper.startswith("COMMIT TRANSACTION"):
+        return {"action": "commit_transaction", "params": {}}
+    if upper.startswith("ROLLBACK TRANSACTION"):
+        return {"action": "rollback_transaction", "params": {}}
     if upper.startswith("COMMIT RECORD"):
         return {"action": "commit_record", "params": {}}
     if upper.startswith("REVERT RECORD"):

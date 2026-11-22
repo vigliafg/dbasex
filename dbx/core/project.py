@@ -77,6 +77,13 @@ def _pid_alive(pid: int) -> bool:
     return True
 
 
+def _storable_value(value: Any) -> Any:
+    """Valore JSON-compatibile per le variabili globali."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
+
+
 @dataclass
 class Project:
     path: Path
@@ -110,6 +117,26 @@ class Project:
     @property
     def database_file(self) -> Path:
         return self.data_path / f"{self.name}.sqlite"
+
+    # ----------------------------------------------------------- globali script
+    @property
+    def globals(self) -> dict[str, Any]:
+        """Variabili globali degli script, persistite nel manifest."""
+        data = self.settings.get("globals")
+        if not isinstance(data, dict):
+            data = {}
+            self.settings["globals"] = data
+        return data
+
+    def set_global(self, name: str, value: Any) -> None:
+        self.globals[str(name)] = _storable_value(value)
+
+    def unset_global(self, name: str) -> bool:
+        key = str(name)
+        if key in self.globals:
+            del self.globals[key]
+            return True
+        return False
 
     @property
     def db(self) -> Database:

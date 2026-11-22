@@ -31,7 +31,12 @@ from ..core.metadata import validate_project_tables
 from ..core.project import Project
 from ..core.query_model import QuerySpec
 from ..runtime.report_engine import ReportSpec
-from ..runtime.script_engine import ACTIONS, GO_RECORD_MODES
+from ..runtime.script_engine import (
+    ACTIONS,
+    GO_RECORD_MODES,
+    ScriptError,
+    script_parameters,
+)
 
 
 class BuildError(RuntimeError):
@@ -87,6 +92,10 @@ def validate_project(project: Project) -> list[str]:
             errors.append(f"Etichetta {name}: tabella inesistente {spec.table}")
 
     for name, artifact in project.objects["scripts"].items():
+        try:
+            script_parameters(artifact)
+        except ScriptError as exc:
+            errors.append(f"Script {name}: {exc}")
         for error in _validate_steps(
             artifact.get("steps", []),
             tables,

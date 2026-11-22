@@ -1142,3 +1142,49 @@
 - **RIPRESA:** nessuna ondata aperta. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
   `git status`/`git log` e iniziare l’**Ondata 10 — Automazione (parametri script, variabili
   globali, transazioni esplicite)**; non ripartire da O1–O9.
+
+### 2026-11-22 — Ondata 0.9.0 — O10 Automazione: parametri, globali e transazioni
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O10.
+- **Obiettivo:** rendere gli script riutilizzabili e transazionali: parametri dichiarati, variabili
+  globali persistite e transazioni esplicite, senza introdurre un nuovo linguaggio.
+- **File toccati:** `dbx/core/project.py`, `dbx/runtime/script_engine.py`,
+  `dbx/designers/script_builder.py`, `dbx/designers/project_builder.py`,
+  `dbx/ui/script_params.py` (nuovo), `dbx/ui/main_window.py`, `dbx/ui/project_runner.py`,
+  `dbx/samples.py`, `dbx/smoke.py`, `tools/capture_ui.py`,
+  `tests/test_script_automation.py` (nuovo), `tests/test_ui_script_params.py` (nuovo),
+  `tests/test_samples.py`, PLAN, CHANGELOG, README, parity, indice render, DIARIO.
+- **Scelte:**
+  - I parametri sono un elenco additivo nell'oggetto script: `{"name", "label", "default"}`.
+    `script_parameters` accetta anche la forma abbreviata a lista di nomi, così gli script 0.8
+    restano validi; `parameter_values` applica i predefiniti e le sostituzioni.
+  - `run_named(..., params=...)` e `run(..., params=...)` immettono i valori in `variables`; nel
+    Program Editor valgono i predefiniti, nel Navigator/menu/Project Runner un dialogo chiede i
+    valori. Il dialogo dei parametri è separato da quello dei valori e non contiene logica dati.
+  - Filtri e ordinamenti SQL usano una sostituzione dedicata (`:variabile` e `[campo]`) che non
+    valuta il testo come espressione: un filtro `anni >= :eta` non può diventare `True`.
+  - Le variabili globali vivono in `project.settings["globals"]` tramite `Project.globals`,
+    `set_global` e `unset_global`; sono salvate nel manifest con valori JSON-compatibili (le date
+    diventano testo). Il motore le espone a espressioni e messaggi; le variabili locali hanno la
+    precedenza, ma `SET GLOBAL` rimuove l'eventuale locale omonimo così il nuovo valore è visibile.
+  - Nuove azioni `set_global`, `unset_global`, `begin_transaction`, `commit_transaction`,
+    `rollback_transaction`; la forma testuale usa `SET GLOBAL`, `CLEAR GLOBAL`, `BEGIN/COMMIT/ROLLBACK
+    TRANSACTION`.
+  - Le transazioni usano la connessione SQLite del progetto (`BEGIN`/`COMMIT`/`ROLLBACK`) e quindi
+    includono anche `Rowset` e l'azione SQL. Doppio `BEGIN`, commit/rollback senza transazione sono
+    errori espliciti; una transazione rimasta aperta viene annullata automaticamente alla fine dello
+    script, anche in caso di errore.
+  - Il rollback rilegge il cursore corrente, così la scheda mostra i valori ripristinati.
+  - Script demo `fatture_sopra_soglia` con parametro `soglia` (default 1000), filtro parametrizzato e
+    variabile globale `ultima_soglia`; voce nel menu del progetto.
+  - La validazione di progetto controlla nome e unicità dei parametri.
+- **Test:** `481 passed`; smoke OK con `parametri e variabili globali` e `transazioni script`;
+  `python -m dbx --version` resta `0.8.0` (la release 0.9 arriva in O11). Test dedicati su
+  dichiarazione/valori, filtri parametrizzati, globali condivise e persistenti, date, shadowing,
+  commit/rollback, rollback automatico, errori di stato, cursore, forma testuale, validazione,
+  dialoghi, Program Editor, Navigator e Project Runner.
+- **Screenshot:** `37-script-parameters.png`; serie `01`–`37` rigenerata.
+- **Problemi aperti:** parametri solo testuali (la conversione numerica resta a `VAL`), nessuna
+  esecuzione passo-passo o breakpoint, transazioni annidate non supportate, globali senza tipi o
+  scoping per utente.
+- **Prossimo passo:** O11 — QA, documentazione, screenshot, release 0.9.0 e Checkpoint G.

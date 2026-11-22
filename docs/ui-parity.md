@@ -1,6 +1,6 @@
 # Stato di parità UI — dBX 0.8 vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (release 0.8.0)
+Aggiornato: 2026-11-22 (0.9.0 in corso, O10)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
 `fuori scope` = escluso dalla 0.3 per decisione di piano; `mancante` = non implementato.
@@ -24,7 +24,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Form Runtime | `40`, `35`, `36` | `dbx/runtime/form_runtime.py` | fatto (viste 0.8/O9) | Scheda/Lista, portali ordinati e filtrati; dispatcher di azioni, query read-only |
 | Report Designer | `32`–`38`, `41`, `34` | `dbx/designers/report_builder.py` | fatto (grafici 0.8/O8) | Selezione singola; ordine delle bande di flusso fisso; grafici barre/linee/torta |
 | Report Preview | `39`, `33` | `dbx/ui/report_preview.py` | fatto (grafici 0.8/O8) | Zoom persistente per sessione; pagina singola/continua; report su query e grafici |
-| Program Editor | `31`, `32` | `dbx/designers/script_builder.py`, `dbx/designers/step_picker.py` | fatto (catalogo e passi 0.5/O5–O6) | Nessuna esecuzione passo-passo |
+| Program Editor | `31`, `32`, `37` | `dbx/designers/script_builder.py`, `dbx/designers/step_picker.py`, `dbx/ui/script_params.py` | fatto (automazione 0.9/O10) | Parametri, variabili globali e transazioni; nessuna esecuzione passo-passo |
 | Menu Designer | — | `dbx/designers/menu_builder.py` | fatto | Anteprima come menu bar, non popup sempre aperto |
 | Project Editor/Builder | — | `dbx/designers/project_builder.py` | fatto | Build sincrono, senza barra di avanzamento |
 | Label Designer | `31` | `dbx/designers/label_builder.py` | fatto (0.8/O7) | Etichette e mail merge con preset, griglia e modello `[campo]` |
@@ -61,6 +61,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
   mostra il controllo grafico selezionato nel Report Designer.
 - `35-form-list.png` mostra la vista Lista di un form; `36-form-portal.png` mostra il portale delle
   fatture ordinate e filtrate nel form principale.
+- `37-script-parameters.png` mostra l'editor dei parametri di uno script.
 - La 0.6.0 aggiunge ricerca guidata, sostituzione, import CSV, rinomina/duplicazione oggetti e
   manutenzione del database.
 - La 0.5.0 completa il Program Editor con 17 passi core, cursore dati e Step Picker; rende visibili

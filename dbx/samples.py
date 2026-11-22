@@ -94,6 +94,29 @@ def _report() -> ReportSpec:
     return spec
 
 
+def _script_parametri() -> dict:
+    """Script dimostrativo con parametro e variabile globale (0.9)."""
+    conta = new_step("set", variable="conteggio", expr="0")
+    loop = new_step("foreach", table="fatture", filter="importo >= :soglia")
+    loop["steps"].append(new_step("set", variable="conteggio", expr=":conteggio + 1"))
+    loop["steps"].append(
+        new_step("message", text="Fattura [numero] — importo [importo]")
+    )
+    return {
+        "name": "fatture_sopra_soglia",
+        "params": [
+            {"name": "soglia", "label": "Importo minimo", "default": "1000"}
+        ],
+        "steps": [
+            new_step("status", text="Fatture sopra :soglia"),
+            conta,
+            loop,
+            new_step("set_global", variable="ultima_soglia", expr=":soglia"),
+            new_step("status", text="Trovate :conteggio fatture sopra :soglia"),
+        ],
+    }
+
+
 def _script() -> dict:
     steps = [
         new_step("status", text="Riepilogo fatture in corso…"),
@@ -214,6 +237,7 @@ def create_demo_project(path: str | Path, name: str = "Rubrica") -> Project:
     project.add_object("forms", form_fatture.to_dict())
     project.add_object("reports", _report().to_dict())
     project.add_object("scripts", _script())
+    project.add_object("scripts", _script_parametri())
     project.add_object(
         "menus",
         {
@@ -225,6 +249,7 @@ def create_demo_project(path: str | Path, name: str = "Rubrica") -> Project:
                 {"label": "Clienti attivi (query)", "action": "open_form", "target": "form_clienti_attivi"},
                 {"label": "Fatture per cliente (query)", "action": "open_report", "target": "fatture_clienti_report"},
                 {"label": "Riepilogo fatture", "action": "run_script", "target": "riepilogo_fatture"},
+                {"label": "Fatture sopra soglia", "action": "run_script", "target": "fatture_sopra_soglia"},
             ],
         },
     )

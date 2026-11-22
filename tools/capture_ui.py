@@ -63,6 +63,7 @@ from dbx.ui.main_window import MainWindow  # noqa: E402
 from dbx.ui.navigator import Navigator  # noqa: E402
 from dbx.ui.query_results import QueryResultsWidget  # noqa: E402
 from dbx.ui.report_preview import ReportPreviewDialog  # noqa: E402
+from dbx.ui.script_params import ScriptParametersDialog  # noqa: E402
 from dbx.ui.theme import apply_theme  # noqa: E402
 
 OUTPUT_DIR = ROOT / "docs" / "reference" / "dbx-ui" / "renders"
@@ -420,6 +421,18 @@ def run(theme: str = "aurora") -> int:
         portal_runtime.load_current()
         widgets.append(portal_runtime)
         captured.append(_capture(app, portal_runtime, "36-form-portal.png", (900, 800)))
+
+        params_dialog = ScriptParametersDialog(
+            [
+                {"name": "soglia", "label": "Importo minimo", "default": "1000"},
+                {"name": "anno", "label": "Anno di riferimento", "default": "2026"},
+            ],
+            name="fatture_sopra_soglia",
+        )
+        widgets.append(params_dialog)
+        captured.append(
+            _capture(app, params_dialog, "37-script-parameters.png", (560, 340))
+        )
     finally:
         for widget in reversed(widgets):
             widget.close()
