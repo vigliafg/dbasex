@@ -47,6 +47,14 @@ def _pattern(value: str, op: str) -> str:
     return f"%{text}"
 
 
+def _qbe_pattern(value: str) -> str:
+    """Pattern QBE: ``*`` e ``?`` sono wildcard, ``%`` e ``_`` sono letterali."""
+    text = str(value)
+    for char in ("\\", "%", "_"):
+        text = text.replace(char, "\\" + char)
+    return text.replace("*", "%").replace("?", "_")
+
+
 def _filter_sql(item: QueryFilter, by_name: dict[str, Table]) -> tuple[str, list[Any]]:
     table_name, field_name = parse_ref(item.field)
     column = _ref_sql(table_name, field_name)
@@ -54,15 +62,27 @@ def _filter_sql(item: QueryFilter, by_name: dict[str, Table]) -> tuple[str, list
         return f"{column} IS NULL", []
     if item.op == "notnull":
         return f"{column} IS NOT NULL", []
+    if item.op == "ref":
+        target_table, target_field = parse_ref(item.value)
+        return f"{column} = {_ref_sql(target_table, target_field)}", []
     if item.op in LIKE_OPERATORS:
         return f"{column} LIKE ? ESCAPE '\\'", [_pattern(item.value, item.op)]
-    operator = OPERATORS.get(item.op)
-    if operator is None:
-        raise QueryError(f"Operatore di filtro non valido: {item.op}")
+    if item.op == "like":
+        return f"{column} LIKE ? ESCAPE '\\'", [_qbe_pattern(item.value)]
     table = by_name.get(table_name.lower())
     field = table.field(field_name) if table is not None else None
     if field is None:
         raise QueryError(f"Filtro su campo inesistente: {item.field}")
+    if item.op == "between":
+        try:
+            low = T.to_storage(item.value, field.type)
+            high = T.to_storage(item.value2, field.type)
+        except (TypeError, ValueError) as exc:
+            raise QueryError(f"Filtro {item.field}: {exc}") from exc
+        return f"{column} BETWEEN ? AND ?", [low, high]
+    operator = OPERATORS.get(item.op)
+    if operator is None:
+        raise QueryError(f"Operatore di filtro non valido: {item.op}")
     try:
         value = T.to_storage(item.value, field.type)
     except (TypeError, ValueError) as exc:
@@ -186,12 +206,29 @@ class QueryEngine:
             )
         conditions: list[str] = []
         params: list[Any] = []
+        grouped: dict[int, tuple[list[str], list[Any]]] = {}
         for item in spec.filters:
             condition, values = _filter_sql(item, self.tables)
             conditions.append(condition)
             params.extend(values)
+            group = int(item.group or 0)
+            bucket_conditions, bucket_params = grouped.setdefault(group, ([], []))
+            bucket_conditions.append(condition)
+            bucket_params.extend(values)
         if conditions:
-            sql += " WHERE " + " AND ".join(conditions)
+            if len(grouped) == 1:
+                sql += " WHERE " + " AND ".join(conditions)
+            else:
+                parts = [
+                    " AND ".join(bucket_conditions)
+                    for bucket_conditions, _bucket_params in grouped.values()
+                ]
+                sql += " WHERE " + " OR ".join(f"({part})" for part in parts)
+                params = [
+                    value
+                    for _bucket_conditions, bucket_params in grouped.values()
+                    for value in bucket_params
+                ]
         if spec.sorts:
             terms = []
             for item in spec.sorts:

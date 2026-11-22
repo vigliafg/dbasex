@@ -627,3 +627,41 @@
 - **Screenshot:** `21-query-expert.png`, `22-report-expert.png`.
 - **Problemi aperti:** nessuno bloccante; QBE e OR sono il scope di O3.
 - **Prossimo passo:** O3 — modello e motore QBE, poi Checkpoint A.
+
+### 2026-11-22 — Ondata 0.4.0 — O3 Modello e motore QBE
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O3.
+- **Obiettivo:** estendere il modello e il motore delle query per il QBE read-only:
+  righe OR, intervalli, pattern QBE ed example elements.
+- **File toccati:** `dbx/core/query_model.py`, `dbx/core/query_engine.py`,
+  `tests/test_query_model.py`, `tests/test_qbe_model.py` (nuovo), `PLAN.md`, `DIARIO.md`.
+- **Scelte:**
+  - `QueryFilter` acquisisce `value2` (secondo estremo di `between`) e `group`
+    (stesso gruppo = AND, gruppi diversi = OR), con default retrocompatibili.
+  - Nuovi operatori: `between` (`BETWEEN ? AND ?`), `like` (pattern QBE con `*`/`?`
+    e `%`/`_` letterali) e `ref` (confronto tra due campi già presenti, traduzione
+    degli example elements).
+  - Compilazione `WHERE (gruppo 0) OR (gruppo 1)` con AND interno; parametri ordinati
+    per gruppo.
+  - Validazione: intervallo completo, gruppo non negativo, riferimento esistente e
+    tipi compatibili per `ref`; nessuna modifica ai JSON 0.3.
+  - Il QBE resta in sola lettura: nessuna query Insert/Delete/Set/ChangeTo.
+- **Test:** `296 passed`; smoke headless OK; catture Aurora e Dark OK.
+- **Screenshot:** serie `01`–`22` invariata; nessuna nuova UI in O3.
+- **Problemi aperti:** nessuno bloccante; l’interfaccia QBE arriva in O4.
+- **Prossimo passo:** O4 — UI QBE, sincronizzazione e release 0.4.0.
+
+## Checkpoint A — fine O3 (2026-11-22)
+
+- **Stato ondate:** 0.4.0 O0–O3 completate. Esperti Table/Query/Report e Form Expert
+  allineato; modello e motore QBE pronti (OR, between, like, ref).
+- **Test eseguiti:** `296 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK;
+  `python tools/capture_ui.py` OK; `python tools/capture_ui.py --theme dark` OK.
+- **Screenshot:** serie `01`–`22`; nuovi `20-table-expert.png`, `21-query-expert.png`,
+  `22-report-expert.png` nelle ondate precedenti. Nessun rendering nuovo in O3.
+- **Decisioni:** QBE solo ricerca; example elements come `ref`; `group` additivo;
+  OR su LEFT JOIN da documentare/avvisare in O4.
+- **RIPRESA:** Checkpoint A attivo. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`,
+  controllare `git status`/`git log` e iniziare l’**Ondata 4 — UI QBE e release 0.4.0**:
+  toggle QBE/Guidato, query image, sincronizzazione, aiuto, avviso LEFT JOIN, test UI,
+  screenshot `23-qbe-mode.png`, QA e versione 0.4.0. Non ripartire da O0–O3.

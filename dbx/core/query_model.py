@@ -12,6 +12,7 @@ import re
 from dataclasses import dataclass, field as dc_field
 from typing import Any, Iterable
 
+from . import types as T
 from .metadata import Table, slugify
 
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -30,6 +31,8 @@ OPERATORS = {
     "le": "<=",
 }
 LIKE_OPERATORS = ("contains", "starts", "ends")
+QBE_LIKE_OPERATORS = ("like",)
+REF_OPERATORS = ("ref",)
 NULL_OPERATORS = ("null", "notnull")
 OPERATOR_LABELS = {
     "eq": "uguale a",
@@ -41,10 +44,25 @@ OPERATOR_LABELS = {
     "contains": "contiene",
     "starts": "inizia con",
     "ends": "finisce con",
+    "like": "simile a (* e ?)",
+    "between": "compreso tra",
+    "ref": "uguale al campo",
     "null": "è vuoto",
     "notnull": "non è vuoto",
 }
 ALL_OPERATORS = tuple(OPERATOR_LABELS)
+
+
+def type_family(type_name: str) -> str:
+    """Famiglia usata per verificare la compatibilità degli example elements."""
+    if type_name in (T.INTEGER, T.DECIMAL, T.BOOLEAN):
+        return "number"
+    if type_name in (T.DATE, T.DATETIME):
+        return "date"
+    if type_name in (T.TEXT, T.MEMO):
+        return "text"
+    return type_name
+
 
 
 class QueryError(ValueError):
@@ -128,22 +146,40 @@ class QueryJoin:
 
 @dataclass
 class QueryFilter:
-    """Condizione ``campo operatore valore`` applicata in AND."""
+    """Condizione ``campo operatore valore``.
+
+    ``group`` distingue le righe QBE: lo stesso gruppo è combinato in AND,
+    gruppi diversi in OR. ``value2`` è il secondo estremo di ``between``.
+    """
 
     field: str = ""
     op: str = "eq"
     value: str = ""
+    value2: str = ""
+    group: int = 0
 
     def to_dict(self) -> dict[str, Any]:
-        return {"field": self.field, "op": self.op, "value": self.value}
+        return {
+            "field": self.field,
+            "op": self.op,
+            "value": self.value,
+            "value2": self.value2,
+            "group": int(self.group),
+        }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "QueryFilter":
         op = str(data.get("op", "eq")).lower()
+        try:
+            group = int(data.get("group", 0) or 0)
+        except (TypeError, ValueError):
+            group = 0
         return cls(
             field=str(data.get("field", "")),
             op=op if op in ALL_OPERATORS else "eq",
             value=str(data.get("value", "")),
+            value2=str(data.get("value2", "")),
+            group=max(0, group),
         )
 
 
@@ -284,15 +320,52 @@ class QuerySpec:
                 errors.append(str(exc))
                 continue
             table = by_name.get(table_name.lower())
+            source_field = None
             if table is None:
                 errors.append(f"Filtro su tabella inesistente: {table_name}")
             elif table_name.lower() not in available:
                 errors.append(f"Filtro su tabella non presente nella query: {table_name}")
             elif table.field(field_name) is None:
                 errors.append(f"Filtro su campo inesistente: {item.field}")
+            else:
+                source_field = table.field(field_name)
             if item.op not in ALL_OPERATORS:
                 errors.append(f"Operatore di filtro non valido: {item.op}")
-            if item.op not in NULL_OPERATORS and str(item.value).strip() == "":
+                continue
+            if not isinstance(item.group, int) or item.group < 0:
+                errors.append(f"Gruppo di filtro non valido: {item.group!r}")
+            if item.op == "between":
+                if not str(item.value).strip() or not str(item.value2).strip():
+                    errors.append(f"Filtro {item.field}: intervallo incompleto")
+            elif item.op == "like":
+                if not str(item.value).strip():
+                    errors.append(f"Filtro {item.field}: valore mancante")
+            elif item.op == "ref":
+                try:
+                    target_table_name, target_field_name = parse_ref(item.value)
+                except QueryError as exc:
+                    errors.append(f"Filtro {item.field}: {exc}")
+                    continue
+                target_table = by_name.get(target_table_name.lower())
+                if target_table is None or target_table_name.lower() not in available:
+                    errors.append(
+                        f"Filtro {item.field}: tabella di riferimento non presente: {target_table_name}"
+                    )
+                    continue
+                target_field = target_table.field(target_field_name)
+                if target_field is None:
+                    errors.append(
+                        f"Filtro {item.field}: campo di riferimento inesistente: {item.value}"
+                    )
+                    continue
+                if (
+                    source_field is not None
+                    and type_family(source_field.type) != type_family(target_field.type)
+                ):
+                    errors.append(
+                        f"Filtro {item.field}: tipi incompatibili con {item.value}"
+                    )
+            elif item.op not in NULL_OPERATORS and str(item.value).strip() == "":
                 errors.append(f"Filtro {item.field or '(nessun campo)'}: valore mancante")
 
         for item in self.sorts:

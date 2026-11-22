@@ -146,6 +146,9 @@ def test_validation_reports_missing_and_invalid_parts() -> None:
         "contains",
         "starts",
         "ends",
+        "like",
+        "between",
+        "ref",
         "null",
         "notnull",
     }
