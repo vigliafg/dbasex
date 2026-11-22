@@ -945,3 +945,29 @@
 - **Problemi aperti:** le query SQL non leggono campi calcolati (saranno disponibili negli
   aggregati di O5 come campi di output); i calcolati non sono ordinabili né filtrabili via SQL.
 - **Prossimo passo:** O5 — aggregati `GROUP BY` nella query.
+
+### 2026-11-22 — Ondata 0.7.0 — O5 Aggregati nella query
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O5.
+- **Obiettivo:** aggiungere `GROUP BY` e colonne aggregate SUM/COUNT/AVG/MIN/MAX alle query statiche.
+- **File toccati:** `dbx/core/query_model.py`, `dbx/core/query_engine.py`,
+  `dbx/designers/query_builder.py`, `tests/test_query_aggregates.py` (nuovo),
+  `tests/test_ui_query_aggregates.py` (nuovo), `dbx/smoke.py`, `tools/capture_ui.py`.
+- **Scelte:**
+  - `QuerySpec` esteso in modo additivo con `group_by` (riferimenti `tabella.campo`) e
+    `aggregates` (`QueryAggregate`: funzione, tabella, campo, alias).
+  - Il motore genera `COUNT(*)`, `COUNT(campo)`, `SUM`, `AVG`, `MIN`, `MAX`, con alias stabili e
+    deduplicati rispetto ai campi; `COUNT(*)` è disponibile senza campo.
+  - Nei raggruppamenti i campi selezionati devono comparire in `GROUP BY`; gli aggregati possono
+    essere ordinati tramite alias, anche in combinazione con join.
+  - Nuova scheda **Raggruppa** nel Query Designer: righe di raggruppamento, aggregati con funzione,
+    campo e alias, suggerimento sui campi da raggruppare. Lo SQL e l'anteprima si aggiornano subito.
+  - `Query Results`, form e report leggono le colonne aggregate come normali colonne tipizzate;
+    COUNT è intero, SUM/AVG decimali, MIN/MAX ereditano il tipo del campo.
+  - I campi calcolati virtuali restano esclusi da SELECT, GROUP BY e aggregati SQL.
+- **Test:** `400 passed`; smoke OK con `aggregati query`; test dedicati su aggregati globali,
+  GROUP BY, join, ordinamento per alias, validazione, JSON e Query Designer/Query Results.
+- **Screenshot:** `29-query-aggregates.png`.
+- **Problemi aperti:** niente HAVING, niente aggregati sulle espressioni e niente sottoquery; i
+  filtri restano applicati prima del raggruppamento.
+- **Prossimo passo:** O6 — crosstab read-only e release 0.7.0.

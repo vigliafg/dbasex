@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import QApplication, QWidget  # noqa: E402
 from dbx.core import types as T  # noqa: E402
 from dbx.core.form_model import FormSpec  # noqa: E402
 from dbx.core.metadata import Field, Table  # noqa: E402
-from dbx.core.query_model import QuerySpec  # noqa: E402
+from dbx.core.query_model import QueryAggregate, QueryField, QuerySort, QuerySpec  # noqa: E402
 from dbx.core.search import SearchCriterion, SearchRequest  # noqa: E402
 from dbx.designers.database_designer import DatabaseDesignerWidget  # noqa: E402
 from dbx.designers.form_builder import FormDesignerWidget  # noqa: E402
@@ -288,6 +288,28 @@ def run(theme: str = "aurora") -> int:
         calcoli_view = DataView(project, "calcoli")
         widgets.append(calcoli_view)
         captured.append(_capture(app, calcoli_view, "28-browse-calculated.png", (900, 480)))
+
+        aggregate_spec = QuerySpec(
+            name="fatture_per_cliente",
+            caption="Fatture per cliente",
+            base="fatture",
+            fields=[QueryField("clienti", "nome", alias="cliente")],
+            joins=list(query_spec.joins),
+            group_by=["clienti.nome"],
+            aggregates=[
+                QueryAggregate("count", "fatture", alias="numero_fatture"),
+                QueryAggregate("sum", "fatture", "importo", "totale"),
+            ],
+            sorts=[QuerySort("totale", "desc")],
+        )
+        aggregate_designer = QueryDesignerWidget(project, aggregate_spec)
+        widgets.append(aggregate_designer)
+        aggregate_designer.tabs.setCurrentIndex(2)
+        aggregate_designer.run_preview()
+        aggregate_designer.tabs.setCurrentIndex(2)
+        captured.append(
+            _capture(app, aggregate_designer, "29-query-aggregates.png", (1120, 830))
+        )
     finally:
         for widget in reversed(widgets):
             widget.close()

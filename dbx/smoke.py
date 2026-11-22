@@ -15,7 +15,8 @@ def run_smoke() -> int:
     from .core import types as T
     from .core.form_model import FormSpec
     from .core.metadata import Field, Table
-    from .core.query_model import QuerySpec
+    from .core.query_engine import run_query
+    from .core.query_model import QueryAggregate, QuerySpec
     from .core.refactor import check_database, duplicate_object
     from .core.search import SearchCriterion, SearchRequest
     from .designers.database_designer import DatabaseDesignerWidget
@@ -142,6 +143,19 @@ def run_smoke() -> int:
     assert query_results.table.rowCount() == 5
     assert query_results.table.columnCount() == 5
     checks.append("query results")
+
+    aggregate_spec = QuerySpec(
+        name="smoke_aggregato",
+        base="fatture",
+        aggregates=[
+            QueryAggregate("count", "fatture", alias="numero"),
+            QueryAggregate("sum", "fatture", "importo", "totale"),
+        ],
+    )
+    aggregate_result = run_query(project, aggregate_spec)
+    assert aggregate_result.rows[0]["numero"] == 5
+    assert aggregate_result.rows[0]["totale"] == 5900.5
+    checks.append("aggregati query")
 
     query_form = FormRuntime(project, FormSpec.from_dict(project.artifact("forms", "form_clienti_attivi")))
     assert query_form.read_only is True

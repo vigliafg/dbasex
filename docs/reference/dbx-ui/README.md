@@ -40,6 +40,7 @@ l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `do
 | `26-import-csv.png` | Importazione CSV con anteprima e mappatura colonne |
 | `27-table-calculated.png` | Table Structure con campo calcolato e auto-enter |
 | `28-browse-calculated.png` | Browse con totale e serie calcolati |
+| `29-query-aggregates.png` | Query Designer con GROUP BY e aggregati |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.

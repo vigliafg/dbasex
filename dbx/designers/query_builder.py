@@ -36,11 +36,14 @@ from ..core.metadata import Table
 from ..core.project import Project, ProjectError
 from ..core.query_engine import QueryError, engine_for, preview_sql
 from ..core.query_model import (
+    AGGREGATE_FUNCTIONS,
+    AGGREGATE_LABELS,
     ALL_OPERATORS,
     JOIN_KINDS,
     JOIN_LABELS,
     OPERATOR_LABELS,
     SORT_DIRECTIONS,
+    QueryAggregate,
     QueryField,
     QueryFilter,
     QueryJoin,
@@ -382,6 +385,7 @@ class QueryDesignerWidget(QWidget):
         self.tabs.addTab(self.qbe_page, "QBE")
         self.fields_page = self._build_fields_tab()
         self.tabs.addTab(self.fields_page, "Campi")
+        self.tabs.addTab(self._build_group_tab(), "Raggruppa")
         self.tabs.addTab(self._build_filters_tab(), "Filtri")
         self.tabs.addTab(self._build_sorts_tab(), "Ordinamento")
         self.tabs.addTab(self._build_sql_tab(), "SQL")
@@ -421,6 +425,79 @@ class QueryDesignerWidget(QWidget):
         buttons.addStretch(1)
         buttons.addWidget(QLabel("Doppio clic su un campo per aggiungerlo."))
         layout.addLayout(buttons)
+        return page
+
+    def _build_group_tab(self) -> QWidget:
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(4)
+
+        layout.addWidget(QLabel("Raggruppa per (una riga per campo)"))
+        self.group_table = QTableWidget(0, 1)
+        self.group_table.setHorizontalHeaderLabels(["Campo"])
+        self.group_table.verticalHeader().setVisible(False)
+        self.group_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.group_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.group_table.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeMode.Stretch
+        )
+        layout.addWidget(self.group_table, 1)
+        group_bar = QHBoxLayout()
+        group_bar.addWidget(
+            icons.make_button(
+                "Aggiungi raggruppamento", "nuovo", self.add_group_field, self,
+                "Aggiunge un campo alla clausola GROUP BY",
+            )
+        )
+        group_bar.addWidget(
+            icons.make_button(
+                "Rimuovi raggruppamento", "elimina", self.remove_group_field, self,
+                "Toglie il raggruppamento selezionato",
+            )
+        )
+        group_bar.addStretch(1)
+        layout.addLayout(group_bar)
+
+        layout.addWidget(QLabel("Aggregati (SUM, COUNT, AVG, MIN, MAX)"))
+        self.aggregates_table = QTableWidget(0, 3)
+        self.aggregates_table.setHorizontalHeaderLabels(["Funzione", "Campo", "Alias"])
+        self.aggregates_table.verticalHeader().setVisible(False)
+        self.aggregates_table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+        self.aggregates_table.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+        self.aggregates_table.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeMode.Stretch
+        )
+        self.aggregates_table.horizontalHeader().setSectionResizeMode(
+            2, QHeaderView.ResizeMode.ResizeToContents
+        )
+        layout.addWidget(self.aggregates_table, 1)
+        agg_bar = QHBoxLayout()
+        agg_bar.addWidget(
+            icons.make_button(
+                "Aggiungi aggregato", "somma", self.add_aggregate, self,
+                "Aggiunge una colonna calcolata con funzione di aggregazione",
+            )
+        )
+        agg_bar.addWidget(
+            icons.make_button(
+                "Rimuovi aggregato", "elimina", self.remove_aggregate, self,
+                "Toglie l'aggregato selezionato",
+            )
+        )
+        agg_bar.addStretch(1)
+        hint = QLabel(
+            "I campi selezionati devono comparire in Raggruppa per; "
+            "l'alias dell'aggregato può essere usato in Ordinamento."
+        )
+        hint.setObjectName("nav_hint")
+        hint.setWordWrap(True)
+        agg_bar.addWidget(hint)
+        layout.addLayout(agg_bar)
         return page
 
     def _build_filters_tab(self) -> QWidget:
@@ -546,6 +623,7 @@ class QueryDesignerWidget(QWidget):
         self._refresh_fields()
         self._refresh_filters()
         self._refresh_sorts()
+        self._refresh_grouping()
         self._refresh_qbe()
         self._refresh_sql()
         self._refresh_status()
@@ -560,6 +638,7 @@ class QueryDesignerWidget(QWidget):
         self._refresh_fields()
         self._refresh_filters()
         self._refresh_sorts()
+        self._refresh_grouping()
         self._mark_dirty()
 
     def set_mode(self, mode: str) -> None:
@@ -634,6 +713,144 @@ class QueryDesignerWidget(QWidget):
                 result.append((ref, f"{ref} — {field.display_name()}"))
         return result
 
+    # ------------------------------------------------------------ raggruppa
+    def _refresh_grouping(self) -> None:
+        if not hasattr(self, "group_table"):
+            return
+        options = self._available_refs()
+        self.group_table.setRowCount(0)
+        for ref in self.spec.group_by:
+            row = self.group_table.rowCount()
+            self.group_table.insertRow(row)
+            combo = QComboBox()
+            for value, label in options:
+                combo.addItem(label, value)
+            combo.setCurrentIndex(max(0, combo.findData(ref)))
+            combo.currentIndexChanged.connect(lambda _index: self._collect_group_by())
+            self.group_table.setCellWidget(row, 0, combo)
+
+        self.aggregates_table.setRowCount(0)
+        for aggregate in self.spec.aggregates:
+            row = self.aggregates_table.rowCount()
+            self.aggregates_table.insertRow(row)
+            function_combo = QComboBox()
+            for key, label in AGGREGATE_LABELS.items():
+                function_combo.addItem(label, key)
+            function_combo.setCurrentIndex(
+                max(0, function_combo.findData(aggregate.function))
+            )
+            function_combo.currentIndexChanged.connect(
+                lambda _index, r=row: self._on_aggregate_function_changed(r)
+            )
+            self.aggregates_table.setCellWidget(row, 0, function_combo)
+            field_combo = QComboBox()
+            self._populate_aggregate_fields(
+                field_combo,
+                aggregate.function,
+                f"{aggregate.table}.{aggregate.field}" if aggregate.field else "",
+            )
+            field_combo.currentIndexChanged.connect(
+                lambda _index: self._collect_aggregates()
+            )
+            self.aggregates_table.setCellWidget(row, 1, field_combo)
+            alias = QLineEdit(aggregate.alias)
+            alias.setPlaceholderText("alias")
+            alias.textChanged.connect(lambda _text: self._collect_aggregates())
+            self.aggregates_table.setCellWidget(row, 2, alias)
+
+    def _populate_aggregate_fields(
+        self, combo: QComboBox, function: str, selected: str = ""
+    ) -> None:
+        combo.blockSignals(True)
+        combo.clear()
+        if function == "count":
+            combo.addItem("(tutti i record)", "")
+        for value, label in self._available_refs():
+            combo.addItem(label, value)
+        index = combo.findData(selected)
+        combo.setCurrentIndex(index if index >= 0 else 0)
+        combo.blockSignals(False)
+
+    def _on_aggregate_function_changed(self, row: int) -> None:
+        function_combo = self.aggregates_table.cellWidget(row, 0)
+        field_combo = self.aggregates_table.cellWidget(row, 1)
+        if not isinstance(function_combo, QComboBox) or not isinstance(field_combo, QComboBox):
+            return
+        function = str(function_combo.currentData() or "count")
+        current = str(field_combo.currentData() or "")
+        self._populate_aggregate_fields(field_combo, function, current)
+        self._collect_aggregates()
+        self._refresh_sorts()
+
+    def _collect_group_by(self) -> None:
+        values: list[str] = []
+        for row in range(self.group_table.rowCount()):
+            combo = self.group_table.cellWidget(row, 0)
+            if isinstance(combo, QComboBox):
+                ref = str(combo.currentData() or "")
+                if ref and ref not in values:
+                    values.append(ref)
+        self.spec.group_by = values
+        self._mark_dirty()
+
+    def _collect_aggregates(self) -> None:
+        aggregates: list[QueryAggregate] = []
+        for row in range(self.aggregates_table.rowCount()):
+            function_combo = self.aggregates_table.cellWidget(row, 0)
+            field_combo = self.aggregates_table.cellWidget(row, 1)
+            alias_edit = self.aggregates_table.cellWidget(row, 2)
+            if not isinstance(function_combo, QComboBox) or not isinstance(field_combo, QComboBox):
+                continue
+            ref = str(field_combo.currentData() or "")
+            table, field = (ref.split(".", 1) + [""])[:2] if ref else ("", "")
+            aggregates.append(
+                QueryAggregate(
+                    function=str(function_combo.currentData() or "count"),
+                    table=table,
+                    field=field,
+                    alias=alias_edit.text().strip() if isinstance(alias_edit, QLineEdit) else "",
+                )
+            )
+        self.spec.aggregates = aggregates
+        self._mark_dirty()
+
+    def add_group_field(self) -> None:
+        options = self._available_refs()
+        used = {ref.lower() for ref in self.spec.group_by}
+        choice = next((ref for ref, _label in options if ref.lower() not in used), "")
+        if not choice:
+            return
+        self.spec.group_by.append(choice)
+        self._refresh_grouping()
+        self._refresh_status()
+        self._mark_dirty()
+
+    def remove_group_field(self) -> None:
+        row = self.group_table.currentRow()
+        if 0 <= row < len(self.spec.group_by):
+            self.spec.group_by.pop(row)
+            self._refresh_grouping()
+            self._refresh_status()
+            self._mark_dirty()
+
+    def add_aggregate(self) -> None:
+        base = self.spec.base or (self.spec.table_names()[0] if self.spec.table_names() else "")
+        self.spec.aggregates.append(QueryAggregate(function="count", table=base))
+        self._refresh_grouping()
+        self._refresh_sorts()
+        self.aggregates_table.setCurrentCell(len(self.spec.aggregates) - 1, 0)
+        self._refresh_status()
+        self._mark_dirty()
+
+    def remove_aggregate(self) -> None:
+        row = self.aggregates_table.currentRow()
+        if 0 <= row < len(self.spec.aggregates):
+            self.spec.aggregates.pop(row)
+            self._refresh_grouping()
+            self._refresh_sorts()
+            self._refresh_status()
+            self._mark_dirty()
+
     def _refresh_filters(self) -> None:
         self._loading_filters = True
         self.filters_table.setRowCount(0)
@@ -669,6 +886,11 @@ class QueryDesignerWidget(QWidget):
         self._loading_sorts = True
         self.sorts_table.setRowCount(0)
         options = self._available_refs()
+        if self.spec.grouped:
+            options.extend(
+                (name, f"{name} — colonna aggregata")
+                for name in self.spec.aggregate_output_names()
+            )
         for item in self.spec.sorts:
             row = self.sorts_table.rowCount()
             self.sorts_table.insertRow(row)
@@ -703,9 +925,15 @@ class QueryDesignerWidget(QWidget):
             state = "anteprima da aggiornare"
         else:
             state = "anteprima aggiornata"
+        group_part = (
+            f" · {len(self.spec.group_by)} raggruppamenti · "
+            f"{len(self.spec.aggregates)} aggregati"
+            if self.spec.grouped
+            else ""
+        )
         self.status_label.setText(
             f"{len(self.spec.fields)} campi · {len(self.spec.joins)} join · "
-            f"{len(self.spec.filters)} filtri · {state}"
+            f"{len(self.spec.filters)} filtri{group_part} · {state}"
         )
 
     # ------------------------------------------------------------------ stato
@@ -767,6 +995,7 @@ class QueryDesignerWidget(QWidget):
         self._refresh_fields()
         self._refresh_filters()
         self._refresh_sorts()
+        self._refresh_grouping()
         self._refresh_qbe()
         self._mark_dirty()
 
@@ -792,11 +1021,20 @@ class QueryDesignerWidget(QWidget):
         self.spec.sorts = [
             item for item in self.spec.sorts if item.field.lower() != prefix
         ]
+        self.spec.group_by = [
+            ref for ref in self.spec.group_by if ref.lower() != prefix
+        ]
+        self.spec.aggregates = [
+            item
+            for item in self.spec.aggregates
+            if item.ref.lower() != prefix
+        ]
         if reload_tree:
             self._refresh_tree()
         self._refresh_fields()
         self._refresh_filters()
         self._refresh_sorts()
+        self._refresh_grouping()
         self._refresh_qbe()
         self._mark_dirty()
 

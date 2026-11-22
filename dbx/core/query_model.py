@@ -21,6 +21,21 @@ JOIN_KINDS = ("inner", "left")
 JOIN_LABELS = {"inner": "INNER JOIN", "left": "LEFT JOIN"}
 SORT_DIRECTIONS = ("asc", "desc")
 
+AGGREGATE_FUNCTIONS = {
+    "count": "COUNT",
+    "sum": "SUM",
+    "avg": "AVG",
+    "min": "MIN",
+    "max": "MAX",
+}
+AGGREGATE_LABELS = {
+    "count": "Conteggio",
+    "sum": "Somma",
+    "avg": "Media",
+    "min": "Minimo",
+    "max": "Massimo",
+}
+
 # Operatore logico -> frammento SQL. Gli operatori "like" usano un pattern.
 OPERATORS = {
     "eq": "=",
@@ -110,6 +125,45 @@ class QueryField:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "QueryField":
         return cls(
+            table=str(data.get("table", "")),
+            field=str(data.get("field", "")),
+            alias=str(data.get("alias", "")),
+        )
+
+
+@dataclass
+class QueryAggregate:
+    """Colonna di aggregazione: funzione su un campo, con alias di output."""
+
+    function: str = "count"
+    table: str = ""
+    field: str = ""
+    alias: str = ""
+
+    @property
+    def ref(self) -> str:
+        return f"{self.table}.{self.field}" if self.field else self.table
+
+    @property
+    def label(self) -> str:
+        base = AGGREGATE_LABELS.get(self.function, self.function.upper())
+        if self.function == "count" and not self.field:
+            return f"{base} dei record"
+        return f"{base} di {self.field or self.table}"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "function": self.function,
+            "table": self.table,
+            "field": self.field,
+            "alias": self.alias,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "QueryAggregate":
+        function = str(data.get("function", "count")).lower()
+        return cls(
+            function=function if function in AGGREGATE_FUNCTIONS else "count",
             table=str(data.get("table", "")),
             field=str(data.get("field", "")),
             alias=str(data.get("alias", "")),
@@ -214,6 +268,12 @@ class QuerySpec:
     joins: list[QueryJoin] = dc_field(default_factory=list)
     filters: list[QueryFilter] = dc_field(default_factory=list)
     sorts: list[QuerySort] = dc_field(default_factory=list)
+    group_by: list[str] = dc_field(default_factory=list)
+    aggregates: list[QueryAggregate] = dc_field(default_factory=list)
+
+    @property
+    def grouped(self) -> bool:
+        return bool(self.group_by or self.aggregates)
 
     # ------------------------------------------------------------------ crea
     @classmethod
@@ -231,21 +291,10 @@ class QuerySpec:
         return cls.from_dict(artifact) if artifact else None
 
     # --------------------------------------------------------------- nomi output
-    def output_names(self) -> list[str]:
-        """Nomi di colonna stabili e unici, rispettando gli alias."""
-        counts: dict[str, int] = {}
-        for item in self.fields:
-            key = item.field.lower()
-            counts[key] = counts.get(key, 0) + 1
+    def _unique_names(self, bases: list[str]) -> list[str]:
         used: set[str] = set()
         names: list[str] = []
-        for item in self.fields:
-            if item.alias:
-                base = item.alias
-            elif counts.get(item.field.lower(), 0) > 1:
-                base = f"{item.table}_{item.field}"
-            else:
-                base = item.field
+        for base in bases:
             candidate = base
             index = 2
             while candidate.lower() in used:
@@ -254,6 +303,39 @@ class QuerySpec:
             used.add(candidate.lower())
             names.append(candidate)
         return names
+
+    def field_output_names(self) -> list[str]:
+        counts: dict[str, int] = {}
+        for item in self.fields:
+            key = item.field.lower()
+            counts[key] = counts.get(key, 0) + 1
+        bases: list[str] = []
+        for item in self.fields:
+            if item.alias:
+                bases.append(item.alias)
+            elif counts.get(item.field.lower(), 0) > 1:
+                bases.append(f"{item.table}_{item.field}")
+            else:
+                bases.append(item.field)
+        return self._unique_names(bases)
+
+    def aggregate_output_names(self) -> list[str]:
+        used = {name.lower() for name in self.field_output_names()}
+        names: list[str] = []
+        for item in self.aggregates:
+            base = item.alias or f"{item.function}_{item.field or 'record'}"
+            candidate = base
+            index = 2
+            while candidate.lower() in used:
+                candidate = f"{base}_{index}"
+                index += 1
+            used.add(candidate.lower())
+            names.append(candidate)
+        return names
+
+    def output_names(self) -> list[str]:
+        """Nomi di colonna stabili e unici per campi e aggregati."""
+        return self.field_output_names() + self.aggregate_output_names()
 
     def refs(self) -> list[str]:
         return [item.ref for item in self.fields]
@@ -269,7 +351,7 @@ class QuerySpec:
             errors.append(f"Tabella base inesistente: {self.base or '(nessuna)'}")
             return errors
         available = {base.name.lower()}
-        if not self.fields:
+        if not self.fields and not self.aggregates:
             errors.append("La query non seleziona alcun campo")
         if self.distinct is not True and self.distinct is not False:
             errors.append("Il flag DISTINCT deve essere vero o falso")
@@ -318,6 +400,56 @@ class QuerySpec:
                 errors.append(f"Campo calcolato non disponibile nelle query: {item.ref}")
             if item.alias and not IDENT_RE.match(item.alias):
                 errors.append(f"Alias non valido: {item.alias}")
+
+        grouped = bool(self.group_by or self.aggregates)
+        group_refs: set[str] = set()
+        for ref in self.group_by:
+            try:
+                group_table, group_field = parse_ref(ref)
+            except QueryError as exc:
+                errors.append(f"Raggruppamento: {exc}")
+                continue
+            lowered = f"{group_table}.{group_field}".lower()
+            if lowered in group_refs:
+                errors.append(f"Raggruppamento duplicato: {ref}")
+                continue
+            group_refs.add(lowered)
+            table = by_name.get(group_table.lower())
+            if table is None:
+                errors.append(f"Raggruppamento su tabella inesistente: {group_table}")
+            elif group_table.lower() not in available:
+                errors.append(f"Raggruppamento su tabella non presente nella query: {group_table}")
+            elif table.field(group_field) is None:
+                errors.append(f"Raggruppamento su campo inesistente: {ref}")
+            elif not table.field(group_field).stored:
+                errors.append(f"Raggruppamento su campo calcolato non disponibile: {ref}")
+
+        if grouped:
+            for item in self.fields:
+                if item.ref.lower() not in group_refs:
+                    errors.append(
+                        f"Campo non raggruppato: {item.ref} "
+                        "(aggiungilo a Raggruppa per oppure usa un aggregato)"
+                    )
+
+        for item in self.aggregates:
+            if item.function not in AGGREGATE_FUNCTIONS:
+                errors.append(f"Funzione di aggregazione non valida: {item.function}")
+            table = by_name.get(item.table.lower())
+            if table is None:
+                errors.append(f"Aggregato {item.label}: tabella inesistente {item.table}")
+                continue
+            if item.table.lower() not in available:
+                errors.append(f"Aggregato su tabella non presente nella query: {item.table}")
+            if item.function != "count" or item.field:
+                if not item.field:
+                    errors.append(f"Aggregato {item.label}: campo mancante")
+                elif table.field(item.field) is None:
+                    errors.append(f"Aggregato su campo inesistente: {item.ref}")
+                elif not table.field(item.field).stored:
+                    errors.append(f"Aggregato su campo calcolato non disponibile: {item.ref}")
+            if item.alias and not IDENT_RE.match(item.alias):
+                errors.append(f"Alias dell'aggregato non valido: {item.alias}")
 
         for item in self.filters:
             try:
@@ -379,6 +511,11 @@ class QuerySpec:
                 errors.append(f"Filtro {item.field or '(nessun campo)'}: valore mancante")
 
         for item in self.sorts:
+            if item.direction not in SORT_DIRECTIONS:
+                errors.append(f"Direzione di ordinamento non valida: {item.direction}")
+            if self.grouped and "." not in item.field:
+                if item.field.lower() in {name.lower() for name in self.output_names()}:
+                    continue
             try:
                 table_name, field_name = parse_ref(item.field)
             except QueryError as exc:
@@ -393,8 +530,6 @@ class QuerySpec:
                 errors.append(f"Ordinamento su campo inesistente: {item.field}")
             elif not table.field(field_name).stored:
                 errors.append(f"Ordinamento su campo calcolato non disponibile: {item.field}")
-            if item.direction not in SORT_DIRECTIONS:
-                errors.append(f"Direzione di ordinamento non valida: {item.direction}")
 
         return errors
 
@@ -422,6 +557,8 @@ class QuerySpec:
             "joins": [item.to_dict() for item in self.joins],
             "filters": [item.to_dict() for item in self.filters],
             "sorts": [item.to_dict() for item in self.sorts],
+            "group_by": list(self.group_by),
+            "aggregates": [item.to_dict() for item in self.aggregates],
         }
 
     @classmethod
@@ -435,4 +572,10 @@ class QuerySpec:
             joins=[QueryJoin.from_dict(item) for item in data.get("joins", []) if isinstance(item, dict)],
             filters=[QueryFilter.from_dict(item) for item in data.get("filters", []) if isinstance(item, dict)],
             sorts=[QuerySort.from_dict(item) for item in data.get("sorts", []) if isinstance(item, dict)],
+            group_by=[str(item) for item in data.get("group_by", []) if str(item).strip()],
+            aggregates=[
+                QueryAggregate.from_dict(item)
+                for item in data.get("aggregates", [])
+                if isinstance(item, dict)
+            ],
         )

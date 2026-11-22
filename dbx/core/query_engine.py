@@ -14,6 +14,7 @@ from typing import Any, Iterable
 from . import types as T
 from .metadata import Field, Table
 from .query_model import (
+    AGGREGATE_FUNCTIONS,
     LIKE_OPERATORS,
     OPERATORS,
     QueryError,
@@ -168,7 +169,7 @@ class QueryEngine:
     # ------------------------------------------------------------------- SQL
     def columns(self, spec: QuerySpec) -> list[QueryColumn]:
         result: list[QueryColumn] = []
-        for item, name in zip(spec.fields, spec.output_names()):
+        for item, name in zip(spec.fields, spec.field_output_names()):
             table = self.tables.get(item.table.lower())
             field = table.field(item.field) if table is not None else None
             result.append(
@@ -182,6 +183,26 @@ class QueryEngine:
                     fmt=field.fmt if field is not None else "",
                 )
             )
+        for item, name in zip(spec.aggregates, spec.aggregate_output_names()):
+            table = self.tables.get(item.table.lower())
+            field = table.field(item.field) if table is not None and item.field else None
+            if item.function == "count":
+                column_type = T.INTEGER
+            elif item.function == "avg" or item.function == "sum":
+                column_type = T.DECIMAL
+            else:
+                column_type = field.type if field is not None else T.TEXT
+            result.append(
+                QueryColumn(
+                    key=name,
+                    table=table.name if table is not None else item.table,
+                    field=field.name if field is not None else "",
+                    caption=item.label,
+                    type=column_type,
+                    size=field.size if field is not None else 0,
+                    fmt=field.fmt if field is not None else "",
+                )
+            )
         return result
 
     def compile(self, spec: QuerySpec) -> tuple[str, tuple[Any, ...]]:
@@ -189,12 +210,19 @@ class QueryEngine:
         errors = spec.validate(self.tables)
         if errors:
             raise QueryError("; ".join(errors))
-        names = spec.output_names()
-        select = ", ".join(
+        select_items = [
             f"{_ref_sql(item.table, item.field)} AS {_quote(name)}"
-            for item, name in zip(spec.fields, names)
-        )
-        prefix = "SELECT DISTINCT " if spec.distinct else "SELECT "
+            for item, name in zip(spec.fields, spec.field_output_names())
+        ]
+        for item, name in zip(spec.aggregates, spec.aggregate_output_names()):
+            function = AGGREGATE_FUNCTIONS[item.function]
+            if item.function == "count" and not item.field:
+                expression = "COUNT(*)"
+            else:
+                expression = f"{function}({_ref_sql(item.table, item.field)})"
+            select_items.append(f"{expression} AS {_quote(name)}")
+        select = ", ".join(select_items)
+        prefix = "SELECT DISTINCT " if spec.distinct and not spec.grouped else "SELECT "
         sql = f"{prefix}{select} FROM {_quote(spec.base)}"
         for join in spec.joins:
             left_table, left_field = parse_ref(join.left)
@@ -229,9 +257,17 @@ class QueryEngine:
                     for _bucket_conditions, bucket_params in grouped.values()
                     for value in bucket_params
                 ]
+        if spec.group_by:
+            sql += " GROUP BY " + ", ".join(
+                _ref_sql(*parse_ref(ref)) for ref in spec.group_by
+            )
         if spec.sorts:
+            names = {name.lower(): name for name in spec.output_names()}
             terms = []
             for item in spec.sorts:
+                if "." not in item.field and item.field.lower() in names:
+                    terms.append(f"{_quote(names[item.field.lower()])} {item.direction.upper()}")
+                    continue
                 table_name, field_name = parse_ref(item.field)
                 terms.append(f"{_ref_sql(table_name, field_name)} {item.direction.upper()}")
             sql += " ORDER BY " + ", ".join(terms)

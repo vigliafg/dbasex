@@ -16,7 +16,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Query Expert | — | `dbx/designers/query_expert.py` | fatto (0.4/O2) | Join suggeriti dalle FK, campi, criteri AND e ordinamento |
 | Report Expert | — | `dbx/designers/report_expert.py` | fatto (0.4/O2) | Layout tabellare/colonnare/riepilogo, gruppi, stile |
 | Database Designer ER | — | `dbx/designers/database_designer.py` | fatto (0.3/O3) | Diagramma, relazioni e modifiche schema; export PNG/SVG |
-| Query Designer | `15`, `19`, `20`, `21`, `23` | `dbx/designers/query_builder.py` | fatto (0.3/O5, QBE 0.4/O4) | Query statiche, INNER/LEFT JOIN, filtri, gruppi OR e QBE read-only |
+| Query Designer | `15`, `19`, `20`, `21`, `23`, `29` | `dbx/designers/query_builder.py` | fatto (0.3/O5, QBE 0.4/O4, aggregati 0.7/O5) | Query statiche, INNER/LEFT JOIN, filtri, gruppi OR, QBE read-only e GROUP BY con aggregati |
 | Query Results | `16`, `17` | `dbx/ui/query_results.py` | fatto (0.3/O6) | Griglia read-only, aggiornamento ed export CSV |
 | Form Expert | `22`–`26` | `dbx/designers/form_expert.py` | fatto | Sorgente tabella o query (read-only); miniatura layout strutturale |
 | Form Designer | `27`–`31`, `40` | `dbx/designers/form_builder.py` | fatto | Palette in pannello ridimensionabile, non flottante; form query in sola lettura |
@@ -49,7 +49,9 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - `26-import-csv.png` mostra l'importazione CSV con anteprima e mappatura delle colonne.
 - `27-table-calculated.png` mostra la proprietà Calcolato del Table Structure;
   `28-browse-calculated.png` mostra totale e serie calcolati nella Browse.
-- La 0.7.0 (in corso) introduce campi calcolati virtuali e auto-enter (serie, date, espressioni).
+- La 0.7.0 (in corso) introduce campi calcolati virtuali, auto-enter e aggregati `GROUP BY` nelle
+  query.
+- `29-query-aggregates.png` mostra la scheda Raggruppa con aggregati e anteprima.
 - La 0.6.0 aggiunge ricerca guidata, sostituzione, import CSV, rinomina/duplicazione oggetti e
   manutenzione del database.
 - La 0.5.0 completa il Program Editor con 17 passi core, cursore dati e Step Picker; rende visibili
