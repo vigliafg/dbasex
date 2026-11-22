@@ -49,6 +49,7 @@ from ..core.project import Project, ProjectError
 from ..runtime.form_runtime import FormPreviewDialog
 from ..runtime.script_engine import (
     ACTIONS,
+    GO_RECORD_MODES,
     NullUI,
     ScriptEngine,
     count_steps,
@@ -66,25 +67,48 @@ KEYWORDS = (
     "ASK",
     "INTO",
     "SET",
+    "FIELD",
     "IF",
     "THEN",
     "ELSE",
+    "ELSEIF",
     "ENDIF",
     "CONFIRM",
     "ENDCONFIRM",
     "FOR",
     "EACH",
     "ENDFOR",
+    "LOOP",
+    "ENDLOOP",
+    "EXIT",
+    "HALT",
+    "COMMENT",
+    "SELECT",
+    "TABLE",
     "WHERE",
+    "ORDER",
+    "BY",
+    "GO",
+    "RECORD",
+    "NEW",
+    "DUPLICATE",
+    "DELETE",
+    "NOCONFIRM",
+    "COMMIT",
+    "REVERT",
     "OPEN",
     "FORM",
-    "PRINT",
+    "QUERY",
     "REPORT",
+    "PRINT",
     "EXPORT",
     "CSV",
     "TO",
     "SQL",
     "CALL",
+    "CUSTOM",
+    "DIALOG",
+    "BEEP",
 )
 
 
@@ -257,6 +281,32 @@ class QtScriptUI(NullUI):
             dialog = FormPreviewDialog(self.project, FormSpec.from_dict(artifact), self.parent)
             dialog.exec()
 
+    def open_query(self, name: str) -> None:
+        window = self.parent.window()
+        opener = getattr(window, "open_query_results", None)
+        if callable(opener):
+            opener(name)
+            return
+        from ..ui.query_results import QueryResultsWidget
+
+        dialog = QDialog(self.parent)
+        dialog.setWindowTitle(f"Query Results — {name}")
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.addWidget(QueryResultsWidget(self.project, name, dialog))
+        dialog.resize(900, 560)
+        dialog.exec()
+
+    def open_report(self, name: str) -> None:
+        self.print_report(name)
+
+    def custom_dialog(self, title: str, message: str, default: str = "") -> str | None:
+        text, ok = QInputDialog.getText(self.parent, title or "dBX", message, text=default)
+        return text if ok else None
+
+    def beep(self) -> None:
+        QApplication.beep()
+
     def print_report(self, name: str) -> None:
         from ..ui.report_preview import ReportPreviewDialog
 
@@ -294,11 +344,30 @@ class ActionDialog(QDialog):
         self.resize(520, 180)
 
     def _make_editor(self, kind: str, value: str) -> QWidget:
-        if kind in ("table", "form", "report", "script"):
+        if kind == "mode":
+            combo = QComboBox()
+            labels = {
+                "first": "Primo",
+                "previous": "Precedente",
+                "next": "Successivo",
+                "last": "Ultimo",
+                "number": "Numero",
+            }
+            for mode in GO_RECORD_MODES:
+                combo.addItem(labels.get(mode, mode), mode)
+            combo.setCurrentIndex(max(0, combo.findData(value)))
+            return combo
+        if kind in ("table", "form", "report", "script", "query"):
             combo = QComboBox()
             combo.setEditable(True)
             combo.addItem("")
-            category = {"table": "tables", "form": "forms", "report": "reports", "script": "scripts"}[kind]
+            category = {
+                "table": "tables",
+                "form": "forms",
+                "report": "reports",
+                "script": "scripts",
+                "query": "queries",
+            }[kind]
             for name in self.project.names(category):
                 combo.addItem(name)
             index = combo.findText(value)
@@ -330,7 +399,10 @@ class ActionDialog(QDialog):
         for key, _label, kind in ACTIONS[self.action]["params"]:
             widget = self.editors[key]
             if isinstance(widget, QComboBox):
-                result[key] = widget.currentText().strip()
+                data = widget.currentData()
+                result[key] = (
+                    str(data) if data is not None else widget.currentText().strip()
+                )
             elif isinstance(widget, QLineEdit):
                 result[key] = widget.text().strip()
             else:
@@ -546,11 +618,21 @@ class ScriptBuilderWidget(QWidget):
 
     # ------------------------------------------------------------- inspector
     def _param_options(self, kind: str) -> list[tuple[str, str]]:
+        if kind == "mode":
+            labels = {
+                "first": "Primo",
+                "previous": "Precedente",
+                "next": "Successivo",
+                "last": "Ultimo",
+                "number": "Numero",
+            }
+            return [(mode, labels.get(mode, mode)) for mode in GO_RECORD_MODES]
         category = {
             "table": "tables",
             "form": "forms",
             "report": "reports",
             "script": "scripts",
+            "query": "queries",
         }.get(kind)
         if category is None:
             return []
@@ -588,7 +670,7 @@ class ScriptBuilderWidget(QWidget):
         self._loading = True
         for key, label, kind in definition.get("params", []):
             value = str(params.get(key, ""))
-            if kind in ("table", "form", "report", "script"):
+            if kind in ("table", "form", "report", "script", "query", "mode"):
                 rows.append((f"param:{key}", label, "choice", value, self._param_options(kind)))
             else:
                 rows.append((f"param:{key}", label, "text", value, None))

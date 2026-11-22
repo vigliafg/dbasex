@@ -24,7 +24,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Form Runtime | `40` | `dbx/runtime/form_runtime.py` | fatto | Dispatcher di azioni, non linguaggio di scripting; query read-only |
 | Report Designer | `32`–`38`, `41` | `dbx/designers/report_builder.py` | fatto | Selezione singola; ordine delle bande di flusso fisso; sorgente query |
 | Report Preview | `39` | `dbx/ui/report_preview.py` | fatto | Zoom persistente per sessione; pagina singola/continua; report su query |
-| Program Editor | `31`, `32` | `dbx/designers/script_builder.py`, `dbx/designers/step_picker.py` | fatto (catalogo 0.5/O5) | Nessuna esecuzione passo-passo |
+| Program Editor | `31`, `32` | `dbx/designers/script_builder.py`, `dbx/designers/step_picker.py` | fatto (catalogo e passi 0.5/O5–O6) | Nessuna esecuzione passo-passo |
 | Menu Designer | — | `dbx/designers/menu_builder.py` | fatto | Anteprima come menu bar, non popup sempre aperto |
 | Project Editor/Builder | — | `dbx/designers/project_builder.py` | fatto | Build sincrono, senza barra di avanzamento |
 | Label Designer | — | — | rimosso | Sostituito dal Database Designer ER |

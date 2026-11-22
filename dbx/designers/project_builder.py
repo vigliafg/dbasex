@@ -30,7 +30,7 @@ from ..core.metadata import validate_project_tables
 from ..core.project import Project
 from ..core.query_model import QuerySpec
 from ..runtime.report_engine import ReportSpec
-from ..runtime.script_engine import ACTIONS
+from ..runtime.script_engine import ACTIONS, GO_RECORD_MODES
 
 
 class BuildError(RuntimeError):
@@ -76,7 +76,14 @@ def validate_project(project: Project) -> list[str]:
             errors.append(f"Report {name}: tabella inesistente {spec.table}")
 
     for name, artifact in project.objects["scripts"].items():
-        for error in _validate_steps(artifact.get("steps", []), table_names, form_names, report_names, script_names):
+        for error in _validate_steps(
+            artifact.get("steps", []),
+            tables,
+            form_names,
+            report_names,
+            query_names,
+            script_names,
+        ):
             errors.append(f"Script {name}: {error}")
 
     for name, artifact in project.objects["menus"].items():
@@ -98,32 +105,73 @@ def validate_project(project: Project) -> list[str]:
 
 def _validate_steps(
     steps: list[dict[str, Any]],
-    table_names: set[str],
+    tables: dict[str, Any],
     form_names: set[str],
     report_names: set[str],
+    query_names: set[str],
     script_names: set[str],
+    current_table: str = "",
 ) -> list[str]:
     errors: list[str] = []
+    context = current_table
     for step in steps:
         action = step.get("action")
         params = step.get("params") or {}
         if action not in ACTIONS:
             errors.append(f"azione sconosciuta {action}")
             continue
-        if action in ("open_form",) and str(params.get("form", "")).lower() not in form_names:
+        if action == "open_form" and str(params.get("form", "")).lower() not in form_names:
             errors.append(f"form inesistente {params.get('form')}")
-        if action == "print_report" and str(params.get("report", "")).lower() not in report_names:
+        if action in ("print_report", "open_report") and str(
+            params.get("report", "")
+        ).lower() not in report_names:
             errors.append(f"report inesistente {params.get('report')}")
-        if action in ("foreach", "export_csv"):
+        if action == "open_query" and str(params.get("query", "")).lower() not in query_names:
+            errors.append(f"query inesistente {params.get('query')}")
+        if action in ("foreach", "export_csv", "select_table", "new_record"):
             table_name = str(params.get("table", "")).lower()
-            if table_name and table_name not in table_names:
-                errors.append(f"tabella inesistente {params.get('table')}")
+            if table_name:
+                if table_name not in tables:
+                    errors.append(f"tabella inesistente {params.get('table')}")
+                elif action in ("select_table", "new_record"):
+                    context = tables[table_name].name
+        if action == "set_field":
+            field_name = str(params.get("field", "")).strip()
+            if "." in field_name:
+                table_name, field_name = field_name.split(".", 1)
+                table = tables.get(table_name.lower())
+                if table is None:
+                    errors.append(f"tabella inesistente {table_name}")
+                elif table.field(field_name) is None:
+                    errors.append(f"campo inesistente {params.get('field')}")
+            elif context:
+                table = tables.get(context.lower())
+                if table is not None and table.field(field_name) is None:
+                    errors.append(f"campo inesistente {field_name} in {context}")
+        if action == "go_record":
+            mode = str(params.get("mode", "first")).lower()
+            if mode not in GO_RECORD_MODES:
+                errors.append(f"modalità GO RECORD non valida {mode}")
         if action == "call" and str(params.get("script", "")).lower() not in script_names:
             errors.append(f"script inesistente {params.get('script')}")
+        child_context = context
+        if action == "foreach":
+            table_name = str(params.get("table", "")).lower()
+            child_context = tables[table_name].name if table_name in tables else context
         for key in ("then", "else", "steps"):
             child = step.get(key)
             if isinstance(child, list):
-                errors.extend(_validate_steps(child, table_names, form_names, report_names, script_names))
+                errors.extend(
+                    _validate_steps(
+                        child,
+                        tables,
+                        form_names,
+                        report_names,
+                        query_names,
+                        script_names,
+                        child_context,
+                    )
+                )
     return errors
 
 

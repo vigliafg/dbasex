@@ -31,7 +31,7 @@ Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di
 | **Form Runtime** | Navigazione, CRUD, stato del record, sottomaschere uno-a-molti, script, report e messaggi; form su query in sola lettura |
 | **Report Designer** | Foglio unico a bande impilate ed etichettate, delimitatori trascinabili, due toolbar, zoom 50–200%, dialoghi Insert Field / Edit Text / Record Sort Order / Insert Group / Total; sorgente tabella o query |
 | **Report Preview** | Pagina singola o continua, fit-width, zoom persistente, totale pagine, aggiornamento, stampa ed export PDF |
-| **Program Editor** | MiniScript con numeri di riga, evidenziazione di parole chiave/stringhe/commenti/numeri, vista azioni ↔ sorgente bidirezionale, catalogo categorizzato con Step Picker, inspector dei parametri e log di esecuzione |
+| **Program Editor** | MiniScript con numeri di riga, evidenziazione di parole chiave/stringhe/commenti/numeri, vista azioni ↔ sorgente bidirezionale, catalogo categorizzato con Step Picker, inspector dei parametri e log di esecuzione; passi core per controllo, tabelle, record, campi, query, report e dialoghi |
 | **Menu Designer** | Albero di voci e separatori, azioni tipizzate, filtro delle destinazioni, anteprima del menu |
 | **Project Editor / Builder** | Albero oggetti, impostazioni (`title`, `main_form`, `main_menu`), validazione dei riferimenti, build in cartella + zip, helper PyInstaller |
 | **Navigator, menu e status bar** | Sequenza menu dBASE, tooltip e icone coerenti, chiusura con conferma delle finestre modificate |
@@ -97,7 +97,10 @@ migrazione: i campi introdotti nelle versioni successive hanno default vuoti o `
    Scegliendo una query, il form mostra le colonne calcolate in sola lettura.
 5. **Oggetto → Nuovo report**: scegli tabella o query, filtro, ordinamento, gruppi e bande;
    anteprima e PDF.
-6. **Oggetto → Nuovo script**: concatena azioni, prova con **Esegui**, salva.
+6. **Oggetto → Nuovo script**: concatena azioni, prova con **Esegui**, salva. Il catalogo include
+   controllo (`LOOP`, `EXIT SCRIPT`, `HALT`), navigazione (`SELECT TABLE`, `GO RECORD`), scrittura
+   (`SET FIELD`), record (`NEW`/`DUPLICATE`/`DELETE`/`COMMIT`/`REVERT`), query, report, dialoghi e
+   segnale acustico; le variabili nelle espressioni si scrivono `:nome`.
 7. **Oggetto → Nuovo menu**: componi le voci e le azioni del menu runtime.
 8. **Progetto → Modifica progetto…**: imposta titolo, form e menu principale, valida e crea la build.
 9. **Procedure → Esegui progetto** per la prova finale, **Procedure → Build distribuibile** per
@@ -137,7 +140,7 @@ Ogni ambiente segue lo schema generale di dBASE 5.5 (senza imitarne i colori Win
 - **Project Editor**: albero oggetti, impostazioni, validazione e build.
 
 Rendering aggiornati in [`docs/reference/dbx-ui/renders/`](docs/reference/dbx-ui/renders/):
-la serie `01`–`19` copre le finestre, `14-menu-progetto.png` mostra il menu icona + descrizione.
+la serie `01`–`24` copre le finestre, `14-menu-progetto.png` mostra il menu icona + descrizione.
 
 ## Scorciatoie da tastiera
 
@@ -240,6 +243,11 @@ collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md` e `docs/qa-0.4.md`.
 - Gli eventi form sono un dispatcher di azioni singole, non un linguaggio di scripting; i corpi dei
   metodi sono descrittivi e non vengono eseguiti.
 - Il Program Editor non offre breakpoint né esecuzione passo-passo.
+- `NEW RECORD` inserisce subito i valori predefiniti: se la tabella ha campi obbligatori senza
+  default, l'azione fallisce e lo script riporta l'errore; compila quei campi con un form o un
+  default nel Table Builder.
+- Gli script scrivono subito ogni passo; non c'è una transazione implicita. `REVERT RECORD`
+  ricarica il record dal database ma non annulla una scrittura già eseguita.
 - La build del Project Editor è sincrona e non mostra una barra di avanzamento.
 - Import `.DBF` legacy, grafici e campi calcolati persistenti sono previsti dopo la 1.0.
 - Bundle PyInstaller: helper incluso (`designers/project_builder.package_with_pyinstaller`),

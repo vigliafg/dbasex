@@ -181,6 +181,17 @@ def run_smoke() -> int:
     assert any("Fattura" in line for line in result.log), result.log
     checks.append(f"script: {len(result.log)} righe di log")
 
+    core = ScriptEngine(project).run(
+        [
+            {"action": "select_table", "params": {"table": "clienti", "order": "codice"}},
+            {"action": "go_record", "params": {"mode": "number", "number": "2"}},
+            {"action": "set_field", "params": {"field": "note", "expr": '"smoke"'}},
+            {"action": "commit_record", "params": {}},
+        ]
+    )
+    assert core.error is None, core.error
+    checks.append("script core actions")
+
     target = build_project(project, root / "dist")
     assert target.exists()
     checks.append(f"build: {target.name}")

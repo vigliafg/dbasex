@@ -14,6 +14,7 @@ from typing import Any
 from PyQt6.QtCore import QEvent, QObject, Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QComboBox,
     QDateEdit,
@@ -21,6 +22,7 @@ from PyQt6.QtWidgets import (
     QDoubleSpinBox,
     QFrame,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -99,6 +101,69 @@ class FieldBinder:
         if isinstance(widget, QDateEdit):
             return widget.date().toString("yyyy-MM-dd")
         return None
+
+
+class FormScriptUI:
+    """Adattatore minimale tra ScriptEngine e il runtime del form."""
+
+    def __init__(self, runtime: "FormRuntime") -> None:
+        self.runtime = runtime
+        self.project = runtime.project
+        self.parent = runtime
+
+    def message(self, text: str) -> None:
+        QMessageBox.information(self.parent, "Script", text)
+
+    def status(self, text: str) -> None:
+        self.runtime._status.setText(text)
+
+    def confirm(self, text: str) -> bool:
+        return (
+            QMessageBox.question(self.parent, "Conferma", text)
+            == QMessageBox.StandardButton.Yes
+        )
+
+    def ask(self, prompt: str, default: str = "") -> str | None:
+        text, ok = QInputDialog.getText(self.parent, "Script", prompt, text=default)
+        return text if ok else None
+
+    def custom_dialog(self, title: str, message: str, default: str = "") -> str | None:
+        text, ok = QInputDialog.getText(self.parent, title or "dBX", message, text=default)
+        return text if ok else None
+
+    def open_form(self, name: str) -> None:
+        artifact = self.project.artifact("forms", name)
+        if artifact:
+            dialog = FormPreviewDialog(
+                self.project, FormSpec.from_dict(artifact), self.parent
+            )
+            dialog.exec()
+
+    def open_query(self, name: str) -> None:
+        window = self.parent.window()
+        opener = getattr(window, "open_query_results", None)
+        if callable(opener):
+            opener(name)
+            return
+        self.runtime._status.setText(f"Query {name}: apri i risultati dal Navigator")
+
+    def open_report(self, name: str) -> None:
+        self.runtime._print_report(name)
+
+    def print_report(self, name: str) -> None:
+        self.runtime._print_report(name)
+
+    def beep(self) -> None:
+        QApplication.beep()
+
+    def refresh(self) -> None:
+        if self.runtime.read_only:
+            return
+        try:
+            self.runtime.rowset.refresh()
+            self.runtime.load_current()
+        except RowsetError:
+            return
 
 
 class FormRuntime(QWidget):
@@ -495,8 +560,14 @@ class FormRuntime(QWidget):
     def _run_script(self, name: str) -> None:
         from .script_engine import ScriptEngine
 
-        engine = ScriptEngine(self.project)
+        engine = ScriptEngine(self.project, FormScriptUI(self))
         result = engine.run_named(name, self.rowset.current)
+        try:
+            if not self.read_only:
+                self.rowset.refresh()
+                self.load_current()
+        except RowsetError:
+            pass
         if result.error:
             self.event_log.append(f"script {name}: {result.error}")
             self._status.setText(f"Script non eseguito: {result.error}")

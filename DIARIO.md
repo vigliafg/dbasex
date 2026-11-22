@@ -724,3 +724,57 @@
 - **Screenshot:** `24-script-step-picker.png`.
 - **Problemi aperti:** nessuno; i ~16 passi core e il runtime sono il scope di O6.
 - **Prossimo passo:** O6 — passi core e runtime, poi Checkpoint B.
+
+### 2026-11-22 — Ondata 0.5.0 — O6 Passi core e runtime
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O6.
+- **Obiettivo:** implementare i passi core dello script (controllo, tabelle, record, campi,
+  query/report, dialoghi) con cursore dati, forma testuale bidirezionale, validazione e
+  adattatore del Form Runtime.
+- **File toccati:** `dbx/runtime/script_engine.py`, `dbx/runtime/form_runtime.py`,
+  `dbx/designers/script_builder.py`, `dbx/designers/project_builder.py`, `dbx/smoke.py`,
+  `tests/test_script_actions.py` (nuovo), `README.md`, `CHANGELOG.md`, `docs/ui-parity.md`,
+  `tools/capture_ui.py`, `PLAN.md`, `DIARIO.md`.
+- **Scelte:**
+  - Nuove azioni: `comment`, `loop`, `exit_loop_if`, `exit_script`, `halt`, `select_table`,
+    `go_record`, `set_field`, `new_record`, `duplicate_record`, `delete_record`, `commit_record`,
+    `revert_record`, `open_query`, `open_report`, `custom_dialog`, `beep`.
+  - Cursore `Rowset` nello `ScriptEngine`: tabella corrente, record corrente, filtro, ordinamento,
+    id interno; `select_table` apre il cursore e `go_record` lo naviga (numero 1-based).
+  - Scritture immediate per passo con log; `set_field`, `new_record`, `duplicate_record` e
+    `delete_record` passano da `Rowset`, quindi validazione, regole e indici restano nel motore.
+  - `loop` protetto da `max_steps`; `exit_loop_if` interrompe solo il ciclo corrente;
+    `exit_script` e `halt` fermano lo script.
+  - Forma testuale completa per le nuove azioni; `ELSE IF` è zucchero sintattico e diventa un
+    `if` annidato nell’`else` senza aggiungere un’azione al motore.
+  - Validazione progetto estesa a tabelle, campi (con contesto della tabella corrente), form,
+    report, query, script e modalità `GO RECORD`.
+  - Adattatore `FormScriptUI`: messaggi, conferme, dialoghi, apertura form/query/report, beep e
+    ricarica del record dopo l’esecuzione da un evento form.
+  - `NEW RECORD` inserisce subito i default: con campi obbligatori senza default l’azione fallisce
+    con un errore chiaro; limite documentato.
+  - Nessuna transazione implicita: `REVERT RECORD` ricarica dal database ma non annulla una
+    scrittura già eseguita.
+- **Test:** `345 passed`; smoke headless OK con `script core actions`; catture Aurora e Dark OK.
+- **Screenshot:** `11-script-editor.png` e `24-script-step-picker.png` rigenerati; nessun nuovo file.
+- **Problemi aperti:** nessuno bloccante; restano i limiti dichiarati su record obbligatori e
+  assenza di transazioni.
+- **Prossimo passo:** Checkpoint B, poi O7 — QA e release 0.5.0.
+
+## Checkpoint B — fine O6 (2026-11-22)
+
+- **Stato ondate:** 0.4.0 O0–O4 completate e rilasciate come `0.4.0` (tag `v0.4.0`);
+  0.5.0 O5–O6 completate. Catalogo azioni categorizzato, Step Picker, 17 passi core, cursore dati,
+  forma testuale, validazione e adattatore Form Runtime sono pronti.
+- **Test eseguiti:** `345 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK con
+  `script core actions`; `python tools/capture_ui.py` OK; `--theme dark` OK.
+- **Screenshot:** serie `01`–`24`; `24-script-step-picker.png` è il nuovo rendering della 0.5.
+- **Decisioni:** scritture immediate per passo, nessuna transazione implicita; `NEW RECORD` usa i
+  default e fallisce sui campi obbligatori senza default; `ELSE IF` è zucchero sintattico.
+- **Decisioni rimandate all’utente:** eventuale release 0.5.0 con questi limiti, import CSV come
+  estensione separabile, script trigger e transazioni esplicite in una release futura.
+- **RIPRESA:** Checkpoint B attivo. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
+  `git status`/`git log` e iniziare l’**Ondata 7 — QA e release 0.5.0**: QA finale, test completi,
+  smoke, screenshot Aurora/Dark, documentazione e `docs/qa-0.5.md`, versione `0.5.0` in
+  `dbx/__init__.py`/`pyproject.toml`/README/test, CHANGELOG con data, tag `v0.5.0`, Checkpoint C.
+  Non ripartire da O0–O6.

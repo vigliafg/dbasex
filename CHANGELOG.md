@@ -17,6 +17,20 @@ e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
   il dialogo dei parametri riporta la descrizione dell'azione.
 - **QA visiva**: nuovo rendering `24-script-step-picker.png`.
 
+### Passi core e runtime
+
+- Nuove azioni: `comment`, `loop`, `exit_loop_if`, `exit_script`, `halt`, `select_table`,
+  `go_record`, `set_field`, `new_record`, `duplicate_record`, `delete_record`, `commit_record`,
+  `revert_record`, `open_query`, `open_report`, `custom_dialog`, `beep`.
+- Cursore dati nello `ScriptEngine`: tabella corrente, record corrente, filtro, ordinamento e id
+  interno; `set_field` scrive subito e registra nel log.
+- `loop` con limite `max_steps`, `exit_loop_if` sul ciclo corrente, `exit_script` e `halt` per
+  fermare lo script.
+- Forma testuale bidirezionale per tutte le nuove azioni, inclusa `ELSE IF` come `if` annidato.
+- Validazione progetto di tabelle, campi, form, report, query, script e modalità `GO RECORD`.
+- Adattatore UI del Form Runtime: dialoghi, messaggi, query/report e ricarica del record dopo
+  l'esecuzione di uno script da un evento.
+
 ### Note di aggiornamento
 
 - Il catalogo è descrittivo: nessun cambio di comportamento del motore in questa ondata.

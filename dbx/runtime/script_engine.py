@@ -16,6 +16,7 @@ from dataclasses import dataclass, field as dc_field
 from typing import Any, Callable, Iterable
 
 from ..core import types as T
+from ..core.ddl import INTERNAL_ID
 from ..core.expressions import Expression, ExpressionError
 from .rowset import Rowset, RowsetError
 
@@ -118,6 +119,116 @@ ACTIONS: dict[str, dict[str, Any]] = {
         "description": "Esegue un altro script del progetto.",
         "params": [("script", "Script", "script")],
     },
+    "comment": {
+        "label": "Commento",
+        "category": "Controllo",
+        "description": "Aggiunge una nota allo script senza eseguire nulla.",
+        "params": [("text", "Testo", "text")],
+    },
+    "loop": {
+        "label": "Ciclo",
+        "category": "Controllo",
+        "description": "Ripete i passi finché non viene interrotto o termina lo script.",
+        "params": [],
+    },
+    "exit_loop_if": {
+        "label": "Esci dal ciclo se",
+        "category": "Controllo",
+        "description": "Interrompe il ciclo corrente quando la condizione è vera.",
+        "params": [("expr", "Condizione", "expr")],
+    },
+    "exit_script": {
+        "label": "Termina script",
+        "category": "Controllo",
+        "description": "Interrompe subito lo script senza messaggi.",
+        "params": [],
+    },
+    "halt": {
+        "label": "Arresta script",
+        "category": "Controllo",
+        "description": "Interrompe lo script e mostra un messaggio facoltativo.",
+        "params": [("message", "Messaggio", "expr")],
+    },
+    "select_table": {
+        "label": "Seleziona tabella",
+        "category": "Ricerche",
+        "description": "Apre la tabella con filtro e ordinamento e posiziona il primo record.",
+        "params": [
+            ("table", "Tabella", "table"),
+            ("filter", "Filtro SQL (facoltativo)", "text"),
+            ("order", "Ordinamento SQL (facoltativo)", "text"),
+        ],
+    },
+    "go_record": {
+        "label": "Vai al record",
+        "category": "Navigazione",
+        "description": "Sposta il cursore sul primo, precedente, successivo, ultimo o numero indicato.",
+        "params": [("mode", "Modalità", "mode"), ("number", "Numero record", "text")],
+    },
+    "set_field": {
+        "label": "Imposta campo",
+        "category": "Dati",
+        "description": "Calcola un'espressione e la scrive subito nel campo del record corrente.",
+        "params": [("field", "Campo", "text"), ("expr", "Espressione", "expr")],
+    },
+    "new_record": {
+        "label": "Nuovo record",
+        "category": "Record",
+        "description": "Inserisce un record con i valori predefiniti e lo rende corrente.",
+        "params": [("table", "Tabella (facoltativa)", "table")],
+    },
+    "duplicate_record": {
+        "label": "Duplica record",
+        "category": "Record",
+        "description": "Copia il record corrente e posiziona il cursore sulla copia.",
+        "params": [],
+    },
+    "delete_record": {
+        "label": "Elimina record",
+        "category": "Record",
+        "description": "Elimina il record corrente, con conferma facoltativa.",
+        "params": [("confirm", "Chiedi conferma", "text")],
+    },
+    "commit_record": {
+        "label": "Conferma record",
+        "category": "Record",
+        "description": "Ricarica il record corrente dopo le scritture immediate.",
+        "params": [],
+    },
+    "revert_record": {
+        "label": "Ripristina record",
+        "category": "Record",
+        "description": "Ricarica il record corrente dal database, annullando le modifiche in memoria.",
+        "params": [],
+    },
+    "open_query": {
+        "label": "Apri query",
+        "category": "Navigazione",
+        "description": "Apre i risultati di una query salvata.",
+        "params": [("query", "Query", "query")],
+    },
+    "open_report": {
+        "label": "Apri report",
+        "category": "Navigazione",
+        "description": "Apre l'anteprima di un report.",
+        "params": [("report", "Report", "report")],
+    },
+    "custom_dialog": {
+        "label": "Dialogo personalizzato",
+        "category": "Interfaccia",
+        "description": "Chiede un valore con titolo e messaggio e lo salva in una variabile.",
+        "params": [
+            ("title", "Titolo", "text"),
+            ("message", "Messaggio", "expr"),
+            ("variable", "Salva in variabile", "var"),
+        ],
+    },
+    "beep": {
+        "label": "Segnale acustico",
+        "category": "Interfaccia",
+        "description": "Emette il segnale acustico di sistema.",
+        "params": [],
+    },
 }
 
 ACTION_CATEGORIES = (
@@ -143,7 +254,8 @@ def actions_by_category() -> dict[str, list[str]]:
     return {name: keys for name, keys in buckets.items() if keys}
 
 
-BLOCK_ACTIONS = ("if", "foreach", "confirm")
+BLOCK_ACTIONS = ("if", "foreach", "confirm", "loop")
+GO_RECORD_MODES = ("first", "previous", "next", "last", "number")
 _READ_ONLY_PREFIXES = ("SELECT", "WITH", "PRAGMA")
 _WRITE_PREFIXES = ("INSERT", "UPDATE", "DELETE", "REPLACE")
 _FORBIDDEN_PREFIXES = ("DROP", "ALTER", "CREATE", "ATTACH", "DETACH", "TRUNCATE")
@@ -179,7 +291,19 @@ class NullUI:
     def open_form(self, name: str) -> None:  # noqa: D102
         pass
 
+    def open_query(self, name: str) -> None:  # noqa: D102
+        pass
+
+    def open_report(self, name: str) -> None:  # noqa: D102
+        pass
+
     def print_report(self, name: str) -> None:  # noqa: D102
+        pass
+
+    def custom_dialog(self, title: str, message: str, default: str = "") -> str | None:  # noqa: D102
+        return default
+
+    def beep(self) -> None:  # noqa: D102
         pass
 
     def refresh(self) -> None:  # noqa: D102
@@ -211,6 +335,8 @@ class ScriptEngine:
         self._executed = 0
         self._record: dict[str, Any] = {}
         self._current_table: str = ""
+        self._rowset: Rowset | None = None
+        self._loop_flags: list[bool] = []
         self._depth = 0
         self._stop = False
 
@@ -271,12 +397,55 @@ class ScriptEngine:
         except RowsetError as exc:
             raise ScriptError(str(exc)) from exc
 
+    # ------------------------------------------------------------- cursore dati
+    def _open_cursor(self, table_name: str, where: str = "", order: str = "") -> Rowset:
+        table = self.project.table(table_name)
+        if table is None:
+            raise ScriptError(f"Tabella sconosciuta: {table_name}")
+        rowset = Rowset(self.project.db, table)
+        try:
+            rowset.open(where=where or "", order=order or "")
+        except RowsetError as exc:
+            raise ScriptError(str(exc)) from exc
+        self._rowset = rowset
+        self._current_table = table.name
+        self._sync_record()
+        return rowset
+
+    def _require_cursor(self) -> Rowset:
+        if self._rowset is None:
+            raise ScriptError("Nessuna tabella selezionata: usa SELECT TABLE prima")
+        return self._rowset
+
+    def _sync_record(self) -> None:
+        if self._rowset is None:
+            self._record = {}
+            return
+        current = self._rowset.current
+        self._record = dict(current) if current else {}
+
+    def _current_id(self) -> int:
+        record_id = self._record.get(INTERNAL_ID)
+        if record_id in (None, "", 0):
+            raise ScriptError("Nessun record corrente")
+        return int(record_id)
+
+    def _position_log(self) -> str:
+        rowset = self._require_cursor()
+        position = rowset.index + 1 if rowset.current else 0
+        return f"Record {position} di {len(rowset)}"
+
+    def _refresh_ui(self) -> None:
+        self.ui.refresh()
+
     # -------------------------------------------------------------- esecuzione
     def run(self, steps: Iterable[dict[str, Any]], record: dict[str, Any] | None = None) -> ScriptResult:
         self.log = []
         self._executed = 0
         self._stop = False
         self._depth = 0
+        self._loop_flags = []
+        self._rowset = None
         self._record = dict(record or {})
         error: str | None = None
         try:
@@ -297,6 +466,8 @@ class ScriptEngine:
     def _run_steps(self, steps: list[dict[str, Any]]) -> None:
         for step in steps:
             if self._stop:
+                return
+            if self._loop_flags and self._loop_flags[-1]:
                 return
             self._tick()
             self._execute(step)
@@ -428,6 +599,209 @@ class ScriptEngine:
         finally:
             self._depth -= 1
 
+    # ------------------------------------------------------ controllo e testo
+    def _do_comment(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        return
+
+    def _do_loop(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        body = list(step.get("steps", []))
+        self._loop_flags.append(False)
+        try:
+            while not self._stop and not self._loop_flags[-1]:
+                self._tick()
+                self._run_steps(body)
+        finally:
+            self._loop_flags.pop()
+
+    def _do_exit_loop_if(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        if not self._loop_flags:
+            raise ScriptError("EXIT LOOP IF è valido solo dentro un ciclo")
+        if bool(self._eval(str(params.get("expr", "")))):
+            self._loop_flags[-1] = True
+            self._log("Uscita dal ciclo")
+
+    def _do_exit_script(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        self._stop = True
+        self._log("Script terminato")
+
+    def _do_halt(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        message = self._interpolate(params.get("message", ""))
+        self._stop = True
+        self._log(f"Script interrotto: {message}" if message else "Script interrotto")
+        if message:
+            self.ui.message(message)
+
+    # -------------------------------------------------------------- dati/record
+    def _do_select_table(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        table_name = str(params.get("table") or "")
+        if not table_name:
+            raise ScriptError("Tabella mancante in SELECT TABLE")
+        rowset = self._open_cursor(
+            table_name,
+            where=str(params.get("filter") or ""),
+            order=str(params.get("order") or ""),
+        )
+        self._log(f"Tabella {rowset.table.name}: {len(rowset)} record · {self._position_log()}")
+        self._refresh_ui()
+
+    def _do_go_record(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        rowset = self._require_cursor()
+        mode = str(params.get("mode") or "first").strip().lower()
+        aliases = {
+            "primo": "first",
+            "precedente": "previous",
+            "prev": "previous",
+            "successivo": "next",
+            "ultimo": "last",
+            "numero": "number",
+            "goto": "number",
+        }
+        mode = aliases.get(mode, mode)
+        if mode == "first":
+            rowset.first()
+        elif mode == "previous":
+            rowset.previous()
+        elif mode == "next":
+            rowset.next()
+        elif mode == "last":
+            rowset.last()
+        elif mode == "number":
+            try:
+                number = int(str(params.get("number") or "0"))
+            except (TypeError, ValueError) as exc:
+                raise ScriptError("Numero di record non valido") from exc
+            if number < 1:
+                raise ScriptError("Il numero di record parte da 1")
+            rowset.goto(number - 1)
+        else:
+            raise ScriptError(f"Modalità GO RECORD non valida: {mode}")
+        self._sync_record()
+        self._log(self._position_log())
+        self._refresh_ui()
+
+    def _do_set_field(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        rowset = self._require_cursor()
+        record_id = self._current_id()
+        field_name = str(params.get("field") or "").strip()
+        if "." in field_name:
+            table_name, field_name = field_name.split(".", 1)
+            if table_name.lower() != rowset.table.name.lower():
+                raise ScriptError(
+                    f"SET FIELD lavora sulla tabella corrente {rowset.table.name}, non su {table_name}"
+                )
+        if rowset.table.field(field_name) is None:
+            raise ScriptError(f"Campo sconosciuto in SET FIELD: {field_name}")
+        expression = str(params.get("expr") or "").strip()
+        if not expression:
+            raise ScriptError("Espressione mancante in SET FIELD")
+        value = self._eval(expression)
+        values = dict(self._record)
+        values[field_name] = value
+        try:
+            rowset.update(record_id, values)
+        except RowsetError as exc:
+            raise ScriptError(str(exc)) from exc
+        self._sync_record()
+        self._log(f"{rowset.table.name}.{field_name} = {value!r}")
+        self._refresh_ui()
+
+    def _do_new_record(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        table_name = str(params.get("table") or "")
+        if table_name and (
+            self._rowset is None
+            or self._rowset.table.name.lower() != table_name.lower()
+        ):
+            self._open_cursor(table_name)
+        rowset = self._require_cursor()
+        record = rowset.new_record()
+        try:
+            record_id = rowset.insert(record)
+        except RowsetError as exc:
+            raise ScriptError(f"Nuovo record non inserito: {exc}") from exc
+        rowset.refresh()
+        rowset.find(INTERNAL_ID, record_id)
+        self._sync_record()
+        self._log(f"Nuovo record in {rowset.table.name} · {self._position_log()}")
+        self._refresh_ui()
+
+    def _do_duplicate_record(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        rowset = self._require_cursor()
+        self._current_id()
+        values = {key: value for key, value in self._record.items() if key != INTERNAL_ID}
+        try:
+            record_id = rowset.insert(values)
+        except RowsetError as exc:
+            raise ScriptError(f"Duplicazione non riuscita: {exc}") from exc
+        rowset.refresh()
+        rowset.find(INTERNAL_ID, record_id)
+        self._sync_record()
+        self._log(f"Record duplicato · {self._position_log()}")
+        self._refresh_ui()
+
+    def _do_delete_record(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        rowset = self._require_cursor()
+        self._current_id()
+        confirm = str(params.get("confirm") or "").strip().lower()
+        if confirm not in ("no", "false", "0", "off"):
+            if not self.ui.confirm("Eliminare il record corrente?"):
+                self._log("Eliminazione annullata")
+                return
+        try:
+            rowset.delete()
+        except RowsetError as exc:
+            raise ScriptError(f"Eliminazione non riuscita: {exc}") from exc
+        rowset.refresh()
+        self._sync_record()
+        self._log(f"Record eliminato · {self._position_log()}")
+        self._refresh_ui()
+
+    def _do_commit_record(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        rowset = self._require_cursor()
+        rowset.refresh()
+        self._sync_record()
+        self._log(f"Record confermato · {self._position_log()}")
+        self._refresh_ui()
+
+    def _do_revert_record(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        rowset = self._require_cursor()
+        rowset.refresh()
+        self._sync_record()
+        self._log(f"Record ripristinato · {self._position_log()}")
+        self._refresh_ui()
+
+    # ------------------------------------------------------- finestre e servizi
+    def _do_open_query(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        name = str(params.get("query") or "")
+        if self.project.artifact("queries", name) is None:
+            raise ScriptError(f"Query sconosciuta: {name}")
+        self._log(f"Apri query {name}")
+        self.ui.open_query(name)
+
+    def _do_open_report(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        name = str(params.get("report") or "")
+        if self.project.artifact("reports", name) is None:
+            raise ScriptError(f"Report sconosciuto: {name}")
+        self._log(f"Apri report {name}")
+        self.ui.open_report(name)
+
+    def _do_custom_dialog(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        title = self._interpolate(params.get("title", "")) or "dBX"
+        message = self._interpolate(params.get("message", ""))
+        variable = str(params.get("variable") or "").lstrip(":")
+        default = str(self.variables.get(variable, "")) if variable else ""
+        value = self.ui.custom_dialog(title, message, default)
+        if value is None:
+            self._log("Dialogo annullato")
+            return
+        if variable:
+            self.variables[variable] = value
+            self._log(f":{variable} = {value!r}")
+        else:
+            self._log(f"Dialogo: {value!r}")
+
+    def _do_beep(self, params: dict[str, Any], step: dict[str, Any]) -> None:
+        self.ui.beep()
+
 
 # --------------------------------------------------------------------------- #
 # Forma testuale (two-way)
@@ -489,12 +863,93 @@ def to_text(steps: Iterable[dict[str, Any]], indent: int = 0) -> str:
             lines.append(f"{pad}SQL {params.get('statement', '')}")
         elif action == "call":
             lines.append(f"{pad}CALL {params.get('script', '')}")
+        elif action == "comment":
+            lines.append(f"{pad}COMMENT {_quote(params.get('text', ''))}")
+        elif action == "loop":
+            lines.append(f"{pad}LOOP")
+            lines.append(to_text(step.get("steps", []), indent + 1))
+            lines.append(f"{pad}ENDLOOP")
+        elif action == "exit_loop_if":
+            lines.append(f"{pad}EXIT LOOP IF {params.get('expr', '')}")
+        elif action == "exit_script":
+            lines.append(f"{pad}EXIT SCRIPT")
+        elif action == "halt":
+            message = str(params.get("message") or "")
+            lines.append(f"{pad}HALT {_quote(message)}" if message else f"{pad}HALT")
+        elif action == "select_table":
+            where = f" WHERE {params.get('filter')}" if params.get("filter") else ""
+            order = f" ORDER BY {params.get('order')}" if params.get("order") else ""
+            lines.append(f"{pad}SELECT TABLE {params.get('table', '')}{where}{order}")
+        elif action == "go_record":
+            mode = str(params.get("mode") or "first")
+            number = f" {params.get('number')}" if mode == "number" else ""
+            lines.append(f"{pad}GO RECORD {mode}{number}")
+        elif action == "set_field":
+            lines.append(
+                f"{pad}SET FIELD {params.get('field', '')} = {params.get('expr', '')}"
+            )
+        elif action == "new_record":
+            table = str(params.get("table") or "")
+            lines.append(f"{pad}NEW RECORD {table}" if table else f"{pad}NEW RECORD")
+        elif action == "duplicate_record":
+            lines.append(f"{pad}DUPLICATE RECORD")
+        elif action == "delete_record":
+            confirm = str(params.get("confirm") or "").strip().lower()
+            suffix = " NOCONFIRM" if confirm in ("no", "false", "0", "off") else ""
+            lines.append(f"{pad}DELETE RECORD{suffix}")
+        elif action == "commit_record":
+            lines.append(f"{pad}COMMIT RECORD")
+        elif action == "revert_record":
+            lines.append(f"{pad}REVERT RECORD")
+        elif action == "open_query":
+            lines.append(f"{pad}OPEN QUERY {params.get('query', '')}")
+        elif action == "open_report":
+            lines.append(f"{pad}OPEN REPORT {params.get('report', '')}")
+        elif action == "custom_dialog":
+            variable = str(params.get("variable") or "")
+            into = f" INTO :{variable}" if variable else ""
+            lines.append(
+                f"{pad}CUSTOM DIALOG {_quote(params.get('title', ''))} "
+                f"{_quote(params.get('message', ''))}{into}"
+            )
+        elif action == "beep":
+            lines.append(f"{pad}BEEP")
         else:
             lines.append(f"{pad}# azione sconosciuta: {action}")
     return "\n".join(line for line in lines if line.strip())
 
 
 _TOKEN_SPLIT = re.compile(r"\s+")
+
+
+def _parse_if(
+    lines: list[tuple[int, str]], index: int, line_no: int, expr: str
+) -> tuple[dict[str, Any], int]:
+    """Legge un IF, incluso ``ELSE IF`` come IF annidato nell'ELSE."""
+    then_steps, index = _parse_block(lines, index + 1, ("ELSE", "ELSEIF", "ENDIF"))
+    step: dict[str, Any] = {
+        "action": "if",
+        "params": {"expr": expr},
+        "then": then_steps,
+        "else": [],
+    }
+    if index < len(lines):
+        current = lines[index][1].strip()
+        upper = current.upper()
+        if upper == "ELSE":
+            else_steps, index = _parse_block(lines, index + 1, ("ENDIF",))
+            step["else"] = else_steps
+        elif upper.startswith("ELSE IF ") or upper.startswith("ELSEIF "):
+            nested_expr = current[8:].strip() if upper.startswith("ELSE IF ") else current[7:].strip()
+            nested, index = _parse_if(lines, index, line_no, nested_expr)
+            step["else"] = [nested]
+            # L'ENDIF del nested chiude anche l'IF esterno.
+            return step, index
+    if index >= len(lines):
+        raise ScriptError(f"IF alla riga {line_no} senza ENDIF")
+    if lines[index][1].strip().upper() != "ENDIF":
+        raise ScriptError(f"IF alla riga {line_no} senza ENDIF")
+    return step, index + 1
 
 
 def _parse_block(lines: list[tuple[int, str]], index: int, terminators: tuple[str, ...]) -> tuple[list[dict[str, Any]], int]:
@@ -507,16 +962,15 @@ def _parse_block(lines: list[tuple[int, str]], index: int, terminators: tuple[st
         line_no, text = lines[index]
         upper = text.upper()
         if upper.startswith("IF "):
-            expr = text[3:].strip()
-            then_steps, index = _parse_block(lines, index + 1, ("ELSE", "ENDIF"))
-            step = {"action": "if", "params": {"expr": expr}, "then": then_steps, "else": []}
-            if index < len(lines) and lines[index][1].strip().upper() == "ELSE":
-                else_steps, index = _parse_block(lines, index + 1, ("ENDIF",))
-                step["else"] = else_steps
-            if index >= len(lines):
-                raise ScriptError(f"IF alla riga {line_no} senza ENDIF")
-            index += 1
+            step, index = _parse_if(lines, index, line_no, text[3:].strip())
             steps.append(step)
+            continue
+        if upper == "LOOP":
+            body, index = _parse_block(lines, index + 1, ("ENDLOOP",))
+            if index >= len(lines):
+                raise ScriptError(f"LOOP alla riga {line_no} senza ENDLOOP")
+            index += 1
+            steps.append({"action": "loop", "params": {}, "steps": body})
             continue
         if upper.startswith("FOR EACH "):
             rest = text[9:].strip()
@@ -552,6 +1006,93 @@ def _parse_block(lines: list[tuple[int, str]], index: int, terminators: tuple[st
 
 def _parse_line(text: str, line_no: int) -> dict[str, Any]:
     upper = text.upper()
+    if upper.startswith("COMMENT "):
+        return {"action": "comment", "params": {"text": _unquote(text[8:])}}
+    if upper.startswith("SET FIELD "):
+        rest = text[10:].strip()
+        match = re.match(
+            r"^([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)\s*=\s*(.+)$", rest
+        )
+        if not match:
+            raise ScriptError(
+                f"SET FIELD malformato alla riga {line_no}: usa SET FIELD campo = espressione"
+            )
+        return {
+            "action": "set_field",
+            "params": {"field": match.group(1), "expr": match.group(2).strip()},
+        }
+    if upper.startswith("SELECT TABLE "):
+        rest = text[13:].strip()
+        match = re.match(
+            r"^(\w+)(?:\s+WHERE\s+(.+?))?(?:\s+ORDER\s+BY\s+(.+))?$",
+            rest,
+            re.IGNORECASE,
+        )
+        if not match:
+            raise ScriptError(f"SELECT TABLE malformato alla riga {line_no}")
+        return {
+            "action": "select_table",
+            "params": {
+                "table": match.group(1),
+                "filter": (match.group(2) or "").strip(),
+                "order": (match.group(3) or "").strip(),
+            },
+        }
+    if upper.startswith("GO RECORD "):
+        rest = text[10:].strip()
+        match = re.match(r"^(\w+)(?:\s+(\d+))?$", rest)
+        if not match:
+            raise ScriptError(f"GO RECORD malformato alla riga {line_no}")
+        return {
+            "action": "go_record",
+            "params": {"mode": match.group(1).lower(), "number": match.group(2) or ""},
+        }
+    if upper.startswith("NEW RECORD"):
+        rest = text[10:].strip()
+        return {"action": "new_record", "params": {"table": rest}}
+    if upper.startswith("DUPLICATE RECORD"):
+        return {"action": "duplicate_record", "params": {}}
+    if upper.startswith("DELETE RECORD"):
+        rest = text[13:].strip().upper()
+        return {
+            "action": "delete_record",
+            "params": {"confirm": "no" if rest == "NOCONFIRM" else ""},
+        }
+    if upper.startswith("COMMIT RECORD"):
+        return {"action": "commit_record", "params": {}}
+    if upper.startswith("REVERT RECORD"):
+        return {"action": "revert_record", "params": {}}
+    if upper.startswith("EXIT LOOP IF "):
+        return {"action": "exit_loop_if", "params": {"expr": text[13:].strip()}}
+    if upper.startswith("EXIT SCRIPT"):
+        return {"action": "exit_script", "params": {}}
+    if upper.startswith("HALT"):
+        rest = text[4:].strip()
+        return {"action": "halt", "params": {"message": _unquote(rest)}}
+    if upper.startswith("OPEN QUERY "):
+        return {"action": "open_query", "params": {"query": text[11:].strip()}}
+    if upper.startswith("OPEN REPORT "):
+        return {"action": "open_report", "params": {"report": text[12:].strip()}}
+    if upper.startswith("CUSTOM DIALOG "):
+        rest = text[14:].strip()
+        match = re.match(
+            r'^("(?:[^"]|"")*")\s+("(?:[^"]|"")*")(?:\s+INTO\s+:(\w+))?$',
+            rest,
+        )
+        if not match:
+            raise ScriptError(
+                f"CUSTOM DIALOG malformato alla riga {line_no}: usa CUSTOM DIALOG \"titolo\" \"messaggio\" INTO :var"
+            )
+        return {
+            "action": "custom_dialog",
+            "params": {
+                "title": _unquote(match.group(1)),
+                "message": _unquote(match.group(2)),
+                "variable": match.group(3) or "",
+            },
+        }
+    if upper.strip() == "BEEP":
+        return {"action": "beep", "params": {}}
     if upper.startswith("MESSAGE "):
         return {"action": "message", "params": {"text": _unquote(text[8:])}}
     if upper.startswith("STATUS "):
