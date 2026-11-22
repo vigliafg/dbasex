@@ -701,3 +701,26 @@
 - **Problemi aperti:** nessuno bloccante; restano i limiti dichiarati della 0.4 (QBE read-only,
   example elements con tabella già presente, avviso OR su LEFT JOIN).
 - **Prossimo passo:** O5 — catalogo azioni script e Step Picker.
+
+### 2026-11-22 — Ondata 0.5.0 — O5 Catalogo azioni e Step Picker
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O5.
+- **Obiettivo:** categorizzare il catalogo `ACTIONS`, aggiungere descrizioni e introdurre il
+  selettore visuale dei passi senza cambiare il comportamento del motore.
+- **File toccati:** `dbx/runtime/script_engine.py`, `dbx/designers/step_picker.py` (nuovo),
+  `dbx/designers/script_builder.py`, `tests/test_step_catalog.py` (nuovo),
+  `tests/test_ui_script_editor.py`, `tools/capture_ui.py`, `README.md`, `CHANGELOG.md`,
+  `docs/ui-parity.md`, `docs/reference/dbx-ui/README.md`, `PLAN.md`, `DIARIO.md`.
+- **Scelte:**
+  - `ACTIONS` resta il dizionario unico; ogni voce ha `label`, `category`, `description` e `params`.
+  - Categorie nell’ordine del piano: Controllo, Navigazione, Dati, Record, Ricerche, Interfaccia,
+    Stampa/File, Script, Variabili, Avanzate; le categorie senza azioni non compaiono.
+  - `StepPickerDialog` con albero per categoria, filtro su nome/categoria/descrizione, riepilogo
+    dell’azione e pulsante **Aggiungi**; `Aggiungi azione` lo usa al posto dell’elenco piatto.
+  - L’Inspector mostra `Categoria` e `Descrizione` del passo; `ActionDialog` mostra la descrizione.
+  - Nessuna azione nuova e nessuna modifica a `to_text`/`from_text` o all’interprete.
+  - Nuovo rendering `24-script-step-picker.png`.
+- **Test:** `331 passed`; smoke headless OK; catture Aurora e Dark OK.
+- **Screenshot:** `24-script-step-picker.png`.
+- **Problemi aperti:** nessuno; i ~16 passi core e il runtime sono il scope di O6.
+- **Prossimo passo:** O6 — passi core e runtime, poi Checkpoint B.

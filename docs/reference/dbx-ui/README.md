@@ -35,6 +35,7 @@ l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `do
 | `21-query-expert.png` | Query Expert con join suggeriti dalle foreign key |
 | `22-report-expert.png` | Report Expert con scelta del layout |
 | `23-qbe-mode.png` | Query Designer in modalità QBE con query image, example elements e OR |
+| `24-script-step-picker.png` | Step Picker con catalogo azioni categorizzato e descrizioni |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.

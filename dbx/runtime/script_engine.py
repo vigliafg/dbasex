@@ -21,6 +21,8 @@ from .rowset import Rowset, RowsetError
 
 __all__ = [
     "ACTIONS",
+    "ACTION_CATEGORIES",
+    "actions_by_category",
     "ScriptEngine",
     "ScriptError",
     "NullUI",
@@ -40,35 +42,106 @@ class ScriptAborted(Exception):
 
 # (chiave, etichetta, tipo: text|expr|var|table|form|report|file)
 ACTIONS: dict[str, dict[str, Any]] = {
-    "message": {"label": "Messaggio", "params": [("text", "Testo", "expr")]},
-    "status": {"label": "Messaggio di stato", "params": [("text", "Testo", "expr")]},
+    "message": {
+        "label": "Messaggio",
+        "category": "Interfaccia",
+        "description": "Mostra un messaggio all'utente.",
+        "params": [("text", "Testo", "expr")],
+    },
+    "status": {
+        "label": "Messaggio di stato",
+        "category": "Interfaccia",
+        "description": "Aggiorna il messaggio nella barra di stato.",
+        "params": [("text", "Testo", "expr")],
+    },
     "ask": {
         "label": "Chiedi un valore",
+        "category": "Variabili",
+        "description": "Chiede un valore e lo salva in una variabile.",
         "params": [("prompt", "Domanda", "expr"), ("variable", "Salva in variabile", "var")],
     },
     "set": {
         "label": "Imposta variabile",
+        "category": "Variabili",
+        "description": "Assegna il risultato di un'espressione a una variabile.",
         "params": [("variable", "Variabile", "var"), ("expr", "Espressione", "expr")],
     },
-    "if": {"label": "Se…Altrimenti", "params": [("expr", "Condizione", "expr")]},
+    "if": {
+        "label": "Se…Altrimenti",
+        "category": "Controllo",
+        "description": "Esegue i passi del ramo Then o Else secondo la condizione.",
+        "params": [("expr", "Condizione", "expr")],
+    },
     "foreach": {
         "label": "Ripeti per ogni record",
+        "category": "Record",
+        "description": "Ripete i passi per ogni record della tabella indicata.",
         "params": [("table", "Tabella", "table"), ("filter", "Filtro SQL (facoltativo)", "text")],
     },
-    "confirm": {"label": "Chiedi conferma", "params": [("text", "Domanda", "expr")]},
-    "open_form": {"label": "Apri form", "params": [("form", "Form", "form")]},
-    "print_report": {"label": "Stampa report", "params": [("report", "Report", "report")]},
+    "confirm": {
+        "label": "Chiedi conferma",
+        "category": "Interfaccia",
+        "description": "Chiede conferma prima di eseguire i passi contenuti.",
+        "params": [("text", "Domanda", "expr")],
+    },
+    "open_form": {
+        "label": "Apri form",
+        "category": "Navigazione",
+        "description": "Apre un form del progetto.",
+        "params": [("form", "Form", "form")],
+    },
+    "print_report": {
+        "label": "Stampa report",
+        "category": "Stampa/File",
+        "description": "Apre l'anteprima di stampa di un report.",
+        "params": [("report", "Report", "report")],
+    },
     "export_csv": {
         "label": "Esporta CSV",
+        "category": "Stampa/File",
+        "description": "Esporta in CSV i record della tabella, con filtro facoltativo.",
         "params": [
             ("table", "Tabella", "table"),
             ("filter", "Filtro SQL (facoltativo)", "text"),
             ("path", "File di destinazione", "file"),
         ],
     },
-    "sql": {"label": "Esegui SQL", "params": [("statement", "Istruzione SQL", "text")]},
-    "call": {"label": "Chiama script", "params": [("script", "Script", "script")]},
+    "sql": {
+        "label": "Esegui SQL",
+        "category": "Avanzate",
+        "description": "Esegue un'istruzione SQL controllata dal motore.",
+        "params": [("statement", "Istruzione SQL", "text")],
+    },
+    "call": {
+        "label": "Chiama script",
+        "category": "Script",
+        "description": "Esegue un altro script del progetto.",
+        "params": [("script", "Script", "script")],
+    },
 }
+
+ACTION_CATEGORIES = (
+    "Controllo",
+    "Navigazione",
+    "Dati",
+    "Record",
+    "Ricerche",
+    "Interfaccia",
+    "Stampa/File",
+    "Script",
+    "Variabili",
+    "Avanzate",
+)
+
+
+def actions_by_category() -> dict[str, list[str]]:
+    """Azioni raggruppate per categoria, nell'ordine dichiarato dal catalogo."""
+    buckets: dict[str, list[str]] = {name: [] for name in ACTION_CATEGORIES}
+    for key, definition in ACTIONS.items():
+        category = str(definition.get("category", "Avanzate"))
+        buckets.setdefault(category, []).append(key)
+    return {name: keys for name, keys in buckets.items() if keys}
+
 
 BLOCK_ACTIONS = ("if", "foreach", "confirm")
 _READ_ONLY_PREFIXES = ("SELECT", "WITH", "PRAGMA")

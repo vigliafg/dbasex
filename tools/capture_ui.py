@@ -39,6 +39,7 @@ from dbx.designers.query_expert import QueryExpert  # noqa: E402
 from dbx.designers.report_builder import ReportBuilderDialog  # noqa: E402
 from dbx.designers.report_expert import ReportExpert  # noqa: E402
 from dbx.designers.script_builder import ScriptBuilderWidget  # noqa: E402
+from dbx.designers.step_picker import StepPickerDialog  # noqa: E402
 from dbx.designers.table_builder import TableBuilderDialog  # noqa: E402
 from dbx.designers.table_expert import TableExpert  # noqa: E402
 from dbx.runtime.form_runtime import FormRuntime  # noqa: E402
@@ -223,6 +224,11 @@ def run(theme: str = "aurora") -> int:
         report_expert = ReportExpert(project, suggested_name="report_clienti")
         widgets.append(report_expert)
         captured.append(_capture(app, report_expert, "22-report-expert.png", (840, 660)))
+
+        step_picker = StepPickerDialog()
+        step_picker.select_action("export_csv")
+        widgets.append(step_picker)
+        captured.append(_capture(app, step_picker, "24-script-step-picker.png", (560, 500)))
     finally:
         for widget in reversed(widgets):
             widget.close()

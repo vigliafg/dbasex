@@ -31,7 +31,7 @@ Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di
 | **Form Runtime** | Navigazione, CRUD, stato del record, sottomaschere uno-a-molti, script, report e messaggi; form su query in sola lettura |
 | **Report Designer** | Foglio unico a bande impilate ed etichettate, delimitatori trascinabili, due toolbar, zoom 50–200%, dialoghi Insert Field / Edit Text / Record Sort Order / Insert Group / Total; sorgente tabella o query |
 | **Report Preview** | Pagina singola o continua, fit-width, zoom persistente, totale pagine, aggiornamento, stampa ed export PDF |
-| **Program Editor** | MiniScript con numeri di riga, evidenziazione di parole chiave/stringhe/commenti/numeri, vista azioni ↔ sorgente bidirezionale, inspector dei parametri e log di esecuzione |
+| **Program Editor** | MiniScript con numeri di riga, evidenziazione di parole chiave/stringhe/commenti/numeri, vista azioni ↔ sorgente bidirezionale, catalogo categorizzato con Step Picker, inspector dei parametri e log di esecuzione |
 | **Menu Designer** | Albero di voci e separatori, azioni tipizzate, filtro delle destinazioni, anteprima del menu |
 | **Project Editor / Builder** | Albero oggetti, impostazioni (`title`, `main_form`, `main_menu`), validazione dei riferimenti, build in cartella + zip, helper PyInstaller |
 | **Navigator, menu e status bar** | Sequenza menu dBASE, tooltip e icone coerenti, chiusura con conferma delle finestre modificate |

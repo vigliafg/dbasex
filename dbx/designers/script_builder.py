@@ -58,6 +58,7 @@ from ..runtime.script_engine import (
 )
 from ..ui import design, icons
 from ..ui.widgets import PropertyInspector
+from .step_picker import StepPickerDialog
 
 KEYWORDS = (
     "MESSAGE",
@@ -273,6 +274,10 @@ class ActionDialog(QDialog):
         self.editors: dict[str, QWidget] = {}
         self.setWindowTitle(f"Azione — {ACTIONS[action]['label']}")
         layout = QVBoxLayout(self)
+        description = QLabel(str(ACTIONS[action].get("description", "")))
+        description.setObjectName("nav_hint")
+        description.setWordWrap(True)
+        layout.addWidget(description)
         form = QFormLayout()
         for key, label, kind in ACTIONS[action]["params"]:
             widget = self._make_editor(kind, str(params.get(key, "")))
@@ -569,14 +574,19 @@ class ScriptBuilderWidget(QWidget):
             self.inspector.set_methods([])
             return
         action = str(step.get("action", ""))
-        definition = ACTIONS.get(action, {"label": action, "params": []})
+        definition = ACTIONS.get(
+            action,
+            {"label": action, "category": "", "description": "", "params": []},
+        )
         params = step.get("params") or {}
         rows = [
-            ("action", "Azione", "ro", definition["label"], None),
+            ("action", "Azione", "ro", definition.get("label", action), None),
+            ("category", "Categoria", "ro", definition.get("category", ""), None),
+            ("description", "Descrizione", "ro", definition.get("description", ""), None),
             ("label", "Blocchi", "ro", str(count_steps([step])), None),
         ]
         self._loading = True
-        for key, label, kind in definition["params"]:
+        for key, label, kind in definition.get("params", []):
             value = str(params.get(key, ""))
             if kind in ("table", "form", "report", "script"):
                 rows.append((f"param:{key}", label, "choice", value, self._param_options(kind)))
@@ -627,12 +637,12 @@ class ScriptBuilderWidget(QWidget):
         self._refresh_actions()
 
     def add_action(self) -> None:
-        keys = list(ACTIONS)
-        labels = [ACTIONS[key]["label"] for key in keys]
-        label, ok = QInputDialog.getItem(self, "Nuova azione", "Scegli l'azione:", labels, 0, False)
-        if not ok:
+        picker = StepPickerDialog(self)
+        if picker.exec() != QDialog.DialogCode.Accepted:
             return
-        action = keys[labels.index(label)]
+        action = picker.selected_action()
+        if action not in ACTIONS:
+            return
         dialog = ActionDialog(action, {}, self.project, self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return

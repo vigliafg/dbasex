@@ -68,13 +68,12 @@ def test_invalid_source_is_rejected(qapp, demo_project, monkeypatch) -> None:
 
 
 def test_add_action_updates_tree_and_source(qapp, demo_project, monkeypatch) -> None:
-    from PyQt6.QtWidgets import QInputDialog
+    from PyQt6.QtWidgets import QDialog
 
-    monkeypatch.setattr(
-        QInputDialog,
-        "getItem",
-        staticmethod(lambda *args, **kwargs: ("Messaggio", True)),
-    )
+    from dbx.designers.step_picker import StepPickerDialog
+
+    monkeypatch.setattr(StepPickerDialog, "exec", lambda self: QDialog.DialogCode.Accepted)
+    monkeypatch.setattr(StepPickerDialog, "selected_action", lambda self: "message")
     monkeypatch.setattr(ActionDialog, "exec", lambda self: ActionDialog.DialogCode.Accepted)
     monkeypatch.setattr(ActionDialog, "params", lambda self: {"text": "ciao"})
     editor = ScriptBuilderWidget(demo_project, {"name": "prova", "steps": []})

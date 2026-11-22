@@ -3,6 +3,25 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
+## [Non rilasciato] — 0.5.0 in corso
+
+### Aggiunto
+
+- **Catalogo azioni categorizzato**: ogni azione di `ACTIONS` ha `category` e `description`;
+  le categorie sono Controllo, Navigazione, Dati, Record, Ricerche, Interfaccia, Stampa/File,
+  Script, Variabili e Avanzate.
+- **Step Picker**: finestra con albero per categoria, filtro su nome/categoria/descrizione,
+  descrizione e parametri dell'azione scelta; sostituisce l'elenco piatto in
+  `Aggiungi azione`.
+- **Inspector del passo**: il Program Editor mostra categoria e descrizione oltre ai parametri;
+  il dialogo dei parametri riporta la descrizione dell'azione.
+- **QA visiva**: nuovo rendering `24-script-step-picker.png`.
+
+### Note di aggiornamento
+
+- Il catalogo è descrittivo: nessun cambio di comportamento del motore in questa ondata.
+- Gli script JSON e testuali esistenti restano validi.
+
 ## [0.4.0] — 2026-11-22
 
 Release degli **Esperti** in stile Paradox e della modalità **QBE** del Query Designer. Le query
