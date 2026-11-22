@@ -93,6 +93,8 @@ class FormControl:
     table: str = ""
     link_parent: str = ""
     link_child: str = ""
+    order: str = ""
+    filter: str = ""
     backcolor: str = ""
     forecolor: str = ""
     events: dict[str, str] = dc_field(default_factory=dict)
@@ -117,6 +119,8 @@ class FormControl:
             "table": self.table,
             "link_parent": self.link_parent,
             "link_child": self.link_child,
+            "order": self.order,
+            "filter": self.filter,
             "backcolor": self.backcolor,
             "forecolor": self.forecolor,
             "events": dict(self.events),
@@ -143,6 +147,8 @@ class FormControl:
             table=str(data.get("table", "")),
             link_parent=str(data.get("link_parent", "")),
             link_child=str(data.get("link_child", "")),
+            order=str(data.get("order", "")),
+            filter=str(data.get("filter", "")),
             backcolor=str(data.get("backcolor", "")),
             forecolor=str(data.get("forecolor", "")),
             events=_string_map(data.get("events")),
@@ -176,6 +182,8 @@ class FormSpec:
     width: int = 620
     height: int = 440
     order: str = ""
+    view_mode: str = "form"
+    list_fields: str = ""
     pages: list[FormPage] = dc_field(default_factory=lambda: [FormPage()])
     backcolor: str = ""
     forecolor: str = ""
@@ -204,6 +212,8 @@ class FormSpec:
             errors.append("Nessuna query collegata al form")
         if not self.pages:
             errors.append("Il form non ha pagine")
+        if self.view_mode not in ("form", "list"):
+            errors.append(f"Vista del form sconosciuta: {self.view_mode}")
         for page in self.pages:
             for control in page.controls:
                 if control.kind not in CONTROL_KINDS:
@@ -224,6 +234,8 @@ class FormSpec:
             "width": self.width,
             "height": self.height,
             "order": self.order,
+            "view_mode": self.view_mode,
+            "list_fields": self.list_fields,
             "pages": [page.to_dict() for page in self.pages],
             "backcolor": self.backcolor,
             "forecolor": self.forecolor,
@@ -245,6 +257,8 @@ class FormSpec:
             width=int(data.get("width", 620) or 620),
             height=int(data.get("height", 440) or 440),
             order=str(data.get("order", "")),
+            view_mode=str(data.get("view_mode", "form") or "form"),
+            list_fields=str(data.get("list_fields", "")),
             pages=pages,
             backcolor=str(data.get("backcolor", "")),
             forecolor=str(data.get("forecolor", "")),
@@ -375,7 +389,10 @@ class FormSpec:
     ) -> "FormSpec":
         spec = cls.create(parent, name=name)
         page = spec.pages[0]
-        grid_y = spec.height - 40
+        content_bottom = max(
+            (control.y + control.h for control in page.controls), default=0
+        )
+        grid_y = max(spec.height - 40, content_bottom + 16)
         page.controls.append(
             FormControl(
                 id=new_id(),

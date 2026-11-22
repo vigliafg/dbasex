@@ -3,7 +3,7 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
-## [Non rilasciato]
+## [0.8.0] — 2026-11-22
 
 ### Aggiunto
 
@@ -22,6 +22,23 @@ e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
   esterne né dipendenze nuove.
 - Rendering `31-label-designer.png`, `32-label-preview.png`, `33-report-chart.png` e
   `34-report-chart-designer.png`.
+- **Vista Lista del form** (O9): `view_mode` `form`/`list` e colonne `list_fields`; la barra del
+  runtime alterna scheda e lista, la selezione di una riga carica il record e la lista di una query
+  resta in sola lettura.
+- **Portali**: il controllo sottomaschera accetta `order` e `filter` (espressione sui campi figlio),
+  applicati dopo il collegamento padre-figlio; errori di ordine o filtro sono riportati nello stato.
+- **Form Designer**: proprietà View/List fields e Portal order/filter nell'Inspector.
+- La sottomaschera generata da `create_master_detail` non si sovrappone più ai pulsanti del form.
+- Rendering `35-form-list.png` e `36-form-portal.png`.
+
+### Note di aggiornamento
+
+- I progetti 0.7 restano validi: le nuove proprietà del form hanno default (`view_mode` = scheda,
+  portali senza ordine/filtro).
+- La vista Lista è di sola consultazione; modifiche, nuovo ed eliminazione passano dalla scheda.
+- I portali leggono la tabella figlia collegata e applicano ordine SQL e filtro in sintassi dBX.
+- I grafici usano la palette condivisa e non sono interattivi.
+
 
 ## [0.7.0] — 2026-11-22
 

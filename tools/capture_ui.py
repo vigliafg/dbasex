@@ -398,6 +398,28 @@ def run(theme: str = "aurora") -> int:
         captured.append(
             _capture(app, chart_designer, "34-report-chart-designer.png", (1180, 800))
         )
+
+        list_spec = FormSpec.from_dict(form_artifact)
+        list_spec.view_mode = "list"
+        list_spec.list_fields = "codice,nome,citta,email"
+        list_runtime = FormRuntime(project, list_spec)
+        list_runtime._list.selectRow(1)
+        widgets.append(list_runtime)
+        captured.append(_capture(app, list_runtime, "35-form-list.png", (900, 620)))
+
+        portal_spec = FormSpec.from_dict(project.artifact("forms", "form_fatture"))
+        portal_grid = next(
+            control
+            for control in portal_spec.all_controls()
+            if control.kind == "grid"
+        )
+        portal_grid.order = "importo desc"
+        portal_grid.filter = "[importo] >= 200"
+        portal_runtime = FormRuntime(project, portal_spec)
+        portal_runtime.rowset.goto(1)
+        portal_runtime.load_current()
+        widgets.append(portal_runtime)
+        captured.append(_capture(app, portal_runtime, "36-form-portal.png", (900, 800)))
     finally:
         for widget in reversed(widgets):
             widget.close()

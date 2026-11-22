@@ -117,6 +117,31 @@ def run_smoke() -> int:
     assert runtime.rowset.index == 1
     checks.append("form runtime + eventi")
 
+    list_spec = FormSpec.from_dict(form_artifact)
+    list_spec.view_mode = "list"
+    list_spec.list_fields = "codice,nome,citta"
+    list_runtime = FormRuntime(project, list_spec)
+    assert list_runtime.is_list_view() is True
+    assert list_runtime._list.rowCount() == 3
+    list_runtime._list.selectRow(2)
+    assert list_runtime.rowset.current["codice"] == "C003"
+    list_runtime.toggle_view()
+    assert list_runtime.is_list_view() is False
+    checks.append("form vista lista")
+
+    portal_spec = FormSpec.from_dict(project.artifact("forms", "form_fatture"))
+    portal_grid = next(
+        control for control in portal_spec.all_controls() if control.kind == "grid"
+    )
+    portal_grid.order = "importo desc"
+    portal_grid.filter = "[importo] >= 200"
+    portal_runtime = FormRuntime(project, portal_spec)
+    portal_runtime.rowset.goto(1)
+    portal_runtime.load_current()
+    assert portal_runtime.grids[0][0].rowCount() == 2
+    assert portal_runtime.grids[0][0].item(0, 4).text() == "3200"
+    checks.append("portale ordinato e filtrato")
+
     report_artifact = project.artifact("reports", "fatture_per_cliente")
     report_dialog = ReportDesignerWidget(project, ReportSpec.from_dict(report_artifact))
     assert len(report_dialog.canvas.band_tops()) == 7

@@ -1,6 +1,6 @@
 # Rendering dell'interfaccia dBX
 
-Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.8.0 in corso), generati con:
+Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.8.0), generati con:
 
 ```bash
 python tools/capture_ui.py
@@ -46,6 +46,8 @@ l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `do
 | `32-label-preview.png` | Mail merge su foglio di etichette A4 |
 | `33-report-chart.png` | Report Preview con grafico a barre per gruppo |
 | `34-report-chart-designer.png` | Controllo grafico selezionato nel Report Designer |
+| `35-form-list.png` | Form runtime in vista Lista con selezione del record |
+| `36-form-portal.png` | Portale fatture ordinato e filtrato nel form |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.

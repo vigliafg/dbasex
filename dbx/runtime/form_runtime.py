@@ -30,6 +30,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSpinBox,
+    QStackedWidget,
     QTabWidget,
     QTableWidget,
     QTableWidgetItem,
@@ -39,6 +40,7 @@ from PyQt6.QtWidgets import (
 
 from ..core import types as T
 from ..core.ddl import INTERNAL_ID
+from ..core.expressions import Expression, ExpressionError
 from ..core.form_model import FIELD_KINDS, FormControl, FormSpec
 from ..core.metadata import Table
 from ..core.query_engine import QueryError, query_table, run_query
@@ -199,6 +201,8 @@ class FormRuntime(QWidget):
         self.grids: list[tuple[QTableWidget, FormControl]] = []
         self.event_log: list[str] = []
         self._new = False
+        self._list_loading = False
+        self._list_columns: list[Any] = []
         self._status = QLabel("")
         self._toolbar = QHBoxLayout()
         self._pages = QTabWidget()
@@ -218,10 +222,22 @@ class FormRuntime(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.addLayout(self._toolbar)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(self._pages)
-        layout.addWidget(scroll, 1)
+        self._stack = QStackedWidget()
+        self._form_scroll = QScrollArea()
+        self._form_scroll.setWidgetResizable(True)
+        self._form_scroll.setWidget(self._pages)
+        self._stack.addWidget(self._form_scroll)
+        self._list = QTableWidget(0, 0)
+        self._list.setObjectName("form_list")
+        self._list.setAlternatingRowColors(True)
+        self._list.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self._list.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        self._list.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self._list.verticalHeader().setVisible(False)
+        self._list.cellClicked.connect(self._on_list_clicked)
+        self._list.itemSelectionChanged.connect(self._on_list_selection)
+        self._stack.addWidget(self._list)
+        layout.addWidget(self._stack, 1)
         self._status.setObjectName("runtime_status")
         layout.addWidget(self._status)
         self.setWindowTitle(self.spec.caption or self.spec.name)
@@ -234,6 +250,8 @@ class FormRuntime(QWidget):
             for control in page.controls:
                 self._add_control(surface, control)
         self._add_nav_buttons()
+        self._refresh_list()
+        self._set_view(self.spec.view_mode if self.spec.view_mode in ("form", "list") else "form")
 
     def _add_nav_buttons(self) -> None:
         for caption, action, glyph, tip in (
@@ -253,6 +271,12 @@ class FormRuntime(QWidget):
                 button.setEnabled(False)
                 button.setToolTip("Form su query: sorgente in sola lettura")
             self._toolbar.addWidget(button)
+        self.view_button = icons.make_button(
+            "Lista", "elenco", self.toggle_view, self,
+            "Alterna la scheda e la vista Lista dei record",
+        )
+        self.view_button.setAutoDefault(False)
+        self._toolbar.addWidget(self.view_button)
         self._toolbar.addStretch(1)
         close = icons.make_button("Chiudi", "chiudi", self._close, self, "Chiude il form")
         self._toolbar.addWidget(close)
@@ -350,6 +374,92 @@ class FormRuntime(QWidget):
     def _bind(self, control: FormControl, widget: QWidget) -> None:
         self.binders.append(FieldBinder(control, widget, self.table))
 
+    # -------------------------------------------------------------- vista lista
+    def _list_field_names(self) -> list[str]:
+        names = [
+            item.strip()
+            for item in str(self.spec.list_fields or "").split(",")
+            if item.strip()
+        ]
+        return names
+
+    def _refresh_list(self) -> None:
+        fields = [
+            field
+            for name in self._list_field_names()
+            if (field := self.table.field(name)) is not None
+        ]
+        if not fields:
+            fields = list(self.table.fields)
+        self._list_columns = fields
+        self._list.setColumnCount(len(fields))
+        self._list.setHorizontalHeaderLabels([field.display_name() for field in fields])
+        rows = self.rowset.rows()
+        self._list.setRowCount(len(rows))
+        for row_index, row in enumerate(rows):
+            for column_index, field in enumerate(fields):
+                item = QTableWidgetItem(
+                    T.format_value(row.get(field.name), field.type, field.fmt)
+                )
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                self._list.setItem(row_index, column_index, item)
+        self._list.resizeColumnsToContents()
+        self._sync_list_selection()
+
+    def _sync_list_selection(self) -> None:
+        self._list_loading = True
+        try:
+            index = self.rowset.index
+            if 0 <= index < self._list.rowCount():
+                self._list.selectRow(index)
+            else:
+                self._list.clearSelection()
+        finally:
+            self._list_loading = False
+
+    def _on_list_selection(self) -> None:
+        if self._list_loading:
+            return
+        selected = self._list.selectionModel().selectedRows()
+        if not selected:
+            return
+        row = selected[0].row()
+        if row == self.rowset.index:
+            return
+        self._new = False
+        self.rowset.goto(row)
+        self.load_current()
+
+    def _on_list_clicked(self, row: int, _column: int) -> None:
+        if self._list_loading or row == self.rowset.index:
+            return
+        self._new = False
+        self.rowset.goto(row)
+        self.load_current()
+
+    def _set_view(self, mode: str) -> None:
+        if mode not in ("form", "list"):
+            return
+        self._stack.setCurrentWidget(
+            self._list if mode == "list" else self._form_scroll
+        )
+        self.view_button.setText("Scheda" if mode == "list" else "Lista")
+        self.view_button.setToolTip(
+            "Torna alla scheda del record"
+            if mode == "list"
+            else "Mostra tutti i record in una lista"
+        )
+        if mode == "list":
+            self._refresh_list()
+        self._update_status()
+
+    def toggle_view(self) -> None:
+        current = "list" if self._stack.currentWidget() is self._list else "form"
+        self._set_view("form" if current == "list" else "list")
+
+    def is_list_view(self) -> bool:
+        return self._stack.currentWidget() is self._list
+
     def _populate_combo(self, combo: QComboBox, control: FormControl) -> None:
         combo.clear()
         combo.addItem("", None)
@@ -419,10 +529,14 @@ class FormRuntime(QWidget):
         record = self.rowset.current
         for binder in self.binders:
             binder.set_value(record.get(binder.control.field) if record else None)
-        self._refresh_grids(record)
+        error = self._refresh_grids(record)
+        self._sync_list_selection()
         self._update_status()
+        if error:
+            self._status.setText(error)
 
-    def _refresh_grids(self, record: dict[str, Any] | None) -> None:
+    def _refresh_grids(self, record: dict[str, Any] | None) -> str | None:
+        error: str | None = None
         for grid, control in self.grids:
             child = self.project.table(control.table)
             grid.clear()
@@ -434,10 +548,30 @@ class FormRuntime(QWidget):
             if record is not None and control.link_parent:
                 value = record.get(control.link_parent)
                 if value is not None:
-                    rows = Rowset(self.project.db, child).open(
-                        where=f'"{control.link_child or control.link_parent}" = ?',
-                        params=(value,),
-                    ).rows()
+                    try:
+                        rows = Rowset(self.project.db, child).open(
+                            where=f'"{control.link_child or control.link_parent}" = ?',
+                            params=(value,),
+                            order=control.order or "",
+                        ).rows()
+                    except RowsetError as exc:
+                        self.event_log.append(f"portale {control.table}: {exc}")
+                        error = f"Portale {control.table}: {exc}"
+                        rows = []
+            if control.filter:
+                try:
+                    expression = Expression(control.filter)
+                    rows = [
+                        row
+                        for row in rows
+                        if expression.truth(row, table=child.name)
+                    ]
+                except ExpressionError as exc:
+                    self.event_log.append(f"filtro portale {control.table}: {exc}")
+                    error = (
+                        f"Filtro del portale {control.table} non valido: {exc}"
+                    )
+                    rows = []
             grid.setRowCount(len(rows))
             for r, row in enumerate(rows):
                 for c, field in enumerate(child.fields):
@@ -447,6 +581,7 @@ class FormRuntime(QWidget):
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                     grid.setItem(r, c, item)
             grid.resizeColumnsToContents()
+        return error
 
     def collect(self) -> dict[str, Any]:
         values: dict[str, Any] = {}
@@ -470,6 +605,7 @@ class FormRuntime(QWidget):
         self._new = False
         self._select_record(record_id)
         self.load_current()
+        self._refresh_list()
         self._status.setText(f"Record salvato · {self._position_text()}")
         return True
 
@@ -493,6 +629,7 @@ class FormRuntime(QWidget):
             for binder in self.binders:
                 binder.set_value(blank.get(binder.control.field))
             self._refresh_grids(None)
+            self._set_view("form")
             self._status.setText("Nuovo record: compila e salva")
             return
         if action == "save":
@@ -563,6 +700,7 @@ class FormRuntime(QWidget):
             return
         self.rowset.first()
         self.load_current()
+        self._refresh_list()
         self._status.setText(f"Record eliminato · {self._position_text()}")
 
     def _run_script(self, name: str) -> None:
@@ -621,7 +759,8 @@ class FormRuntime(QWidget):
 
     def _update_status(self) -> None:
         suffix = " · sola lettura" if self.read_only else ""
-        self._status.setText(f"{self._position_text()}{suffix}")
+        view = " · lista" if self.is_list_view() else ""
+        self._status.setText(f"{self._position_text()}{suffix}{view}")
 
 
 class FormPreviewDialog(QDialog):

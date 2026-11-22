@@ -1,6 +1,6 @@
 # dBX — personal database in stile dBASE 5.5
 
-**Versione 0.7.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
+**Versione 0.8.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
 con motore **SQLite**, ispirato a *dBASE 5.5 for Windows* (Borland). Riunisce in un'unica applicazione
 i costruttori visivi che resero celebre dBASE: tabelle, form, report, script, menu e progetto.
 L'interfaccia usa il tema **Aurora**: zone colorate con gradienti, menu con icona e descrizione,
@@ -14,8 +14,9 @@ resta il **clone strutturale + chrome dBASE** concordato nel piano: desktop MDI,
 categorie, Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande
 impilate, Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
 
-La 0.8 (in corso) aggiunge **etichette e mail merge** con Label Designer leggero, preset A4/Avery,
-filtro/ordinamento e stampa o PDF su più fogli, e **grafici** barre/linee/torta nei report.
+La 0.8 aggiunge **etichette e mail merge** con Label Designer leggero, preset A4/Avery,
+filtro/ordinamento e stampa o PDF su più fogli, **grafici** barre/linee/torta nei report e la
+**vista Lista** dei form con portali ordinati e filtrati.
 
 ## Funzioni
 
@@ -37,7 +38,7 @@ filtro/ordinamento e stampa o PDF su più fogli, e **grafici** barre/linee/torta
 | **Campi calcolati** | Formula valutata a ogni lettura, senza colonna fisica; auto-enter con espressione, serie automatica e data di creazione/modifica; valori visibili in sola lettura in Browse, form e report |
 | **Form Expert** | Wizard a cinque passi: assistito o vuoto, tabella, scelta campi, layout, font/colori/stile |
 | **Form Designer** | Palette `Controls` / `Field`, canvas con righelli e griglia 8 px, otto maniglie reali, selezione multipla, clipboard, undo/redo, allineamento, distribuzione, z-order, pagine a schede, Object Inspector ad albero, eventi e metodi |
-| **Form Runtime** | Navigazione, CRUD, stato del record, sottomaschere uno-a-molti, script, report e messaggi; form su query in sola lettura |
+| **Form Runtime** | Navigazione, CRUD, stato del record, vista **Lista** dei record, portali uno-a-molti con ordinamento/filtro, script, report e messaggi; form su query in sola lettura |
 | **Report Designer** | Foglio unico a bande impilate ed etichettate, delimitatori trascinabili, due toolbar, zoom 50–200%, dialoghi Insert Field / Edit Text / Record Sort Order / Insert Group / Total / Chart; grafici barre, linee e torta; sorgente tabella o query |
 | **Report Preview** | Pagina singola o continua, fit-width, zoom persistente, totale pagine, aggiornamento, stampa ed export PDF |
 | **Label Designer** | Etichette e mail merge con preset A4/Avery, griglia colonne/righe, margini, modello `[campo]`/`{{espressione}}`, filtro, ordine e salto etichette |
@@ -234,10 +235,10 @@ Le immagini Borland sono incluse con finalità di studio e confronto; i relativi
 titolari originali. dBX non ridistribuisce asset grafici Borland nell'applicazione.
 
 Lo stato finestra-per-finestra è in [`docs/ui-parity.md`](docs/ui-parity.md); le checklist di
-collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md`, `docs/qa-0.6.md` e
-`docs/qa-0.7.md`.
+collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md`, `docs/qa-0.6.md`,
+`docs/qa-0.7.md` e `docs/qa-0.8.md`.
 
-## Limiti noti della 0.7
+## Limiti noti della 0.8
 
 - La ricerca guidata lavora su una tabella alla volta; non esiste ancora una ricerca globale tra oggetti.
 - L'import CSV scrive in una tabella esistente: non crea una tabella nuova dalla struttura del file.
@@ -250,6 +251,8 @@ collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-
   corrispondenza.
 - I form su query sono in sola lettura; per modificare i dati usare un form su tabella.
 - Il Crosstab legge un risultato di query già aggregato: non ha un designer persistente né grafici.
+- La vista Lista è di consultazione: le modifiche si fanno nella scheda del record.
+- I portali mostrano colonne del figlio e supportano ordine/filtro, non layout o azioni per riga.
 - Query Results non offre modifica inline: è una vista di controllo, non un Browse.
 - I report su query usano le colonne della query; i sottoreport e le query annidate non sono previsti.
 - Il Label Designer è stato rimosso e sostituito dal Database Designer ER.

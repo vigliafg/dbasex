@@ -1088,3 +1088,57 @@
 - **Problemi aperti:** niente grafici interattivi, tooltip, assi con scale configurabili, legenda
   completa oltre 8 voci o esportazione in immagine separata; il grafico non filtra da solo i record.
 - **Prossimo passo:** O9 — vista Lista del form, portale e release 0.8.0 (Checkpoint F).
+
+### 2026-11-22 — Ondata 0.8.0 — O9 Vista Lista, portale e release 0.8.0
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O9 e tag `v0.8.0`.
+- **Obiettivo:** aggiungere la vista Lista ai form, ordinamento e filtro ai portali uno-a-molti, QA e
+  release 0.8.0.
+- **File toccati:** `dbx/core/form_model.py`, `dbx/runtime/form_runtime.py`,
+  `dbx/designers/form_builder.py`, `dbx/smoke.py`, `tools/capture_ui.py`,
+  `tests/test_form_list_portal.py` (nuovo), `tests/test_ui_form_list_portal.py` (nuovo),
+  `tests/test_ui_shell.py`, pyproject, `dbx/__init__.py`, README, CHANGELOG, PLAN, parity,
+  indice render, `docs/qa-0.8.md` (nuovo), DIARIO.
+- **Scelte:**
+  - `FormSpec` esteso in modo additivo con `view_mode` (`form`/`list`) e `list_fields` (elenco
+    separato da virgole). Default innocui: scheda e tutte le colonne.
+  - Il runtime impila scheda e lista; il pulsante **Lista/Scheda** alterna le viste. La lista è di
+    consultazione (celle non editabili), la selezione di una riga carica il record nella scheda e
+    sincronizza lo stato. Su query la lista eredita la sola lettura.
+  - Nuovo/elimina/salva passano dalla scheda; dopo il salvataggio e l'eliminazione la lista viene
+    ricostruita. `list_fields` ignora nomi inesistenti e ricade su tutti i campi.
+  - Il controllo `grid` (sottomaschera/portale) accetta `order` e `filter` additivi: l'ordine è SQL
+    sulla tabella figlia, il filtro è un'espressione dBX valutata per riga dopo il collegamento
+    padre-figlio. Un ordine o filtro non valido resta confinato al portale e viene riportato nello
+    stato/event log, senza bloccare il form.
+  - `create_master_detail` ora posiziona il portale sotto il contenuto reale della scheda, evitando
+    la sovrapposizione con i pulsanti generati.
+  - Form Designer: proprietà View/List fields tra le proprietà del form e Portal order/filter tra
+    quelle del controllo; le modifiche sono serializzate senza conversioni speciali.
+  - Release `0.8.0`: versione, CHANGELOG, README, parity, indice render, QA 0.8 e tag.
+- **Test:** `455 passed`; smoke OK con `etichette e mail merge`, `grafici report`,
+  `form vista lista` e `portale ordinato e filtrato`; `dbx --version` = `0.8.0`; catture Aurora e
+  Dark OK. Aggiornato il test di versione della shell.
+- **Screenshot:** `35-form-list.png` e `36-form-portal.png`; serie `01`–`36` rigenerata, con `31`–`34`
+  delle ondate O7–O8.
+- **Problemi aperti:** la lista non consente modifica inline; i portali non hanno layout/azioni per
+  riga; niente grafici interattivi.
+- **Prossimo passo:** Checkpoint F; dopo `continua`, O10 — parametri script, variabili globali e
+  transazioni esplicite.
+
+## Checkpoint F — fine O9 e release 0.8.0 (2026-11-22)
+
+- **Stato ondate:** 0.8.0 O7–O9 completata e rilasciata come `0.8.0` (tag `v0.8.0`). Etichette,
+  mail merge, grafici, vista Lista e portali sono pronti.
+- **Test eseguiti:** `455 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK;
+  `python -m dbx --version` = `0.8.0`; `python tools/capture_ui.py` OK; `--theme dark` OK.
+- **Screenshot:** serie `01`–`36`; nuovi `31-label-designer.png`, `32-label-preview.png`,
+  `33-report-chart.png`, `34-report-chart-designer.png`, `35-form-list.png`, `36-form-portal.png`.
+- **Decisioni:** etichette con modello testuale e preset, non designer a controlli liberi; grafici
+  non interattivi disegnati da `pdf_export`; lista di consultazione; portali con ordine/filtro ma
+  senza layout per riga.
+- **Decisioni rimandate all’utente:** barcode/QR, grafici interattivi, portali con azioni, parametri
+  interattivi delle query e automazione 0.9.
+- **RIPRESA:** nessuna ondata aperta. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
+  `git status`/`git log` e iniziare l’**Ondata 10 — Automazione (parametri script, variabili
+  globali, transazioni esplicite)**; non ripartire da O1–O9.
