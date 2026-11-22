@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QUrl, pyqtSignal
+from PyQt6.QtCore import QSize, Qt, QUrl, pyqtSignal
 from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMenu,
-    QPushButton,
+    QSizePolicy,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -24,15 +24,29 @@ from PyQt6.QtWidgets import (
 from ..core.project import CATEGORY_LABELS, Project
 from . import icons
 
-# Categorie mostrate nella colonna del Navigator, nello stesso ordine del dBASE originale.
+# Categorie nello stesso ordine del Navigator originale. L'ultimo campo indica
+# se la categoria è utilizzabile in dBX 0.2; quelle non disponibili restano
+# visibili e disabilitate, con tooltip esplicativo.
 NAV_CATEGORIES = [
-    ("all", "Tutti", "elenco"),
-    ("tables", "Tabelle", "tabella"),
-    ("forms", "Form", "form"),
-    ("reports", "Report", "report"),
-    ("scripts", "Programmi", "script"),
-    ("menus", "Menu", "menu"),
+    ("all", "Tutti", "elenco", True),
+    ("tables", "Tabelle", "tabella", True),
+    ("queries", "Query", "cerca", False),
+    ("forms", "Form", "form", True),
+    ("reports", "Report", "report", True),
+    ("menus", "Menu", "menu", True),
+    ("labels", "Etichette", "stampa", False),
+    ("scripts", "Programmi", "script", True),
+    ("images", "Immagini", "immagine", False),
+    ("sounds", "Suoni", "esegui", False),
+    ("catalogs", "Cataloghi", "elenco", False),
+    ("custom", "Personalizzati", "impostazioni", False),
 ]
+
+NAV_LABELS = {key: label for key, label, _glyph, _available in NAV_CATEGORIES}
+AVAILABLE_CATEGORIES = [
+    key for key, _label, _glyph, available in NAV_CATEGORIES if available and key != "all"
+]
+SELECTABLE_CATEGORIES = ["all", *AVAILABLE_CATEGORIES]
 
 CATEGORY_ICONS = {
     "tables": "tabella",
@@ -41,6 +55,15 @@ CATEGORY_ICONS = {
     "scripts": "script",
     "menus": "menu",
 }
+
+FILTERS = [
+    ("Tutti i file (*.*)", "all"),
+    ("Tabelle (*.table.json)", "tables"),
+    ("Form (*.form.json)", "forms"),
+    ("Report (*.report.json)", "reports"),
+    ("Programmi (*.script.json)", "scripts"),
+    ("Menu (*.menu.json)", "menus"),
+]
 
 
 class Navigator(QWidget):
@@ -55,7 +78,7 @@ class Navigator(QWidget):
         super().__init__(parent)
         self.project: Project | None = None
         self.category = "all"
-        self._buttons: dict[str, QPushButton] = {}
+        self._buttons: dict[str, QToolButton] = {}
         self._build_ui()
 
     # ------------------------------------------------------------------- UI
@@ -66,15 +89,28 @@ class Navigator(QWidget):
 
         column = QFrame()
         column.setObjectName("nav_categories")
-        column.setFixedWidth(134)
+        column.setFixedWidth(122)
         column_layout = QVBoxLayout(column)
         column_layout.setContentsMargins(4, 6, 4, 6)
         column_layout.setSpacing(2)
-        for key, label, glyph in NAV_CATEGORIES:
-            button = icons.make_button(label, glyph, lambda _checked=False, k=key: self.set_category(k), self)
+        for key, label, glyph, available in NAV_CATEGORIES:
+            button = QToolButton(column)
+            button.setText(label)
+            button.setIcon(icons.icon(glyph))
+            button.setIconSize(QSize(20, 20))
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
             button.setCheckable(True)
+            button.setFixedHeight(46)
+            button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             button.setProperty("nav_category", key)
-            button.setStyleSheet("text-align: left;")
+            if available:
+                button.setToolTip(f"Mostra {label.lower()}")
+                button.clicked.connect(
+                    lambda _checked=False, k=key: self.set_category(k)
+                )
+            else:
+                button.setEnabled(False)
+                button.setToolTip(f"{label}: non disponibile in dBX 0.2")
             column_layout.addWidget(button)
             self._buttons[key] = button
         column_layout.addStretch(1)
@@ -86,10 +122,11 @@ class Navigator(QWidget):
         right_layout.setSpacing(6)
 
         directory_row = QHBoxLayout()
-        directory_row.addWidget(QLabel("Directory corrente:"))
+        directory_row.addWidget(QLabel("Directory corrente"))
         self.directory_edit = QLineEdit()
         self.directory_edit.setReadOnly(True)
         self.directory_edit.setPlaceholderText("(nessun progetto)")
+        self.directory_edit.setToolTip("Cartella del progetto corrente")
         directory_row.addWidget(self.directory_edit, 1)
         browse = QToolButton()
         browse.setText("…")
@@ -99,13 +136,14 @@ class Navigator(QWidget):
         right_layout.addLayout(directory_row)
 
         self.filter_combo = QComboBox()
-        self.filter_combo.addItem("Tutti i file (*.*)", "all")
-        self.filter_combo.addItem("Tabelle (*.dbf)", "tables")
-        self.filter_combo.addItem("Form (*.form)", "forms")
-        self.filter_combo.addItem("Report (*.rep)", "reports")
-        self.filter_combo.addItem("Programmi (*.pro)", "scripts")
+        for text, data in FILTERS:
+            self.filter_combo.addItem(text, data)
         self.filter_combo.currentIndexChanged.connect(self._on_filter_changed)
         right_layout.addWidget(self.filter_combo)
+
+        self.list_header = QLabel("Oggetti del progetto")
+        self.list_header.setObjectName("nav_header")
+        right_layout.addWidget(self.list_header)
 
         self.list = QListWidget()
         self.list.setAlternatingRowColors(False)
@@ -118,7 +156,7 @@ class Navigator(QWidget):
 
         self.hint = QLabel("Seleziona una categoria per iniziare.")
         self.hint.setWordWrap(True)
-        self.hint.setStyleSheet("color: palette(mid);")
+        self.hint.setObjectName("nav_hint")
         right_layout.addWidget(self.hint)
         outer.addWidget(right, 1)
 
@@ -130,6 +168,8 @@ class Navigator(QWidget):
         self.refresh()
 
     def set_category(self, category: str) -> None:
+        if category not in SELECTABLE_CATEGORIES:
+            return
         self.category = category
         for key, button in self._buttons.items():
             button.setChecked(key == category)
@@ -149,30 +189,50 @@ class Navigator(QWidget):
         self.list.clear()
         if self.project is None:
             self.directory_edit.clear()
+            self.list_header.setText("Oggetti del progetto")
             self.hint.setText("Nessun progetto aperto.")
             return
         self.directory_edit.setText(str(self.project.path))
-        categories = list(CATEGORY_LABELS)
-        if self.category != "all":
-            categories = [self.category]
+        self.directory_edit.setCursorPosition(0)
+        categories = (
+            AVAILABLE_CATEGORIES if self.category == "all" else [self.category]
+        )
         count = 0
         for category in categories:
             if category not in CATEGORY_ICONS:
                 continue
-            untitled = QListWidgetItem(icons.icon(CATEGORY_ICONS[category]), f"[Nuovo {CATEGORY_LABELS[category]}]")
+            untitled = QListWidgetItem(icons.icon(CATEGORY_ICONS[category]), "[Untitled]")
             untitled.setData(Qt.ItemDataRole.UserRole, f"new:{category}")
-            untitled.setToolTip(f"Crea un nuovo oggetto in {CATEGORY_LABELS[category]}")
+            untitled.setToolTip(
+                f"Nuovo oggetto — {NAV_LABELS.get(category, CATEGORY_LABELS.get(category, category))}"
+            )
             self.list.addItem(untitled)
             for name in self.project.names(category):
                 item = QListWidgetItem(icons.icon(CATEGORY_ICONS[category]), name)
                 item.setData(Qt.ItemDataRole.UserRole, f"{category}:{name}")
-                item.setToolTip(f"{CATEGORY_LABELS[category]} — doppio clic per aprire")
+                item.setToolTip(
+                    f"{NAV_LABELS.get(category, category)} — doppio clic per aprire"
+                )
                 self.list.addItem(item)
                 count += 1
-        if count:
-            self.hint.setText(f"{count} oggetti in {CATEGORY_LABELS.get(self.category, 'tutte le categorie')}.")
+        if self.category == "all":
+            self.list_header.setText(f"Oggetti del progetto ({count})")
         else:
-            self.hint.setText("Nessun oggetto: usa una voce [Nuovo …] per creare.")
+            self.list_header.setText(f"{NAV_LABELS.get(self.category, self.category)} ({count})")
+        if count:
+            where = (
+                "nel progetto"
+                if self.category == "all"
+                else f"in {NAV_LABELS.get(self.category, self.category)}"
+            )
+            self.hint.setText(f"{count} oggetti {where}.")
+        elif self.category == "all":
+            self.hint.setText("Progetto vuoto: apri una categoria e usa [Untitled].")
+        else:
+            self.hint.setText(
+                f"Nessun oggetto in {NAV_LABELS.get(self.category, self.category)}: "
+                "doppio clic su [Untitled] per crearlo."
+            )
 
     def _open_directory(self) -> None:
         if self.project is None:
@@ -195,13 +255,20 @@ class Navigator(QWidget):
         item = self.list.itemAt(position)
         menu = QMenu(self)
         if item is None:
-            for category in CATEGORY_ICONS:
-                menu.addAction(f"Nuovo in {CATEGORY_LABELS[category]}", lambda c=category: self.new_object.emit(c))
+            for category in AVAILABLE_CATEGORIES:
+                label = NAV_LABELS.get(category, CATEGORY_LABELS.get(category, category))
+                menu.addAction(
+                    f"Nuovo in {label}",
+                    lambda c=category: self.new_object.emit(c),
+                )
         else:
             data = item.data(Qt.ItemDataRole.UserRole)
             if isinstance(data, str) and data.startswith("new:"):
                 category = data.split(":", 1)[1]
-                menu.addAction(f"Nuovo in {CATEGORY_LABELS.get(category, category)}", lambda: self.new_object.emit(category))
+                label = NAV_LABELS.get(category, CATEGORY_LABELS.get(category, category))
+                menu.addAction(
+                    f"Nuovo in {label}", lambda c=category: self.new_object.emit(c)
+                )
             elif isinstance(data, str) and ":" in data:
                 category, name = data.split(":", 1)
                 menu.addAction("Apri / modifica", lambda: self.open_object.emit(category, name))

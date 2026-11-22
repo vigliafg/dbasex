@@ -111,3 +111,18 @@ def test_mdi_replaces_tabs(qapp, demo_project) -> None:
         assert window.centralWidget() is window.mdi
     finally:
         window.close()
+
+
+def test_command_window_opens_in_mdi_once(qapp, demo_project) -> None:
+    window = MainWindow(demo_project)
+    try:
+        window.show()
+        window.open_command_window()
+        qapp.processEvents()
+        assert window.editors.find("command") is not None
+        window.open_command_window()
+        qapp.processEvents()
+        assert len(window.editors.windows()) == 1
+        assert "Command Window" in window.object_label.text()
+    finally:
+        window.close()

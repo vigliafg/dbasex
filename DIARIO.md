@@ -9,7 +9,7 @@
 |---|---|---|
 | O0 — Baseline e design token | completata (2026-11-22) | — |
 | O1 — Shell/MDI/menu/tema | completata (2026-11-22) | — |
-| O2 — Navigator/Command/Browse | da iniziare | — |
+| O2 — Navigator/Command/Browse | completata (2026-11-22) | — |
 | O3 — Table Structure | da iniziare | A |
 | O4 — Form Designer/Expert/Runtime | da iniziare | — |
 | O5 — Report Designer/Preview | da iniziare | — |
@@ -85,10 +85,35 @@
   - Navigator, Command Window e Browse restano da rifinire in O2.
 - **Prossimo passo:** Ondata 2 — Navigator, Command Window, Browse/DataView.
 
+### 2026-11-22 — Ondata 2 — avvio
+- **Stato:** in corso
+- **Obiettivo:** rendere fedeli Navigator, Command Window e Browse/DataView.
+
+### 2026-11-22 — Ondata 2 — chiusura
+- **Stato:** completata
+- **Branch/commit:** `main` — commit dell'ondata
+- **Obiettivo:** Navigator completo, Command Window dentro l'MDI, Browse con selettore record e navigazione.
+- **File toccati:** `dbx/ui/navigator.py` (riscritto), `dbx/ui/command_window.py` (riscritto), `dbx/ui/data_view.py` (riscritto), `dbx/ui/main_window.py`, `dbx/ui/design.py`, `tests/test_ui_navigator.py`, `tests/test_ui_designers.py`, `tests/test_ui_shell.py`, `tests/test_ui_workspace.py` (nuovo), `docs/ui-parity.md`.
+- **Scelte/deviazioni:**
+  - Navigator con le categorie originali (`Tutti`, `Tabelle`, `Query`, `Form`, `Report`, `Menu`, `Etichette`, `Programmi`, `Immagini`, `Suoni`, `Cataloghi`, `Personalizzati`): **Menu** è inserito dopo Report perché in dBX è un oggetto reale e deve restare raggiungibile; le altre categorie non implementate sono visibili e disabilitate con tooltip.
+  - Pulsanti categoria come `QToolButton` con icona sopra e testo sotto, altezza fissa; filtro con le estensioni reali del progetto (`.table.json`, `.form.json`, …).
+  - `[Untitled]` sostituisce le vecchie voci `[Nuovo …]`; intestazione della lista e suggerimento contestuale.
+  - Command Window convertita da `QDialog` a `QWidget` e aperta in MDI; due riquadri con titolo, cronologia ↑/↓, stato con esito ok/errore distinto dai token del tema.
+  - Browse con barra di navigazione primo/precedente/successivo/ultimo, colonna selettore record, intestazione della tabella, stato `Record n di m · filtro · ordine`; editing in-place con rollback invariato.
+  - `Editing Options` minimale e persistenza delle larghezze colonna per progetto/tabella nella configurazione utente.
+  - `Struttura…` della Browse resta un dialog modale: l'integrazione con l'MDI è esplicitamente in O3.
+- **Test:** `102 passed`; smoke headless OK; `tools/capture_ui.py` OK in Silver e Dark.
+- **Screenshot:** `01-desktop.png`, `02-navigator.png`, `03-browse-clienti.png`, `09-command-window.png` aggiornati; nuovo `10-desktop-mdi.png` da O1.
+- **Problemi aperti:**
+  - Query/Label/Immagini/Suoni/Cataloghi/Personalizzati restano disabilitate (fuori 0.2).
+  - `Struttura…` della Browse apre ancora un dialog modale (O3).
+  - La selezione della categoria non filtra fisicamente i file su disco: usa il catalogo del progetto.
+- **Prossimo passo:** Ondata 3 — Table Structure, poi **Checkpoint A**.
+
 ## Checkpoint
 
 Nessun checkpoint raggiunto.
 
 ## Ripresa
 
-Nessun checkpoint attivo. Prossima azione: **Ondata 2 — Navigator, Command Window, Browse/DataView**. Al termine di O3 fermarsi per il **Checkpoint A**.
+Nessun checkpoint attivo. Prossima azione: **Ondata 3 — Table Structure**. Al termine fermarsi per il **Checkpoint A**.

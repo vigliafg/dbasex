@@ -1,15 +1,15 @@
 # Stato di parità UI — dBX vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (Ondata 1)
+Aggiornato: 2026-11-22 (Ondata 2)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire; `mancante` = non implementato.
 
 | Finestra originale | Riferimento | Modulo dBX | Stato 0.1 | Target | Gap principale |
 |---|---|---|---|---|---|
 | Desktop + menu + SpeedBar | `01`, `43` | `dbx/ui/main_window.py` | fatto (O1) | O1 | allinea/distribuisci attivi in O4; Navigator in O2 |
-| Navigator | `01`, `42`, `43` | `dbx/ui/navigator.py` | parziale | O2 | categorie ridotte, filtro legacy, `[Untitled]` per categoria |
-| Command Window | `01`, `02`, `04` | `dbx/ui/command_window.py` | parziale | O2 | dialog non MDI, cronologia assente |
-| Browse / Table | `07`, `11`, `18` | `dbx/ui/data_view.py` | parziale | O2 | intestazione, selettore record, navigazione |
+| Navigator | `01`, `42`, `43` | `dbx/ui/navigator.py` | fatto (O2) | O2 | Query/Etichette/Immagini/Suoni/Cataloghi/Personalizzati disabilitate |
+| Command Window | `01`, `02`, `04` | `dbx/ui/command_window.py` | fatto (O2) | O2 | comandi limitati a HELP/TABELLE/USE/RECORD/CLEAR/espressioni |
+| Browse / Table | `07`, `11`, `18` | `dbx/ui/data_view.py` | fatto (O2) | O2 | `Struttura…` resta un dialog fino a O3 |
 | Table Structure | `08`, `09`, `13`, `14` | `dbx/designers/table_builder.py` | parziale | O3 | schede invece di griglia unica, metadati |
 | Query Designer | `15`, `19`, `20`, `21` | — | mancante | 0.3 | non implementato |
 | Query Results | `16`, `17` | — | mancante | 0.3 | non implementato |

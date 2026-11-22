@@ -123,6 +123,7 @@ SILVER: Palette = {
     "tooltip_bg": "#ffffe1",
     "tooltip_text": "#000000",
     "tooltip_border": "#808080",
+    "error": "#800000",
     # brand e icone
     "accent": "#000080",
     "accent_text": "#ffffff",
@@ -192,6 +193,7 @@ SILVER_DARK: Palette = {
     "tooltip_bg": "#3a3a3a",
     "tooltip_text": "#e8e8e8",
     "tooltip_border": "#666666",
+    "error": "#ff8080",
     "accent": "#2f5d8a",
     "accent_text": "#ffffff",
     "icon_color": "#e8e8e8",
@@ -256,6 +258,13 @@ QToolButton:pressed, QToolButton:checked {
 QMdiArea { background: $window_bg; border-top: 1px solid $panel_dark; }
 QMdiSubWindow { background: $window_bg; }
 QLabel#status_field { padding: 0 8px; border-left: 1px solid $status_border; }
+QFrame#nav_categories { background: $window_bg; border-right: 1px solid $panel_shadow; }
+QLabel#nav_header, QLabel#browse_header, QLabel#pane_title {
+    background: $header_bg; border: 1px solid $panel_shadow; padding: 3px 6px; font-weight: 600;
+}
+QLabel#nav_hint { color: $disabled; padding: 2px; }
+QFrame#command_pane, QFrame#results_pane { border: 1px solid $panel_shadow; }
+QLabel#command_status[state="error"] { color: $error; }
 QTabWidget::pane { border: 1px solid $tab_border; background: $tab_pane_bg; }
 QTabBar::tab {
     padding: 5px 12px; background: $tab_bg; border: 1px solid $tab_border; border-bottom: 0;

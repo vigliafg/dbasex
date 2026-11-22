@@ -63,6 +63,7 @@ MODES = {
     "MenuBuilderDialog": "Design",
     "FormPreviewDialog": "Esecuzione",
     "ReportPreviewDialog": "Anteprima",
+    "CommandWindow": "Comandi",
 }
 
 EDIT_METHODS = {
@@ -109,7 +110,6 @@ class MainWindow(QMainWindow):
     def __init__(self, project: Project | None = None) -> None:
         super().__init__()
         self.project: Project | None = None
-        self.command_window: CommandWindow | None = None
         self.config = load_config()
         self._filter_app: QApplication | None = None
         self.setWindowTitle(f"{APP_NAME} — {__version__}")
@@ -510,9 +510,6 @@ class MainWindow(QMainWindow):
         self.object_label.setText("Oggetto: —")
         self.record_label.setText("Record: —")
         self.mode_label.setText("Modalità: —")
-        if self.command_window is not None:
-            self.command_window.close()
-            self.command_window = None
         self.setWindowTitle(f"{APP_NAME} — {__version__}")
         self._update_actions()
 
@@ -625,6 +622,7 @@ class MainWindow(QMainWindow):
                     return
                 view = DataView(self.project, name)
                 view.status_changed.connect(self.record_label.setText)
+                self.record_label.setText(view.status.text())
                 self.editors.open(
                     key,
                     f"Browse — {name}",
@@ -756,6 +754,8 @@ class MainWindow(QMainWindow):
         title = editor_title(widget, "Finestra")
         self.object_label.setText(f"Oggetto: {title}")
         self.mode_label.setText(f"Modalità: {self._mode_for(editor_widget(widget))}")
+        if not isinstance(editor_widget(widget), DataView):
+            self.record_label.setText("Record: —")
 
     def _on_editor_opened(self, _sub=None) -> None:
         self._refresh_window_menu()
@@ -909,13 +909,18 @@ class MainWindow(QMainWindow):
     def open_command_window(self) -> None:
         if not self._require_project():
             return
-        if getattr(self, "command_window", None) is not None and self.command_window.isVisible():
-            self.command_window.raise_()
-            self.command_window.activateWindow()
+        assert self.project is not None
+        existing = self.editors.find("command")
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
             return
-        self.command_window = CommandWindow(self.project, self)
-        self.command_window.show()
-        self.command_window.raise_()
+        self.editors.open(
+            "command",
+            f"Command Window — {self.project.name}",
+            CommandWindow(self.project),
+            icon=icons.icon("testo"),
+            size=QSize(760, 520),
+        )
 
     def create_demo(self) -> None:
         from ..samples import create_demo_project

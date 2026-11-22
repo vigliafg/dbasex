@@ -66,7 +66,8 @@ def test_data_view(qapp, demo_project) -> None:
         assert view.rowset.count() == 3
         assert view.grid.rowCount() == 3
         assert view.grid.columnCount() == len(view.table.fields)
-        assert "Record 3" in view.status.text()
+        assert view.status.text().startswith("Record 1 di 3")
+        assert not view.grid.verticalHeader().isHidden()
     finally:
         view.deleteLater()
 
@@ -74,13 +75,12 @@ def test_data_view(qapp, demo_project) -> None:
 def test_command_window(qapp, demo_project) -> None:
     window = CommandWindow(demo_project)
     try:
-        assert window.isModal() is False
         assert window.output.isReadOnly()
         window.input.setText("2 + 2")
         window.execute()
         assert "4" in window.output.toPlainText()
     finally:
-        window.close()
+        window.deleteLater()
 
 
 def test_report_preview(qapp, demo_project) -> None:
