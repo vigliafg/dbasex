@@ -1224,3 +1224,41 @@
   annidate, breakpoint/esecuzione passo-passo, barcode/QR, grafici interattivi e portali con azioni.
 - **RIPRESA:** nessuna ondata aperta e nessun checkpoint successivo. Il piano 0.6–0.9 è concluso;
   eventuali nuove richieste vanno pianificate come release successive.
+
+### 2026-11-22 — Harness E2E completo e esecuzione programmata
+- **Stato:** completata
+- **Branch/commit:** `main`; commit dedicato al harness.
+- **Obiettivo:** rendere ripetibile in un solo comando il collaudo completo di tutte le funzionalità,
+  con esiti leggibili, log, JUnit, screenshot e codici di uscita affidabili per un'esecuzione non
+  presidiata.
+- **File toccati:** `tools/e2e_harness.py` (nuovo), `tools/e2e_scenarios.py` (nuovo),
+  `tools/run_e2e.sh` (nuovo), `docs/e2e.md` (nuovo), `tests/test_e2e_harness.py` (nuovo),
+  `.github/workflows/ci.yml`, README, DIARIO.
+- **Scelte:**
+  - Un unico entry-point `tools/e2e_harness.py` esegue in ordine **pytest completo**, **smoke
+    headless** e **10 scenari E2E**; `tools/run_e2e.sh` è il wrapper per l'avvio rapido.
+  - Ogni scenario usa un progetto temporaneo isolato; i progetti dell'utente non vengono toccati.
+    In caso di fallimento la cartella temporanea viene conservata per il debug.
+  - Gli scenari coprono tabelle e CRUD, Find mode e CSV, query/aggregati/QBE/Crosstab, form e
+    portali, report/grafici/etichette, script con parametri/globali/transazioni, manutenzione,
+    shell MDI e designer, menu runtime e build ZIP.
+  - I dialoghi modali sono neutralizzati; i warning del plugin Qt offscreen durante gli screenshot
+    sono silenziati. Ogni scenario ha un timeout (dove `SIGALRM` è disponibile).
+  - Il report è sia macchina-leggibile (`report.json`) sia leggibile (`report.md`), con commit Git,
+    versioni, tempi, controlli, traceback, percorsi di log e screenshot.
+  - Output predefinito `build/e2e/<timestamp>/` (ignorato da Git), con `latest.txt`; `--output`
+    consente una cartella dedicata. La console stampa l'esito e il percorso del report.
+  - `--only`, `--skip-pytest`, `--skip-smoke`, `--no-screenshots`, `--keep`, `--fail-fast`,
+    `--timeout`, `--pytest-args`, `--list` e `--quiet/--verbose` coprono esecuzioni mirate e
+    diagnostica.
+  - La CI esegue il harness su Linux/Python 3.12 con pytest e smoke già eseguiti a parte, e pubblica
+    la cartella `build/e2e-ci` come artifact.
+  - `tests/test_e2e_harness.py` verifica l'elenco, un'esecuzione minima isolata e l'errore per
+    scenari sconosciuti, così il harness stesso resta coperto dalla suite.
+- **Test:** `484 passed` (481 + 3 del harness); harness completo `PASS` con 10/10 scenari,
+  187+ controlli, smoke e pytest verdi; esecuzione mirata `--only ui_designers` verde.
+- **Screenshot:** 18 immagini in `build/e2e/<timestamp>/screenshots/` a ogni esecuzione, separate
+  dalla galleria canonica `docs/reference/dbx-ui/renders/`.
+- **Problemi aperti:** il timeout per scenario su Windows non usa `SIGALRM`; i tempi dipendono dalla
+  macchina; PyInstaller resta un test opzionale non incluso nel harness.
+- **Prossimo passo:** lanciare `./tools/run_e2e.sh` domani e conservare `build/e2e/<timestamp>/`.

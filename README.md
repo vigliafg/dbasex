@@ -220,12 +220,19 @@ QT_QPA_PLATFORM=offscreen python -m dbx --smoke
 python tools/capture_ui.py                 # Aurora
 python tools/capture_ui.py --theme silver  # Silver storico
 python tools/capture_ui.py --theme dark    # Dark
+
+./tools/run_e2e.sh                         # harness completo: pytest + smoke + E2E
 ```
 
 La suite copre DDL, migrazioni, espressioni, rowset, report, script, form, designer, shell MDI,
 accessibilità, HiDPI e prestazioni (apertura demo < 2 s, form con 100 controlli < 2 s).
 La CI GitHub Actions esegue i test headless su Linux, Windows e macOS (Python 3.11/3.12), lo smoke
 e, su Linux, cattura e pubblica gli screenshot come artifact.
+
+Il **harness E2E** (`docs/e2e.md`) esegue la suite, lo smoke e dieci scenari completi su progetti
+temporanei: tabelle, ricerca/CSV, query e Crosstab, form e portali, report/grafici/etichette,
+script e automazione, manutenzione, designer e build. Produce `report.json`, `report.md`, log,
+JUnit e screenshot in `build/e2e/<timestamp>/`.
 
 ## Riferimenti visivi dBASE 5.5
 

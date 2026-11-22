@@ -41,3 +41,13 @@ jobs:
           name: dbx-screenshots-silver
           path: docs/reference/dbx-ui/renders/*.png
           if-no-files-found: error
+      - name: Harness E2E
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: python tools/e2e_harness.py --skip-pytest --skip-smoke --output build/e2e-ci
+      - name: Artifact report E2E
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbx-e2e-report
+          path: build/e2e-ci
+          if-no-files-found: error
