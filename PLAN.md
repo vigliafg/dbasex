@@ -984,4 +984,4 @@ dieci mancanze più frequenti per un personal database desktop.
 | 0.8.0 — O8 Grafici report | `[x]` completata (2026-11-22) | — |
 | 0.8.0 — O9 Vista Lista e release | `[x]` completata (2026-11-22) — versione 0.8.0 | **F** |
 | 0.9.0 — O10 Automazione | `[x]` completata (2026-11-22) | — |
-| 0.9.0 — O11 QA e release | `[ ]` da iniziare | **G** |
+| 0.9.0 — O11 QA e release | `[x]` completata (2026-11-22) — versione 0.9.0 | **G** |

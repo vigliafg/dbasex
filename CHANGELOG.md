@@ -3,7 +3,10 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
-## [Non rilasciato]
+## [0.9.0] — 2026-11-22
+
+Release dell'**automazione**: parametri riutilizzabili, variabili globali persistite e transazioni
+esplicite negli script. I progetti 0.8 si aprono senza migrazione.
 
 ### Aggiunto
 
@@ -18,6 +21,14 @@ e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 - **Transazioni esplicite**: `BEGIN/COMMIT/ROLLBACK TRANSACTION` raggruppano più scritture; una
   transazione rimasta aperta viene annullata automaticamente quando lo script termina o fallisce.
 - Rendering `37-script-parameters.png`.
+
+### Note di aggiornamento
+
+- I progetti 0.8 restano validi: `params` è un elenco vuoto negli script esistenti e le variabili
+  globali vengono create solo al primo `SET GLOBAL`.
+- I parametri sono testuali; usare `VAL(:nome)` per i calcoli numerici.
+- Le transazioni sono esplicite e non annidate; senza `COMMIT` lo script annulla le scritture a fine
+  esecuzione, anche in caso di errore.
 
 ## [0.8.0] — 2026-11-22
 

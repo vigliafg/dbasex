@@ -1,6 +1,6 @@
-# Stato di parità UI — dBX 0.8 vs dBASE 5.5
+# Stato di parità UI — dBX 0.9 vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (0.9.0 in corso, O10)
+Aggiornato: 2026-11-22 (release 0.9.0)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
 `fuori scope` = escluso dalla 0.3 per decisione di piano; `mancante` = non implementato.
@@ -50,6 +50,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - `26-import-csv.png` mostra l'importazione CSV con anteprima e mappatura delle colonne.
 - `27-table-calculated.png` mostra la proprietà Calcolato del Table Structure;
   `28-browse-calculated.png` mostra totale e serie calcolati nella Browse.
+- La 0.9.0 introduce parametri script, variabili globali e transazioni esplicite.
 - La 0.8.0 introduce etichette/mail merge, grafici nei report, vista Lista e portali.
 - La 0.7.0 introduce campi calcolati virtuali, auto-enter, aggregati `GROUP BY` e Crosstab
   read-only.
@@ -67,7 +68,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - La 0.5.0 completa il Program Editor con 17 passi core, cursore dati e Step Picker; rende visibili
   categoria e descrizione nell'Inspector e nel dialogo dei parametri.
 - Le checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md`,
-  `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md`, `docs/qa-0.6.md`, `docs/qa-0.7.md` e `docs/qa-0.8.md`.
+  `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md`, `docs/qa-0.6.md`, `docs/qa-0.7.md`, `docs/qa-0.8.md` e `docs/qa-0.9.md`.
 - Il Label Designer leggero è tornato nella 0.8: la categoria **Etichette** convive con **Schema** e
   produce etichette/mail merge; non è il designer a controlli liberi di dBASE.
 - Query Designer, Query Results e le query come sorgente di form/report sono parte della release 0.3.0.

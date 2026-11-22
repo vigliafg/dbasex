@@ -1188,3 +1188,39 @@
   esecuzione passo-passo o breakpoint, transazioni annidate non supportate, globali senza tipi o
   scoping per utente.
 - **Prossimo passo:** O11 — QA, documentazione, screenshot, release 0.9.0 e Checkpoint G.
+
+### 2026-11-22 — Ondata 0.9.0 — O11 QA e release 0.9.0
+- **Stato:** completata
+- **Branch/commit:** `main`; commit di release e tag `v0.9.0`.
+- **Obiettivo:** chiudere il ciclo 0.6–0.9 con QA, documentazione, screenshot e release 0.9.0.
+- **File toccati:** `pyproject.toml`, `dbx/__init__.py`, `tests/test_ui_shell.py`, README, CHANGELOG,
+  PLAN, `docs/ui-parity.md`, `docs/reference/dbx-ui/README.md`, `docs/qa-0.9.md` (nuovo), DIARIO.
+- **Scelte:**
+  - Versione `0.9.0`; nessuna nuova funzionalità in O11, solo consolidamento e documentazione.
+  - README riordinato: la 0.9 è la release corrente, la 0.8 e la 0.7 sono descritte al passato;
+    rimossi i limiti ormai superati su Label Designer, grafici, campi calcolati e transazioni.
+  - `docs/qa-0.9.md` documenta i 13 controlli di automazione, i test dedicati e i limiti accettati.
+  - La compatibilità è esplicita: `params` assente equivale a nessun parametro e le globali nascono
+    solo al primo `SET GLOBAL`; i progetti 0.8 si aprono senza migrazione.
+- **Test:** `481 passed`; smoke OK con `parametri e variabili globali` e `transazioni script`;
+  `dbx --version` = `0.9.0`; catture Aurora e Dark OK; serie `01`–`37` rigenerata.
+- **Screenshot:** `37-script-parameters.png` (nuovo); `11-script-editor.png` aggiornato con il
+  pulsante Parametri.
+- **Problemi aperti:** restano i limiti dichiarati in `docs/qa-0.9.md` e nel README (query statiche,
+  grafici non interattivi, portali senza azioni, parametri testuali, transazioni non annidate).
+- **Prossimo passo:** nessuna ondata prevista nel piano 0.6–0.9; il ciclo è completo.
+
+## Checkpoint G — fine O11 e release 0.9.0 (2026-11-22)
+
+- **Stato ondate:** 0.9.0 O10–O11 completata e rilasciata come `0.9.0` (tag `v0.9.0`). Il piano
+  0.6–0.9 è interamente completato: 0.6.0, 0.7.0, 0.8.0 e 0.9.0.
+- **Test eseguiti:** `481 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK;
+  `python -m dbx --version` = `0.9.0`; `python tools/capture_ui.py` OK; `--theme dark` OK.
+- **Screenshot:** serie `01`–`37`; nuovo `37-script-parameters.png`; aggiornato
+  `11-script-editor.png`.
+- **Decisioni:** parametri testuali con dialogo dedicato; globali nel manifest; transazioni esplicite
+  sulla connessione SQLite con rollback automatico a fine script.
+- **Decisioni rimandate all’utente:** parametri tipizzati o interattivi nelle query, transazioni
+  annidate, breakpoint/esecuzione passo-passo, barcode/QR, grafici interattivi e portali con azioni.
+- **RIPRESA:** nessuna ondata aperta e nessun checkpoint successivo. Il piano 0.6–0.9 è concluso;
+  eventuali nuove richieste vanno pianificate come release successive.

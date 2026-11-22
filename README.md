@@ -1,12 +1,12 @@
 # dBX — personal database in stile dBASE 5.5
 
-**Versione 0.8.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
+**Versione 0.9.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
 con motore **SQLite**, ispirato a *dBASE 5.5 for Windows* (Borland). Riunisce in un'unica applicazione
 i costruttori visivi che resero celebre dBASE: tabelle, form, report, script, menu e progetto.
 L'interfaccia usa il tema **Aurora**: zone colorate con gradienti, menu con icona e descrizione,
 focus visibile e superfici chiare al posto del grigio Win16.
 
-La 0.7 aggiunge il **calcolo** ai dati: campi calcolati virtuali, auto-enter con serie e date
+La 0.7 ha aggiunto il **calcolo** ai dati: campi calcolati virtuali, auto-enter con serie e date
 automatiche, aggregati `GROUP BY` nelle query e tabella incrociata read-only. Restano le
 **operazioni quotidiane** della 0.6 (Find mode, sostituzione, import CSV, manutenzione), gli
 **Esperti**, la modalità **QBE** e il catalogo delle **azioni script** della 0.4–0.5. Il target
@@ -14,12 +14,12 @@ resta il **clone strutturale + chrome dBASE** concordato nel piano: desktop MDI,
 categorie, Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande
 impilate, Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
 
-La 0.8 aggiunge **etichette e mail merge** con Label Designer leggero, preset A4/Avery,
+La 0.8 ha aggiunto **etichette e mail merge** con Label Designer leggero, preset A4/Avery,
 filtro/ordinamento e stampa o PDF su più fogli, **grafici** barre/linee/torta nei report e la
 **vista Lista** dei form con portali ordinati e filtrati.
 
-La 0.9 (in corso) aggiunge **automazione**: parametri dichiarati per gli script, variabili globali
-persistite nel progetto e transazioni esplicite con avvio, conferma e annullamento.
+La 0.9 aggiunge **automazione**: parametri dichiarati per gli script, variabili globali persistite
+nel progetto e transazioni esplicite con avvio, conferma e annullamento.
 
 ## Funzioni
 
@@ -239,9 +239,9 @@ titolari originali. dBX non ridistribuisce asset grafici Borland nell'applicazio
 
 Lo stato finestra-per-finestra è in [`docs/ui-parity.md`](docs/ui-parity.md); le checklist di
 collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md`, `docs/qa-0.6.md`,
-`docs/qa-0.7.md` e `docs/qa-0.8.md`.
+`docs/qa-0.7.md`, `docs/qa-0.8.md` e `docs/qa-0.9.md`.
 
-## Limiti noti della 0.8
+## Limiti noti della 0.9
 
 - La ricerca guidata lavora su una tabella alla volta; non esiste ancora una ricerca globale tra oggetti.
 - L'import CSV scrive in una tabella esistente: non crea una tabella nuova dalla struttura del file.
@@ -258,7 +258,8 @@ collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-
 - I portali mostrano colonne del figlio e supportano ordine/filtro, non layout o azioni per riga.
 - Query Results non offre modifica inline: è una vista di controllo, non un Browse.
 - I report su query usano le colonne della query; i sottoreport e le query annidate non sono previsti.
-- Il Label Designer è stato rimosso e sostituito dal Database Designer ER.
+- Le etichette non gestiscono barcode/QR, immagini o più blocchi di testo; i grafici dei report non
+  sono interattivi.
 - Il Database Designer gestisce un solo diagramma `schema` per progetto e una relazione per volta nel
   dialog; le chiavi composite si creano dal Table Builder.
 - Il Form Designer usa una palette in pannello ridimensionabile, non una finestra flottante come
@@ -266,13 +267,16 @@ collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-
 - Gli eventi form sono un dispatcher di azioni singole, non un linguaggio di scripting; i corpi dei
   metodi sono descrittivi e non vengono eseguiti.
 - Il Program Editor non offre breakpoint né esecuzione passo-passo.
+- I parametri degli script sono testuali: per i calcoli numerici usare `VAL(:parametro)`. Le
+  transazioni non sono annidate e le variabili globali non hanno tipi né scoping per utente.
 - `NEW RECORD` inserisce subito i valori predefiniti: se la tabella ha campi obbligatori senza
   default, l'azione fallisce e lo script riporta l'errore; compila quei campi con un form o un
   default nel Table Builder.
-- Gli script scrivono subito ogni passo; non c'è una transazione implicita. `REVERT RECORD`
-  ricarica il record dal database ma non annulla una scrittura già eseguita.
+- Gli script scrivono subito ogni passo: le transazioni sono esplicite (`BEGIN/COMMIT/ROLLBACK
+  TRANSACTION`) e una transazione rimasta aperta viene annullata a fine script. `REVERT RECORD`
+  ricarica il record dal database ma non annulla una scrittura già confermata.
 - La build del Project Editor è sincrona e non mostra una barra di avanzamento.
-- Import `.DBF` legacy, grafici e campi calcolati persistenti sono previsti dopo la 1.0.
+- Import `.DBF` legacy e campi calcolati persistenti sono previsti dopo la 1.0.
 - Bundle PyInstaller: helper incluso (`designers/project_builder.package_with_pyinstaller`),
   richiede `pip install pyinstaller`.
 
