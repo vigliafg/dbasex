@@ -1,6 +1,6 @@
 # Rendering dell'interfaccia dBX
 
-Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.2.2), generati con:
+Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.3.0 in corso), generati con:
 
 ```bash
 python tools/capture_ui.py
@@ -27,6 +27,7 @@ l'unica fonte di verità per README, `docs/ui-parity.md` e `docs/qa-0.2.md`.
 | `13-project-editor.png` | Project Editor |
 | `14-menu-progetto.png` | Menu Progetto con icona + descrizione |
 | `15-database-designer.png` | Database Designer ER con tabelle e relazioni |
+| `16-query-designer.png` | Query Designer con campi, join e risultato |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.

@@ -13,10 +13,12 @@ def run_smoke() -> int:
     from PyQt6.QtWidgets import QApplication
 
     from .core.form_model import FormSpec
+    from .core.query_model import QuerySpec
     from .designers.database_designer import DatabaseDesignerWidget
     from .designers.form_builder import FormDesignerWidget
     from .designers.form_expert import FormExpert
     from .designers.project_builder import build_project, validate_project
+    from .designers.query_builder import QueryDesignerWidget
     from .designers.menu_builder import MenuBuilderWidget
     from .designers.project_builder import ProjectEditorWidget
     from .designers.report_builder import ReportDesignerWidget
@@ -88,6 +90,14 @@ def run_smoke() -> int:
     assert len(database_designer.graph.edges) == 1
     checks.append("database designer ER")
 
+    query_spec = QuerySpec.from_project(project, "fatture_clienti")
+    assert query_spec is not None
+    query_designer = QueryDesignerWidget(project, query_spec)
+    query_result = query_designer.run_preview()
+    assert query_result is not None and len(query_result) == 5
+    assert query_designer.tree.topLevelItemCount() == 2
+    checks.append("query designer")
+
     script_editor = ScriptBuilderWidget(project, project.artifact("scripts", "riepilogo_fatture"))
     assert script_editor.tree.topLevelItemCount() > 0
     assert script_editor.text_view.line_number_width() > 0
@@ -136,7 +146,7 @@ def run_smoke() -> int:
     print("SMOKE OK")
     for check in checks:
         print("  -", check)
-    del table_dialog, report_dialog, database_designer, form_designer, expert, runtime, script_editor, menu_designer, project_editor
+    del table_dialog, report_dialog, database_designer, query_designer, form_designer, expert, runtime, script_editor, menu_designer, project_editor
     app.processEvents()
     return 0
 

@@ -1,6 +1,6 @@
-# Collaudo dBX 0.3.0 — stato Checkpoint A
+# Collaudo dBX 0.3.0 — stato O5
 
-Data: 2026-11-22. Scope: Database Designer ER e baseline per Query Designer/Results.
+Data: 2026-11-22. Scope: Database Designer ER, motore Query e Query Designer. Checkpoint A superato; Checkpoint B dopo O6.
 
 ## Comandi eseguiti
 
@@ -38,13 +38,30 @@ Esito Checkpoint A: `224 passed`, smoke OK, cattura Aurora/Dark OK.
 - `15-database-designer.png`
 - `01`–`14` rigenerati in Aurora con categoria Schema nel Navigator.
 
+## Query Designer — O4–O5
+
+| Verifica | Esito | Note |
+|---|---|---|
+| Campi con spunta dall'albero | OK | Aggiunta/rimozione e alias |
+| Tabelle e join | OK | INNER/LEFT, campi proposti dalle foreign key |
+| Aggiunta/rimozione tabella | OK | La tabella base non è rimovibile; i campi collegati vengono puliti |
+| Filtri | OK | Operatori `eq/ne/gt/ge/lt/le/contains/starts/ends/null/notnull`, combinati in AND |
+| Ordinamento multiplo | OK | Crescente/decrescente e riordino con Sposta su/giù |
+| Anteprima SQL | OK | SQL parametrizzato con `?` e parametri elencati |
+| Risultato | OK | Griglia read-only, colonne tipizzate, limite 500 righe mostrate |
+| Salvataggio/rinomina | OK | Artefatto `objects/queries/*.query.json` |
+| Nuova query | OK | Dialog nome, didascalia, tabella base; apertura MDI |
+| Navigator | OK | Categoria Query abilitata e filtro `*.query.json` |
+| Demo | OK | `fatture_clienti` (join) e `clienti_attivi` (filtro) |
+
 ## Difetti noti accettati
 
 - Il canvas gestisce una relazione per volta nel dialog; chiavi composite si creano dal Table Builder.
 - La rinomina tabella resta limitata dal motore.
 - Il diagramma è unico (`schema`); più diagrammi sono previsti dopo la 0.3.
-- Query Designer, Query Results e query come sorgente dati non sono ancora implementati: O4–O6.
+- Query Results e query come sorgente di form/report non sono ancora implementati: O6.
+- Le query non supportano aggregazioni né parametri interattivi; i valori dei filtri sono statici.
 
 ## Prossimo passo
 
-Checkpoint A raggiunto. Dopo `continua`: O4 — motore Query.
+Checkpoint A superato. O4 e O5 completate; prossimo passo O6 — Query Results e query come sorgente dati.

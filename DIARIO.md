@@ -21,7 +21,7 @@
 | 0.3.0 — O2 Canvas ER | completata (2026-11-22) | — |
 | 0.3.0 — O3 Editing schema | completata (2026-11-22) | A |
 | 0.3.0 — O4 Motore Query | completata (2026-11-22) | — |
-| 0.3.0 — O5 Query Designer | da iniziare | — |
+| 0.3.0 — O5 Query Designer | completata (2026-11-22) | — |
 | 0.3.0 — O6 Query Results/sorgente | da iniziare | B |
 | 0.3.0 — O7 Release | da iniziare | C |
 
@@ -451,3 +451,23 @@
 - **Test:** 18 nuovi test su modello, validazione, SQL, join, filtri, booleani, LIKE con escape,
   DISTINCT, NULL, parametri, risultato tipizzato e persistenza. Suite completa verde.
 - **Prossimo passo:** O5 — Query Designer.
+
+### 2026-11-22 — Ondata 0.3.0 — O5 Query Designer
+- **Stato:** in corso
+- **Obiettivo:** designer visuale delle query sul modello O4, con tabelle, join, campi, filtri,
+  ordinamento, anteprima SQL e risultato; salvataggio come artefatto `queries`.
+- **File:** `dbx/designers/query_builder.py` (nuovo), `dbx/ui/navigator.py`,
+  `dbx/ui/main_window.py`, `dbx/samples.py`, `dbx/smoke.py`, `tools/capture_ui.py`,
+  `tests/test_ui_query_designer.py` (nuovo), test Navigator/Samples.
+- **Scelte:** designer a due zone con albero tabelle/campi a spunta e schede Campi / Filtri /
+  Ordinamento / SQL / Risultato; join aggiunti da dialog che propone i campi dalle foreign key;
+  query di esempio `fatture_clienti` (INNER JOIN) e `clienti_attivi` (filtro) nel progetto demo;
+  nuova query da `Oggetto → Nuova query…` e dal Navigator; categoria Query abilitata con filtro
+  `*.query.json`; anteprima risultato limitata a 500 righe; rinomina con `Project.put_object`
+  e `previous_name`.
+- **Test:** 10 test del designer (caricamento, campi/alias, filtri/ordinamento, join, suggerimento
+  FK, salvataggio/rinomina, salvataggio bloccato, nuova query, apertura MDI); suite completa verde;
+  smoke con Query Designer; catture Aurora e Dark.
+- **Screenshot:** `16-query-designer.png`.
+- **Prossimo passo:** O6 — Query Results, query come sorgente dati di form/report, validazione,
+  build, QA e Checkpoint B.

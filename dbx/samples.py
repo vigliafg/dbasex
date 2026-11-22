@@ -10,6 +10,7 @@ from .core.form_model import FormSpec
 from .core.schema_graph import SchemaGraph
 from .core.metadata import Field, ForeignKey, Index, Table, new_id
 from .core.project import Project
+from .core.query_model import QueryField, QueryFilter, QueryJoin, QuerySort, QuerySpec
 from .runtime.report_engine import Control, ReportSpec
 from .runtime.rowset import Rowset
 from .runtime.script_engine import new_step
@@ -116,6 +117,37 @@ def create_demo_project(path: str | Path, name: str = "Rubrica") -> Project:
     project.apply_table(fatture)
     graph = SchemaGraph.from_tables([clienti, fatture])
     project.add_object("diagrams", DiagramSpec.from_graph(graph).to_dict())
+
+    query_fatture = QuerySpec(
+        name="fatture_clienti",
+        caption="Fatture per cliente",
+        base="fatture",
+        fields=[
+            QueryField("fatture", "numero"),
+            QueryField("fatture", "data"),
+            QueryField("clienti", "nome", alias="cliente_nome"),
+            QueryField("fatture", "importo"),
+            QueryField("fatture", "pagata"),
+        ],
+        joins=[
+            QueryJoin(
+                kind="inner",
+                table="clienti",
+                left="fatture.cliente",
+                right="clienti.codice",
+            )
+        ],
+        sorts=[QuerySort("fatture.numero", "asc")],
+    )
+    project.add_object("queries", query_fatture.to_dict())
+    query_clienti = QuerySpec.create(clienti, name="clienti_attivi", caption="Clienti attivi")
+    query_clienti.fields = [
+        QueryField("clienti", name)
+        for name in ("codice", "nome", "citta", "email", "telefono")
+    ]
+    query_clienti.filters = [QueryFilter("clienti.attivo", "eq", "1")]
+    query_clienti.sorts = [QuerySort("clienti.nome", "asc")]
+    project.add_object("queries", query_clienti.to_dict())
 
     form_clienti = FormSpec.create(clienti, name="form_clienti")
     form_clienti.caption = "Clienti"

@@ -212,7 +212,7 @@ def test_query_category_persists(demo_project) -> None:
     )
     demo_project.add_object("queries", spec.to_dict())
     demo_project.save()
-    assert demo_project.names("queries") == ["fatture_aperte"]
+    assert "fatture_aperte" in demo_project.names("queries")
     loaded = QuerySpec.from_project(demo_project, "fatture_aperte")
     assert loaded is not None
     assert loaded.to_dict() == spec.to_dict()

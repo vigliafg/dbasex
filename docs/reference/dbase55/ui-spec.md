@@ -116,7 +116,8 @@ La tabella di dettaglio, con stato e gap residui, è in `../../ui-parity.md`; la
 | Browse / Table | `dbx/ui/data_view.py` | fatto | Selettore, navigazione, filtro, ordinamento, editing |
 | Table Structure | `dbx/designers/table_builder.py` | fatto | Griglia unica e metadati; rinomina tabella rimandata al motore |
 | Database Designer ER | `dbx/designers/database_designer.py` | fatto (0.3/O3) | Feature nuova: diagramma ER, relazioni e editing schema |
-| Query Designer / Query Results | — | fuori scope 0.2 | Previsti per la 0.3 |
+| Query Designer | `dbx/designers/query_builder.py` | fatto (0.3/O5) | Query statiche, join, filtri e ordinamento |
+| Query Results | `dbx/ui/query_results.py` | previsto 0.3/O6 | Griglia read-only e query come sorgente dati |
 | Form Expert | `dbx/designers/form_expert.py` | fatto | Wizard a cinque passi |
 | Form Designer | `dbx/designers/form_builder.py` | fatto | Tre zone, righelli, maniglie, Inspector ad albero |
 | Properties Inspector | `dbx/ui/widgets.py` | fatto | Albero condiviso con il Report Designer |

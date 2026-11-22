@@ -15,10 +15,11 @@ Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di
 | Strumento | Cosa fa |
 |---|---|
 | **Desktop MDI** | Finestre documento dentro `QMdiArea`, menu `Progetto · Modifica · Visualizza · Oggetto · Procedure · Proprietà · Finestra · ?`, SpeedBar a icone raggruppate, barra di stato con coordinate, oggetto, record e modalità |
-| **Navigator** | Categorie con icona, `[Untitled]` in cima, filtro file, directory corrente, azioni contestuali, categoria **Schema** per il Database Designer; Query/Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
+| **Navigator** | Categorie con icona, `[Untitled]` in cima, filtro file, directory corrente, azioni contestuali, categoria **Schema** per il Database Designer e categoria **Query** per il Query Designer; Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
 | **Command Window** | Riquadri `Command` / `Command Results` nell'MDI, cronologia con ↑/↓, comandi `HELP`, `TABELLE`, `USE`, `RECORD`, `CLEAR` ed espressioni |
 | **Browse / Vista Dati** | Griglia editabile, selettore di record, barra di navigazione, filtro, ordinamento, nuovo/elimina, export CSV, opzioni di editing e larghezze colonna persistenti |
 | **Database Designer ER** | Diagramma entità-relazione delle tabelle reali, card con campi e PK/FK, archi con cardinalità e `ON DELETE`, pan/zoom, auto-layout, export PNG/SVG, creazione relazioni e modifica schema con backup |
+| **Query Designer** | Tabelle e campi con spunta, INNER/LEFT JOIN suggeriti dalle foreign key, filtri AND, ordinamento multiplo, anteprima SQL parametrizzata e risultato tipizzato in sola lettura |
 | **Table Builder** | Struttura a griglia unica (`Field · Name · Type · Width · Decimal · Index`), tipi, obbligatorietà, default, didascalie, formati, regole, lookup, indici, relazioni, anteprima DDL, `Save As`, stampa, migrazioni con backup |
 | **Form Expert** | Wizard a cinque passi: assistito o vuoto, tabella, scelta campi, layout, font/colori/stile |
 | **Form Designer** | Palette `Controls` / `Field`, canvas con righelli e griglia 8 px, otto maniglie reali, selezione multipla, clipboard, undo/redo, allineamento, distribuzione, z-order, pagine a schede, Object Inspector ad albero, eventi e metodi |
@@ -66,6 +67,8 @@ MioProgetto/
   project.dbx.json              # manifest: formato, impostazioni, indice oggetti
   data/MioProgetto.sqlite       # dati (un file per progetto)
   objects/tables/*.table.json
+  objects/diagrams/*.diagram.json
+  objects/queries/*.query.json
   objects/forms/*.form.json
   objects/reports/*.report.json
   objects/scripts/*.script.json
@@ -103,6 +106,8 @@ Ogni ambiente segue lo schema generale di dBASE 5.5 (senza imitarne i colori Win
   numerata dei campi, schede Indici / Relazioni / Proprietà / Anteprima DDL.
 - **Database Designer**: diagramma ER con card delle tabelle, campi PK/FK, archi crow’s foot,
   cardinalità, pan/zoom, auto-layout e export PNG/SVG; creazione relazioni e modifica schema dal canvas.
+- **Query Designer**: albero tabelle/campi a sinistra, schede Campi / Filtri / Ordinamento / SQL /
+  Risultato a destra; join con campi proposti dalle relazioni, query statiche in sola lettura.
 - **Form Expert** e **Form Designer** a tre zone: palette `Controls` + `Field` a sinistra, anteprima
   live al centro con righelli e griglia di punti, Object Inspector a destra con schede
   Proprietà / Eventi / Metodi; stato `Object · Page · Top · Left · Height · Width`.
@@ -113,7 +118,7 @@ Ogni ambiente segue lo schema generale di dBASE 5.5 (senza imitarne i colori Win
 - **Project Editor**: albero oggetti, impostazioni, validazione e build.
 
 Rendering aggiornati in [`docs/reference/dbx-ui/renders/`](docs/reference/dbx-ui/renders/):
-la serie `01`–`13` copre le finestre, `14-menu-progetto.png` mostra il menu icona + descrizione.
+la serie `01`–`16` copre le finestre, `14-menu-progetto.png` mostra il menu icona + descrizione.
 
 ## Scorciatoie da tastiera
 
@@ -197,8 +202,9 @@ collaudo sono in `docs/qa-0.2.md` e `docs/qa-0.3.md`.
 
 ## Limiti noti della 0.3
 
-- **Query Designer** e **Query Results** sono in arrivo con O4–O6; la categoria Query resta visibile
-  ma disabilitata finché non vengono completati.
+- **Query Results** e l'uso delle query come sorgente di form e report arrivano con O6; per ora la
+  query si esegue nell'anteprima del Query Designer.
+- Le query sono statiche: niente parametri interattivi, RIGHT/FULL JOIN o aggregazioni nel designer.
 - Il Label Designer è stato rimosso e sostituito dal Database Designer ER.
 - Il Database Designer gestisce un solo diagramma `schema` per progetto e una relazione per volta nel
   dialog; le chiavi composite si creano dal Table Builder.

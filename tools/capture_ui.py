@@ -29,10 +29,12 @@ from PyQt6.QtCore import QPoint  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QWidget  # noqa: E402
 
 from dbx.core.form_model import FormSpec  # noqa: E402
+from dbx.core.query_model import QuerySpec  # noqa: E402
 from dbx.designers.database_designer import DatabaseDesignerWidget  # noqa: E402
 from dbx.designers.form_builder import FormDesignerWidget  # noqa: E402
 from dbx.designers.menu_builder import MenuBuilderWidget  # noqa: E402
 from dbx.designers.project_builder import ProjectEditorWidget  # noqa: E402
+from dbx.designers.query_builder import QueryDesignerWidget  # noqa: E402
 from dbx.designers.report_builder import ReportBuilderDialog  # noqa: E402
 from dbx.designers.script_builder import ScriptBuilderWidget  # noqa: E402
 from dbx.designers.table_builder import TableBuilderDialog  # noqa: E402
@@ -165,6 +167,14 @@ def run(theme: str = "aurora") -> int:
         captured.append(
             _capture(app, database_designer, "15-database-designer.png", (1180, 760))
         )
+
+        query_spec = QuerySpec.from_project(project, "fatture_clienti")
+        if query_spec is None:
+            raise RuntimeError("fatture_clienti non presente nel progetto demo")
+        query_designer = QueryDesignerWidget(project, query_spec)
+        widgets.append(query_designer)
+        query_designer.run_preview()
+        captured.append(_capture(app, query_designer, "16-query-designer.png", (1120, 760)))
     finally:
         for widget in reversed(widgets):
             widget.close()

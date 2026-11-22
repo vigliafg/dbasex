@@ -22,6 +22,7 @@ def test_demo_is_valid_and_run_without_errors(demo):
     assert demo.names("forms") == ["form_clienti", "form_fatture"]
     assert demo.names("reports") == ["fatture_per_cliente"]
     assert demo.names("diagrams") == ["schema"]
+    assert demo.names("queries") == ["clienti_attivi", "fatture_clienti"]
     assert demo.names("scripts") == ["riepilogo_fatture"]
     assert demo.settings["main_form"] == "form_clienti"
 

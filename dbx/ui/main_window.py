@@ -28,9 +28,11 @@ from PyQt6.QtWidgets import (
 from .. import APP_NAME, __version__
 from ..config import add_recent, load_config, recent_projects, save_config
 from ..core.form_model import FormSpec
+from ..core.query_model import QuerySpec
 from ..core.project import CATEGORY_LABELS, Project, ProjectError
 from ..designers.database_designer import DatabaseDesignerWidget
 from ..designers.form_builder import FormDesignerWidget
+from ..designers.query_builder import NewQueryDialog, QueryDesignerWidget
 from ..designers.form_expert import FormExpert
 from ..designers.menu_builder import MenuBuilderWidget
 from ..designers.project_builder import BuildError, ProjectEditorWidget, build_project, validate_project
@@ -52,6 +54,7 @@ from .theme import apply_theme
 OBJECT_ICONS = {
     "tables": "tabella",
     "diagrams": "tabella",
+    "queries": "cerca",
     "forms": "form",
     "reports": "report",
     "scripts": "script",
@@ -62,6 +65,7 @@ MODES = {
     "DataView": "Sfoglia",
     "TableBuilderDialog": "Struttura",
     "DatabaseDesignerWidget": "Schema",
+    "QueryDesignerWidget": "Query",
     "FormDesignerWidget": "Design",
     "FormBuilderDialog": "Design",
     "ReportBuilderDialog": "Design",
@@ -314,12 +318,14 @@ class MainWindow(QMainWindow):
     def _build_object_actions(self) -> None:
         self.act_diagram = icons.make_action("Database Designer…", "tabella", self)
         self.act_table = icons.make_action("Nuova tabella…", "tabella", self)
+        self.act_query = icons.make_action("Nuova query…", "cerca", self)
         self.act_form = icons.make_action("Nuovo form…", "form", self)
         self.act_report = icons.make_action("Nuovo report…", "report", self)
         self.act_script = icons.make_action("Nuovo script…", "script", self)
         self.act_menu = icons.make_action("Nuovo menu…", "menu", self)
         self.act_diagram.triggered.connect(self.open_database_designer)
         self.act_table.triggered.connect(lambda: self.new_object("tables"))
+        self.act_query.triggered.connect(lambda: self.new_object("queries"))
         self.act_form.triggered.connect(lambda: self.new_object("forms"))
         self.act_report.triggered.connect(lambda: self.new_object("reports"))
         self.act_script.triggered.connect(lambda: self.new_object("scripts"))
@@ -410,6 +416,7 @@ class MainWindow(QMainWindow):
         menu.addMenu(objects_menu)
         add(objects_menu, self.act_diagram, "Apri il diagramma ER e modifica lo schema del database")
         add(objects_menu, self.act_table, "Crea una nuova tabella con campi e relazioni")
+        add(objects_menu, self.act_query, "Crea una query con campi, join, filtri e ordinamento")
         add(objects_menu, self.act_form, "Crea un form con il Form Expert o da zero")
         add(objects_menu, self.act_report, "Crea un report a bande con gruppi e totali")
         add(objects_menu, self.act_script, "Crea un programma MiniScript")
@@ -450,7 +457,7 @@ class MainWindow(QMainWindow):
             (self.act_new, self.act_open, self.act_save, self.act_print),
             (self.act_cut, self.act_copy, self.act_paste),
             (self.act_undo, self.act_redo),
-            (self.act_table, self.act_form, self.act_report, self.act_script, self.act_menu),
+            (self.act_table, self.act_query, self.act_form, self.act_report, self.act_script, self.act_menu),
             (self.act_align, self.act_distribute),
             (self.act_run,),
             (self.act_command,),
@@ -594,6 +601,9 @@ class MainWindow(QMainWindow):
         if category == "diagrams":
             self.open_database_designer()
             return
+        if category == "queries":
+            self.new_query_wizard()
+            return
         if category == "tables":
             dialog = TableBuilderDialog(self.project, None, self)
             dialog.accepted.connect(lambda: self._after_new_table(dialog))
@@ -691,6 +701,65 @@ class MainWindow(QMainWindow):
         self._refresh_navigator()
         self.open_form_designer(spec.name)
         self.statusBar().showMessage(f"Form {spec.name} creato", 4000)
+
+    def new_query_wizard(self) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        tables = self.project.names("tables")
+        if not tables:
+            QMessageBox.information(self, "Query", "Crea prima una tabella.")
+            return
+        suggested = self._unique_name("queries", f"query_{tables[0]}")
+        dialog = NewQueryDialog(self.project, self, suggested)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        spec = dialog.spec()
+        errors = spec.validate(self.project.tables())
+        if errors:
+            QMessageBox.warning(self, "Query non valida", "\n".join(errors))
+            return
+        if self.project.artifact("queries", spec.name) is not None:
+            answer = QMessageBox.question(
+                self,
+                "Query esistente",
+                f"La query «{spec.name}» esiste già. Sostituirla?",
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+        self.project.put_object("queries", spec.to_dict())
+        self.project.save()
+        self._refresh_navigator()
+        self.open_query_designer(spec.name)
+        self.statusBar().showMessage(f"Query {spec.name} creata", 4000)
+
+    def open_query_designer(self, name: str) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        artifact = self.project.artifact("queries", name)
+        if artifact is None:
+            QMessageBox.warning(self, "Query", f"Query inesistente: {name}")
+            return
+        key = f"queries:{name}"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        spec = QuerySpec.from_dict(artifact)
+        designer = QueryDesignerWidget(self.project, spec, self)
+        designer.saved.connect(self._refresh_navigator)
+        designer.status_message.connect(
+            lambda text: self.statusBar().showMessage(text, 4000)
+        )
+        sub = self.editors.open(
+            key,
+            f"Query Designer ({spec.caption or spec.name})",
+            designer,
+            icon=icons.icon("cerca"),
+            size=QSize(1120, 760),
+        )
+        designer.windowTitleChanged.connect(sub.setWindowTitle)
 
     def open_form_designer(self, name: str) -> None:
         if not self._require_project():
@@ -980,6 +1049,9 @@ class MainWindow(QMainWindow):
             if category == "diagrams":
                 self.open_database_designer()
                 return
+            if category == "queries":
+                self.open_query_designer(name)
+                return
             if category == "forms":
                 self.open_form_designer(name)
                 return
@@ -1007,6 +1079,8 @@ class MainWindow(QMainWindow):
                 self.preview_form(
                     FormSpec.from_dict(artifact), key=f"preview:forms:{name}"
                 )
+        elif category == "queries":
+            self.open_query_designer(name)
         elif category == "reports":
             dialog = ReportPreviewDialog(self.project, name, self)
             self.editors.open_dialog(
@@ -1327,6 +1401,7 @@ class MainWindow(QMainWindow):
             getattr(self, "act_project", None),
             getattr(self, "act_diagram", None),
             getattr(self, "act_table", None),
+            getattr(self, "act_query", None),
             getattr(self, "act_form", None),
             getattr(self, "act_report", None),
             getattr(self, "act_script", None),

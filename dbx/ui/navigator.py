@@ -25,13 +25,13 @@ from . import icons
 from .menu import DescriptiveMenu, add_entry
 
 # Categorie nello stesso ordine del Navigator originale. L'ultimo campo indica
-# se la categoria è utilizzabile in dBX 0.2; quelle non disponibili restano
-# visibili e disabilitate, con tooltip esplicativo.
+# se la categoria è utilizzabile; quelle non disponibili restano visibili e
+# disabilitate, con tooltip esplicativo.
 NAV_CATEGORIES = [
     ("all", "Tutti", "elenco", True),
     ("tables", "Tabelle", "tabella", True),
     ("diagrams", "Schema", "tabella", True),
-    ("queries", "Query", "cerca", False),
+    ("queries", "Query", "cerca", True),
     ("forms", "Form", "form", True),
     ("reports", "Report", "report", True),
     ("menus", "Menu", "menu", True),
@@ -51,6 +51,7 @@ SELECTABLE_CATEGORIES = ["all", *AVAILABLE_CATEGORIES]
 CATEGORY_ICONS = {
     "tables": "tabella",
     "diagrams": "tabella",
+    "queries": "cerca",
     "forms": "form",
     "reports": "report",
     "scripts": "script",
@@ -61,6 +62,7 @@ FILTERS = [
     ("Tutti i file (*.*)", "all"),
     ("Tabelle (*.table.json)", "tables"),
     ("Schema (*.diagram.json)", "diagrams"),
+    ("Query (*.query.json)", "queries"),
     ("Form (*.form.json)", "forms"),
     ("Report (*.report.json)", "reports"),
     ("Programmi (*.script.json)", "scripts"),
