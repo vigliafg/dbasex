@@ -561,6 +561,10 @@ QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus,
 QPlainTextEdit:focus, QTextEdit:focus {
     border: 1px solid $accent;
 }
+QLineEdit[state="error"] {
+    border: 2px solid $error;
+    background: $input_bg;
+}
 QListView:focus, QTreeView:focus, QTableView:focus {
     border: 1px solid $accent;
 }
@@ -605,6 +609,11 @@ QStatusBar {
 QStatusBar QLabel { color: $status_text; }
 QGroupBox { border: 1px solid $groupbox_border; border-radius: $groupbox_radius; margin-top: 10px; padding-top: 8px; }
 QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 4px; color: $accent; }
+QFrame#qbe_box {
+    background: $tab_pane_bg; border: 1px solid $groupbox_border;
+    border-radius: $groupbox_radius;
+}
+QLabel#qbe_title { color: $accent; font-weight: 700; padding: 2px 6px; }
 QSplitter { background: transparent; }
 QSplitter::handle { background: $splitter_bg; }
 QToolTip { background: $tooltip_bg; color: $tooltip_text; border: 1px solid $tooltip_border; padding: 4px 6px; border-radius: 6px; }

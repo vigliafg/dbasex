@@ -665,3 +665,39 @@
   controllare `git status`/`git log` e iniziare l’**Ondata 4 — UI QBE e release 0.4.0**:
   toggle QBE/Guidato, query image, sincronizzazione, aiuto, avviso LEFT JOIN, test UI,
   screenshot `23-qbe-mode.png`, QA e versione 0.4.0. Non ripartire da O0–O3.
+
+### 2026-11-22 — Ondata 0.4.0 — O4 UI QBE e release 0.4.0
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O4 e tag `v0.4.0`.
+- **Obiettivo:** portare il QBE nel Query Designer, sincronizzarlo con le schede guidate,
+  documentare la sintassi e chiudere la release 0.4.0.
+- **File toccati:** `dbx/core/qbe.py` (nuovo), `dbx/designers/qbe_panel.py` (nuovo),
+  `dbx/designers/query_builder.py`, `dbx/ui/design.py`, `dbx/smoke.py`, `tools/capture_ui.py`,
+  `tests/test_qbe_core.py` (nuovo), `tests/test_ui_qbe.py` (nuovo), `tests/test_ui_shell.py`,
+  `dbx/__init__.py`, `pyproject.toml`, `README.md`, `CHANGELOG.md`, `docs/qa-0.4.md` (nuovo),
+  `docs/ui-parity.md`, `docs/reference/dbx-ui/README.md`, `PLAN.md`, `DIARIO.md`.
+- **Scelte:**
+  - Grammatica QBE pura in `dbx/core/qbe.py`: valore nudo, operatori, `a..b`, `blank`/`not blank`,
+    jolly `*`/`?`, `_nome`; nessuna dipendenza dalla UI.
+  - `QbePanel` con una query image per tabella: riga Includi, tre righe Criteri, riga Ordinamento.
+    Il pannello legge e scrive lo stesso `QuerySpec`; nessun modello parallelo.
+  - Toggle **QBE | Guidato** con due pulsanti checkable e le schede esistenti, invece di uno
+    `QStackedWidget` separato: SQL e Risultato restano raggiungibili da entrambe le viste.
+  - Sincronizzazione bidirezionale: le modifiche guidate ricostruiscono la vista QBE; le modifiche
+    QBE riallineano albero, campi, filtri e ordinamento.
+  - Example elements `_nome`: stesso nome in due celle produce un filtro `ref`; la vista li
+    rimostra come `_rifN` dopo il salvataggio.
+  - Celle non valide: bordo d'errore, messaggio nella vista, filtro precedente conservato.
+  - La scheda Filtri mostra la colonna **Gruppo** e conserva gli OR del QBE.
+  - Avviso non bloccante per OR su campi di tabelle in LEFT JOIN.
+  - Pannello di aiuto con grammatica e collegamento a `docs/reference/inspirations/paradox-experts-qbe.md`.
+  - Le query image usano un `QFrame` con titolo invece di `QGroupBox`: il tema Qt ridisegnava due
+    volte il titolo del group box, con un artefatto visivo.
+  - Versione `0.4.0` in `dbx/__init__.py`, `pyproject.toml`, README e test di release; CHANGELOG
+    con sezione 0.4.0 e note di aggiornamento.
+- **Test:** `326 passed`; smoke headless OK con voce `qbe mode`; `dbx --version` = 0.4.0;
+  catture Aurora e Dark OK.
+- **Screenshot:** `23-qbe-mode.png`.
+- **Problemi aperti:** nessuno bloccante; restano i limiti dichiarati della 0.4 (QBE read-only,
+  example elements con tabella già presente, avviso OR su LEFT JOIN).
+- **Prossimo passo:** O5 — catalogo azioni script e Step Picker.

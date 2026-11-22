@@ -3,6 +3,50 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.4.0] — 2026-11-22
+
+Release degli **Esperti** in stile Paradox e della modalità **QBE** del Query Designer. Le query
+restano statiche e in sola lettura; il modello 0.3 si carica senza migrazione.
+
+### Aggiunto
+
+- **Table Expert**: procedura in quattro passi con template (Vuota, Contatti, Fatture, Inventario,
+  Attività), campi modificabili, indici semplici e anteprima DDL; crea una normale tabella e la apre
+  in Browse.
+- **Query Expert**: tabella base, join suggeriti dalle foreign key in entrambe le direzioni, scelta
+  campi, criteri AND, ordinamento e anteprima SQL; crea una `QuerySpec` normale e la apre nel
+  Query Designer.
+- **Report Expert**: sorgente tabella o query, layout tabellare/colonnare/riepilogo, campi, gruppo,
+  ordinamento, orientamento, font e riepilogo; produce un normale `ReportSpec`.
+- **Shell esperti**: `ExpertWizard`, `FieldEditor` e `FieldTransfer` condivisi; Form Expert allineato
+  allo stesso shell. Voci **Oggetto → Nuovo con esperto** e menu contestuale del Navigator.
+- **Modello QBE additivo**: `QueryFilter.value2` per gli intervalli e `QueryFilter.group` per gli OR;
+  operatori `between`, `like` (jolly `*`/`?` con `%`/`_` letterali) e `ref`.
+- **Example elements**: sintassi `_nome`; due celle con lo stesso nome producono un confronto `ref`
+  tra i campi, con controllo della tabella presente e della compatibilità dei tipi.
+- **Modalità QBE**: toggle **QBE | Guidato**, una query image per tabella con righe Includi,
+  Criteri 1–3 e Ordinamento, sincronizzazione bidirezionale con le schede guidate, pannello di aiuto
+  con grammatica e collegamento alla guida, evidenziazione delle celle non valide.
+- **Avviso LEFT JOIN**: un OR su campi di tabelle in LEFT JOIN è permesso ma segnalato nella vista QBE.
+- **QA visiva**: nuovo rendering `23-qbe-mode.png`.
+
+### Cambiato
+
+- La scheda **Filtri** del Query Designer mostra la colonna **Gruppo** e conserva gli OR prodotti dal
+  QBE; l'ordinamento QBE segue l'ordine delle colonne.
+- Il tema aggiunge gli stati visivi per le celle QBE non valide e il telaio delle query image, sempre
+  tramite i token di `dbx/ui/design.py`.
+- Versione dell'applicazione e del pacchetto portata a `0.4.0`.
+
+### Note di aggiornamento
+
+- I progetti 0.3 si aprono senza migrazione: `value2` vale stringa vuota e `group` vale `0`, quindi
+  tutti i filtri esistenti restano AND.
+- Gli esperti generano gli stessi artefatti dei designer: nessun formato o oggetto speciale.
+- Il QBE è solo ricerca: non sono previste query di modifica, crosstab, CALC o parametri interattivi.
+- Gli example elements richiedono che la tabella collegata sia già inclusa tramite un join; il
+  designer segnala il caso invece di aggiungerla automaticamente.
+
 ## [0.3.0] — 2026-11-22
 
 Release del **Database Designer ER** e del flusso completo delle **query**: progettazione visuale,

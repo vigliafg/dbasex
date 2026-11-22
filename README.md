@@ -1,16 +1,16 @@
 # dBX — personal database in stile dBASE 5.5
 
-**Versione 0.3.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
+**Versione 0.4.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
 con motore **SQLite**, ispirato a *dBASE 5.5 for Windows* (Borland). Riunisce in un'unica applicazione
 i costruttori visivi che resero celebre dBASE: tabelle, form, report, script, menu e progetto.
 L'interfaccia usa il tema **Aurora**: zone colorate con gradienti, menu con icona e descrizione,
 focus visibile e superfici chiare al posto del grigio Win16.
 
-La 0.3 porta il **Database Designer ER** al posto del Label Designer e completa il flusso delle
-**query**: Query Designer visuale, Query Results in sola lettura e query usate come sorgente di form
-e report. Restano il **clone strutturale + chrome dBASE** concordato nel piano: desktop MDI, Navigator
-a categorie, Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande
-impilate, Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
+La 0.4 aggiunge gli **Esperti** per tabella, query, form e report e la modalità **QBE** del Query
+Designer, con example elements, intervalli, pattern e righe OR in sola lettura. Restano il
+**clone strutturale + chrome dBASE** concordato nel piano: desktop MDI, Navigator a categorie,
+Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande impilate,
+Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
 
 ## Funzioni
 
@@ -21,7 +21,8 @@ impilate, Program Editor, Menu Designer e Project Editor. Non è un clone pixel-
 | **Command Window** | Riquadri `Command` / `Command Results` nell'MDI, cronologia con ↑/↓, comandi `HELP`, `TABELLE`, `USE`, `RECORD`, `CLEAR` ed espressioni |
 | **Browse / Vista Dati** | Griglia editabile, selettore di record, barra di navigazione, filtro, ordinamento, nuovo/elimina, export CSV, opzioni di editing e larghezze colonna persistenti |
 | **Database Designer ER** | Diagramma entità-relazione delle tabelle reali, card con campi e PK/FK, archi con cardinalità e `ON DELETE`, pan/zoom, auto-layout, export PNG/SVG, creazione relazioni e modifica schema con backup |
-| **Query Designer** | Tabelle e campi con spunta, INNER/LEFT JOIN suggeriti dalle foreign key, filtri AND, ordinamento multiplo, anteprima SQL parametrizzata e risultato tipizzato in sola lettura |
+| **Query Designer** | Tabelle e campi con spunta, INNER/LEFT JOIN suggeriti dalle foreign key, filtri AND, ordinamento multiplo, anteprima SQL parametrizzata e risultato tipizzato in sola lettura; modalità **QBE** con query image, example elements, intervalli, pattern e righe OR |
+| **Esperti** | Procedure guidate per tabella (template, campi, indici, DDL), query (join dalle FK, campi, criteri, ordinamento), report (layout tabellare/colonnare/riepilogo, gruppi) e form; producono artefatti normali, poi modificabili nei designer |
 | **Query Results** | Griglia read-only con tipi e formati dBX, aggiornamento, conteggio righe/colonne ed export CSV |
 | **Query come sorgente** | Form generati da query in sola lettura (campi calcolati, niente inserimento/modifica) e report a bande su colonne di query con gruppi, totali, filtro e ordinamento |
 | **Table Builder** | Struttura a griglia unica (`Field · Name · Type · Width · Decimal · Index`), tipi, obbligatorietà, default, didascalie, formati, regole, lookup, indici, relazioni, anteprima DDL, `Save As`, stampa, migrazioni con backup |
@@ -116,8 +117,10 @@ Ogni ambiente segue lo schema generale di dBASE 5.5 (senza imitarne i colori Win
   numerata dei campi, schede Indici / Relazioni / Proprietà / Anteprima DDL.
 - **Database Designer**: diagramma ER con card delle tabelle, campi PK/FK, archi crow’s foot,
   cardinalità, pan/zoom, auto-layout e export PNG/SVG; creazione relazioni e modifica schema dal canvas.
-- **Query Designer**: albero tabelle/campi a sinistra, schede Campi / Filtri / Ordinamento / SQL /
+- **Query Designer**: albero tabelle/campi a sinistra, schede QBE / Campi / Filtri / Ordinamento / SQL /
   Risultato a destra; join con campi proposti dalle relazioni, query statiche in sola lettura.
+  Il toggle **QBE | Guidato** mostra la stessa `QuerySpec` come query image per tabella o come
+  schede; la scheda Filtri riporta il gruppo per non perdere gli OR.
 - **Query Results**: griglia read-only con intestazioni dBX, aggiornamento, conteggio e export CSV;
   si apre dal contesto della query o dal pulsante del Query Designer.
 - **Form su query**: il Form Expert sceglie tabella o query; i campi sono le colonne della query e
@@ -217,12 +220,16 @@ Le immagini Borland sono incluse con finalità di studio e confronto; i relativi
 titolari originali. dBX non ridistribuisce asset grafici Borland nell'applicazione.
 
 Lo stato finestra-per-finestra è in [`docs/ui-parity.md`](docs/ui-parity.md); le checklist di
-collaudo sono in `docs/qa-0.2.md` e `docs/qa-0.3.md`.
+collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md` e `docs/qa-0.4.md`.
 
-## Limiti noti della 0.3
+## Limiti noti della 0.4
 
 - Le query sono statiche: niente parametri interattivi, RIGHT/FULL JOIN o aggregazioni nel designer.
-- I form su query sono in sola lettura nella 0.3; per modificare i dati usare un form su tabella.
+- Il QBE è una vista di sola ricerca: niente Insert/Delete/Set/ChangeTo, crosstab o CALC; gli
+  example elements richiedono che la tabella collegata sia già nella query.
+- Un OR su campi di tabelle in LEFT JOIN è permesso ma segnalato: può escludere righe senza
+  corrispondenza.
+- I form su query sono in sola lettura nella 0.4; per modificare i dati usare un form su tabella.
 - Query Results non offre modifica inline: è una vista di controllo, non un Browse.
 - I report su query usano le colonne della query; i sottoreport e le query annidate non sono previsti.
 - Il Label Designer è stato rimosso e sostituito dal Database Designer ER.

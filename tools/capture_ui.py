@@ -180,6 +180,16 @@ def run(theme: str = "aurora") -> int:
         query_designer.run_preview()
         captured.append(_capture(app, query_designer, "16-query-designer.png", (1120, 760)))
 
+        qbe = query_designer.qbe_page
+        qbe.set_cell("fatture", "importo", 0, "500..1300")
+        qbe.set_cell("fatture", "cliente", 0, "_cli")
+        qbe.set_cell("clienti", "codice", 0, "_cli")
+        qbe.set_cell("clienti", "citta", 1, "Torino")
+        qbe.apply_and_notify()
+        query_designer.set_mode("qbe")
+        captured.append(_capture(app, query_designer, "23-qbe-mode.png", (1120, 830)))
+        query_designer.set_mode("guided")
+
         query_results = QueryResultsWidget(project, "fatture_clienti")
         widgets.append(query_results)
         captured.append(_capture(app, query_results, "17-query-results.png", (1000, 620)))

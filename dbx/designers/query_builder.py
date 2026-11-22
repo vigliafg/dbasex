@@ -48,6 +48,7 @@ from ..core.query_model import (
     QuerySpec,
 )
 from ..ui import icons
+from .qbe_panel import QbePanel
 
 RESULT_ROW_LIMIT = 500
 
@@ -325,6 +326,17 @@ class QueryDesignerWidget(QWidget):
             "Rimuovi tabella", "elimina", self.remove_selected_table, self,
             "Rimuove la tabella selezionata dalla query",
         )
+        self.qbe_mode_button = icons.make_button(
+            "QBE", "cerca", lambda: self.set_mode("qbe"), self,
+            "Vista Query by Example", checkable=True,
+        )
+        self.guided_mode_button = icons.make_button(
+            "Guidato", "tabella", lambda: self.set_mode("guided"), self,
+            "Vista guidata con schede", checkable=True,
+        )
+        toolbar.addWidget(self.qbe_mode_button)
+        toolbar.addWidget(self.guided_mode_button)
+        toolbar.addSpacing(12)
         for button in (
             self.save_button,
             self.run_button,
@@ -365,7 +377,11 @@ class QueryDesignerWidget(QWidget):
         splitter.addWidget(left)
 
         self.tabs = QTabWidget()
-        self.tabs.addTab(self._build_fields_tab(), "Campi")
+        self.qbe_page = QbePanel(self.project, self.spec)
+        self.qbe_page.changed.connect(self._on_qbe_changed)
+        self.tabs.addTab(self.qbe_page, "QBE")
+        self.fields_page = self._build_fields_tab()
+        self.tabs.addTab(self.fields_page, "Campi")
         self.tabs.addTab(self._build_filters_tab(), "Filtri")
         self.tabs.addTab(self._build_sorts_tab(), "Ordinamento")
         self.tabs.addTab(self._build_sql_tab(), "SQL")
@@ -375,6 +391,8 @@ class QueryDesignerWidget(QWidget):
         splitter.addWidget(self.tabs)
         splitter.setSizes([360, 760])
         layout.addWidget(splitter, 1)
+        self.tabs.setCurrentWidget(self.fields_page)
+        self._sync_mode_buttons()
 
     def _build_fields_tab(self) -> QWidget:
         page = QWidget()
@@ -410,8 +428,8 @@ class QueryDesignerWidget(QWidget):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(4)
-        self.filters_table = QTableWidget(0, 3)
-        self.filters_table.setHorizontalHeaderLabels(["Campo", "Operatore", "Valore"])
+        self.filters_table = QTableWidget(0, 4)
+        self.filters_table.setHorizontalHeaderLabels(["Campo", "Operatore", "Valore", "Gruppo"])
         self.filters_table.verticalHeader().setVisible(False)
         self.filters_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.filters_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -423,6 +441,9 @@ class QueryDesignerWidget(QWidget):
         )
         self.filters_table.horizontalHeader().setSectionResizeMode(
             2, QHeaderView.ResizeMode.Stretch
+        )
+        self.filters_table.horizontalHeader().setSectionResizeMode(
+            3, QHeaderView.ResizeMode.ResizeToContents
         )
         self.filters_table.cellChanged.connect(self._on_filter_cell_changed)
         layout.addWidget(self.filters_table, 1)
@@ -437,7 +458,10 @@ class QueryDesignerWidget(QWidget):
         buttons.addWidget(self.add_filter_button)
         buttons.addWidget(self.remove_filter_button)
         buttons.addStretch(1)
-        hint = QLabel("Le condizioni sono combinate con AND. I valori non sono modificabili da chi esegue la query.")
+        hint = QLabel(
+            "Gruppo uguale = AND, gruppi diversi = OR. "
+            "I valori non sono modificabili da chi esegue la query."
+        )
         hint.setObjectName("nav_hint")
         hint.setWordWrap(True)
         buttons.addWidget(hint)
@@ -522,8 +546,36 @@ class QueryDesignerWidget(QWidget):
         self._refresh_fields()
         self._refresh_filters()
         self._refresh_sorts()
+        self._refresh_qbe()
         self._refresh_sql()
         self._refresh_status()
+
+    def _refresh_qbe(self) -> None:
+        if hasattr(self, "qbe_page"):
+            self.qbe_page.reload()
+
+    def _on_qbe_changed(self) -> None:
+        """La vista QBE ha modificato lo stesso ``QuerySpec``: riallinea il guidato."""
+        self._refresh_tree()
+        self._refresh_fields()
+        self._refresh_filters()
+        self._refresh_sorts()
+        self._mark_dirty()
+
+    def set_mode(self, mode: str) -> None:
+        """Mostra la vista QBE oppure la scheda guidata dei campi."""
+        if mode == "qbe":
+            self.tabs.setCurrentWidget(self.qbe_page)
+        else:
+            self.tabs.setCurrentWidget(self.fields_page)
+        self._sync_mode_buttons()
+
+    def _sync_mode_buttons(self) -> None:
+        if not hasattr(self, "qbe_mode_button"):
+            return
+        qbe = self.tabs.currentWidget() is self.qbe_page
+        self.qbe_mode_button.setChecked(qbe)
+        self.guided_mode_button.setChecked(not qbe)
 
     def _refresh_tree(self) -> None:
         self._loading_tree = True
@@ -607,6 +659,10 @@ class QueryDesignerWidget(QWidget):
             )
             self.filters_table.setCellWidget(row, 1, op_combo)
             self.filters_table.setItem(row, 2, QTableWidgetItem(item.value))
+            group_item = QTableWidgetItem(str(item.group))
+            group_item.setFlags(group_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            group_item.setToolTip("Stesso gruppo = AND, gruppi diversi = OR")
+            self.filters_table.setItem(row, 3, group_item)
         self._loading_filters = False
 
     def _refresh_sorts(self) -> None:
@@ -711,6 +767,7 @@ class QueryDesignerWidget(QWidget):
         self._refresh_fields()
         self._refresh_filters()
         self._refresh_sorts()
+        self._refresh_qbe()
         self._mark_dirty()
 
     def remove_selected_field(self) -> None:
@@ -740,6 +797,7 @@ class QueryDesignerWidget(QWidget):
         self._refresh_fields()
         self._refresh_filters()
         self._refresh_sorts()
+        self._refresh_qbe()
         self._mark_dirty()
 
     def _on_field_item_changed(self, item: QTableWidgetItem) -> None:
@@ -799,12 +857,13 @@ class QueryDesignerWidget(QWidget):
         self.status_message.emit(f"Tabella {table} rimossa dalla query")
 
     # ------------------------------------------------------------------ filtri
-    def add_filter(self, field: str = "", op: str = "eq", value: str = "") -> None:
+    def add_filter(self, field: str = "", op: str = "eq", value: str = "", group: int = 0) -> None:
         if not field:
             options = self._available_refs()
             field = options[0][0] if options else ""
-        self.spec.filters.append(QueryFilter(field, op, value))
+        self.spec.filters.append(QueryFilter(field, op, value, group=max(0, int(group))))
         self._refresh_filters()
+        self._refresh_qbe()
         self._mark_dirty()
 
     def remove_selected_filter(self) -> None:
@@ -813,6 +872,7 @@ class QueryDesignerWidget(QWidget):
             return
         self.spec.filters.pop(row)
         self._refresh_filters()
+        self._refresh_qbe()
         self._mark_dirty()
 
     def _on_filter_combo_changed(self, row: int) -> None:
@@ -824,6 +884,7 @@ class QueryDesignerWidget(QWidget):
             self.spec.filters[row].field = str(field_combo.currentData() or "")
         if isinstance(op_combo, QComboBox):
             self.spec.filters[row].op = str(op_combo.currentData() or "eq")
+        self._refresh_qbe()
         self._mark_dirty()
 
     def _on_filter_cell_changed(self, row: int, column: int) -> None:
@@ -831,6 +892,7 @@ class QueryDesignerWidget(QWidget):
             return
         item = self.filters_table.item(row, column)
         self.spec.filters[row].value = item.text() if item is not None else ""
+        self._refresh_qbe()
         self._mark_dirty()
 
     # ------------------------------------------------------------- ordinamento
@@ -840,6 +902,7 @@ class QueryDesignerWidget(QWidget):
             field = options[0][0] if options else ""
         self.spec.sorts.append(QuerySort(field, direction))
         self._refresh_sorts()
+        self._refresh_qbe()
         self._mark_dirty()
 
     def remove_selected_sort(self) -> None:
@@ -848,6 +911,7 @@ class QueryDesignerWidget(QWidget):
             return
         self.spec.sorts.pop(row)
         self._refresh_sorts()
+        self._refresh_qbe()
         self._mark_dirty()
 
     def move_sort(self, delta: int) -> None:
@@ -861,6 +925,7 @@ class QueryDesignerWidget(QWidget):
         )
         self._refresh_sorts()
         self.sorts_table.selectRow(target)
+        self._refresh_qbe()
         self._mark_dirty()
 
     def _on_sort_combo_changed(self, row: int) -> None:
@@ -875,6 +940,7 @@ class QueryDesignerWidget(QWidget):
             self.spec.sorts[row].direction = (
                 value if value in SORT_DIRECTIONS else "asc"
             )
+        self._refresh_qbe()
         self._mark_dirty()
 
     # ------------------------------------------------------------- anteprima
@@ -916,6 +982,10 @@ class QueryDesignerWidget(QWidget):
         self.result_label.setText(f"{len(result.rows)} righe{suffix}")
 
     def _on_tab_changed(self, _index: int) -> None:
+        self._sync_mode_buttons()
+        if self.tabs.currentWidget() is self.qbe_page:
+            self._refresh_qbe()
+            return
         if self.tabs.currentWidget() is self.result_page:
             if self._result_stale:
                 self.run_preview()

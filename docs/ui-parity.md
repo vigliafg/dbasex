@@ -1,6 +1,6 @@
-# Stato di parità UI — dBX 0.3 vs dBASE 5.5
+# Stato di parità UI — dBX 0.4 vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (release 0.3.0)
+Aggiornato: 2026-11-22 (release 0.4.0)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
 `fuori scope` = escluso dalla 0.3 per decisione di piano; `mancante` = non implementato.
@@ -16,7 +16,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Query Expert | — | `dbx/designers/query_expert.py` | fatto (0.4/O2) | Join suggeriti dalle FK, campi, criteri AND e ordinamento |
 | Report Expert | — | `dbx/designers/report_expert.py` | fatto (0.4/O2) | Layout tabellare/colonnare/riepilogo, gruppi, stile |
 | Database Designer ER | — | `dbx/designers/database_designer.py` | fatto (0.3/O3) | Diagramma, relazioni e modifiche schema; export PNG/SVG |
-| Query Designer | `15`, `19`, `20`, `21` | `dbx/designers/query_builder.py` | fatto (0.3/O5) | Query statiche, INNER/LEFT JOIN, filtri e ordinamento |
+| Query Designer | `15`, `19`, `20`, `21`, `23` | `dbx/designers/query_builder.py` | fatto (0.3/O5, QBE 0.4/O4) | Query statiche, INNER/LEFT JOIN, filtri, gruppi OR e QBE read-only |
 | Query Results | `16`, `17` | `dbx/ui/query_results.py` | fatto (0.3/O6) | Griglia read-only, aggiornamento ed export CSV |
 | Form Expert | `22`–`26` | `dbx/designers/form_expert.py` | fatto | Sorgente tabella o query (read-only); miniatura layout strutturale |
 | Form Designer | `27`–`31`, `40` | `dbx/designers/form_builder.py` | fatto | Palette in pannello ridimensionabile, non flottante; form query in sola lettura |
@@ -43,6 +43,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - `18-form-query.png` e `19-report-query.png` mostrano form e report alimentati da query.
 - `20-table-expert.png` mostra il Table Expert introdotto nella 0.4.
 - `21-query-expert.png` e `22-report-expert.png` mostrano i nuovi esperti guidati.
+- `23-qbe-mode.png` mostra il Query Designer in modalità QBE, con example elements e righe OR.
 - Le checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md` e
   `docs/qa-0.3.md`.
 - Il Label Designer è stato rimosso: la categoria Etichette è stata sostituita da **Schema**.

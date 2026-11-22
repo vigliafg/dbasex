@@ -121,6 +121,14 @@ def run_smoke() -> int:
     assert query_designer.tree.topLevelItemCount() == 2
     checks.append("query designer")
 
+    query_designer.set_mode("qbe")
+    assert len(query_designer.qbe_page.images()) == 2
+    query_designer.qbe_page.set_cell("fatture", "importo", 0, "500..1300")
+    query_designer.qbe_page.apply_and_notify()
+    assert any(item.op == "between" for item in query_spec.filters)
+    assert query_designer.run_preview() is not None
+    checks.append("qbe mode")
+
     query_results = QueryResultsWidget(project, "fatture_clienti")
     assert query_results.table.rowCount() == 5
     assert query_results.table.columnCount() == 5

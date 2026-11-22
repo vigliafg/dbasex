@@ -926,7 +926,7 @@ Rendering nuovi: `20-table-expert.png`, `21-query-expert.png`, `22-report-expert
 | 0.4.0 — O1 Shell esperti e Table Expert | `[x]` completata (2026-11-22) | — |
 | 0.4.0 — O2 Query Expert e Report Expert | `[x]` completata (2026-11-22) | — |
 | 0.4.0 — O3 Modello e motore QBE | `[x]` completata (2026-11-22) | **A** |
-| 0.4.0 — O4 UI QBE e release | `[ ]` da iniziare | — |
+| 0.4.0 — O4 UI QBE e release | `[x]` completata (2026-11-22) — versione 0.4.0 | — |
 | 0.5.0 — O5 Catalogo e Step Picker | `[ ]` da iniziare | — |
 | 0.5.0 — O6 Passi core e runtime | `[ ]` da iniziare | **B** |
 | 0.5.0 — O7 QA e release | `[ ]` da iniziare | **C** |
