@@ -1,12 +1,12 @@
 # Stato di parità UI — dBX vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (Ondata 0)
+Aggiornato: 2026-11-22 (Ondata 1)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire; `mancante` = non implementato.
 
 | Finestra originale | Riferimento | Modulo dBX | Stato 0.1 | Target | Gap principale |
 |---|---|---|---|---|---|
-| Desktop + menu + SpeedBar | `01`, `43` | `dbx/ui/main_window.py` | parziale | O1 | MDI assente, menu incompleti, toolbar con testo |
+| Desktop + menu + SpeedBar | `01`, `43` | `dbx/ui/main_window.py` | fatto (O1) | O1 | allinea/distribuisci attivi in O4; Navigator in O2 |
 | Navigator | `01`, `42`, `43` | `dbx/ui/navigator.py` | parziale | O2 | categorie ridotte, filtro legacy, `[Untitled]` per categoria |
 | Command Window | `01`, `02`, `04` | `dbx/ui/command_window.py` | parziale | O2 | dialog non MDI, cronologia assente |
 | Browse / Table | `07`, `11`, `18` | `dbx/ui/data_view.py` | parziale | O2 | intestazione, selettore record, navigazione |
@@ -27,4 +27,5 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 
 - Lo stato si riferisce alla struttura e al chrome, non al pixel-perfect.
 - Baseline O0 (tema Silver): `docs/reference/dbx-ui/renders/01-desktop.png` … `09-command-window.png`.
+- O1 aggiunge `10-desktop-mdi.png` con Browse e Form Designer aperti nell'area MDI.
 - Ogni ondata aggiorna questa tabella.

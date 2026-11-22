@@ -168,7 +168,7 @@ class ReportBuilderDialog(QDialog):
         self.spec = spec
         self.original_name = spec.name
         self.selected: Control | None = None
-        self.setWindowTitle(f"Report Builder — {spec.name}")
+        self.setWindowTitle(f"Report Designer ({spec.name})")
         self.resize(1140, 780)
         self._build_ui()
         self._reload()

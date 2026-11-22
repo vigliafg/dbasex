@@ -1,4 +1,4 @@
-"""Icone disegnate a runtime e pulsanti sempre con icona + nome (H5).
+"""Icone disegnate a runtime e pulsanti con icona (H5).
 
 Le icone sono disegnate con QPainter su una griglia 24×24, quindi non servono
 file immagine né dipendenze esterne e il contrasto si adatta al tema.
@@ -263,6 +263,73 @@ def _aiuto(painter: QPainter) -> None:
     painter.setBrush(Qt.BrushStyle.NoBrush)
 
 
+def _chiudi(painter: QPainter) -> None:
+    painter.drawRect(QRectF(4, 4, 10, 16))
+    painter.drawLine(QPointF(13, 12), QPointF(21, 12))
+    _poly(painter, (18, 9), (21, 12), (18, 15))
+
+
+def _taglia(painter: QPainter) -> None:
+    painter.drawEllipse(QRectF(3, 14, 6, 6))
+    painter.drawEllipse(QRectF(15, 14, 6, 6))
+    painter.drawLine(QPointF(8, 15), QPointF(17, 4))
+    painter.drawLine(QPointF(16, 15), QPointF(7, 4))
+
+
+def _copia(painter: QPainter) -> None:
+    painter.drawRect(QRectF(3, 7, 12, 14))
+    painter.drawRect(QRectF(9, 3, 12, 14))
+
+
+def _incolla(painter: QPainter) -> None:
+    painter.drawRect(QRectF(5, 5, 14, 16))
+    painter.drawRect(QRectF(9, 3, 6, 4))
+    painter.drawLine(QPointF(8, 12), QPointF(16, 12))
+    painter.drawLine(QPointF(8, 16), QPointF(14, 16))
+
+
+def _undo(painter: QPainter) -> None:
+    _poly(painter, (18, 17), (18, 9), (8, 9))
+    _triangle(painter, (3, 9), (9, 5), (9, 13))
+
+
+def _redo(painter: QPainter) -> None:
+    _poly(painter, (6, 17), (6, 9), (16, 9))
+    _triangle(painter, (21, 9), (15, 5), (15, 13))
+
+
+def _allinea(painter: QPainter) -> None:
+    painter.drawLine(QPointF(4, 4), QPointF(4, 20))
+    painter.drawLine(QPointF(7, 7), QPointF(20, 7))
+    painter.drawLine(QPointF(7, 12), QPointF(16, 12))
+    painter.drawLine(QPointF(7, 17), QPointF(19, 17))
+
+
+def _distribuisci(painter: QPainter) -> None:
+    painter.drawLine(QPointF(3, 5), QPointF(21, 5))
+    painter.drawRect(QRectF(3, 9, 4, 10))
+    painter.drawRect(QRectF(10, 9, 4, 10))
+    painter.drawRect(QRectF(17, 9, 4, 10))
+
+
+def _cascata(painter: QPainter) -> None:
+    painter.drawRect(QRectF(3, 4, 13, 11))
+    painter.drawRect(QRectF(8, 9, 13, 11))
+
+
+def _affianca(painter: QPainter) -> None:
+    painter.drawRect(QRectF(3, 4, 8, 16))
+    painter.drawRect(QRectF(13, 4, 8, 16))
+
+
+def _finestra(painter: QPainter) -> None:
+    painter.drawRect(QRectF(3, 5, 18, 14))
+    painter.drawLine(QPointF(3, 10), QPointF(21, 10))
+    painter.setBrush(painter.pen().color())
+    painter.drawRect(QRectF(18, 6.8, 2, 1.4))
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+
+
 _GLYPHS: dict[str, Callable[[QPainter], None]] = {
     "nuovo": _nuovo,
     "zoom_in": _zoom_in,
@@ -302,6 +369,17 @@ _GLYPHS: dict[str, Callable[[QPainter], None]] = {
     "campo": _campo,
     "data": _data,
     "aiuto": _aiuto,
+    "chiudi": _chiudi,
+    "taglia": _taglia,
+    "copia": _copia,
+    "incolla": _incolla,
+    "undo": _undo,
+    "redo": _redo,
+    "allinea": _allinea,
+    "distribuisci": _distribuisci,
+    "cascata": _cascata,
+    "affianca": _affianca,
+    "finestra": _finestra,
 }
 
 
@@ -381,15 +459,17 @@ def make_button(
 
 def make_action(
     text: str,
-    name: str,
+    name: str | None,
     parent: QWidget,
     shortcut=None,
     tooltip: str | None = None,
     checkable: bool = False,
 ) -> QAction:
-    """QAction con icona e nome, per menu e barre degli strumenti."""
-    action = QAction(icon(name), text, parent)
-    action.setProperty("dbx_icon", name)
+    """QAction con icona opzionale e nome, per menu e barre degli strumenti."""
+    action = QAction(text, parent)
+    if name:
+        action.setIcon(icon(name))
+        action.setProperty("dbx_icon", name)
     action.setCheckable(checkable)
     if shortcut:
         action.setShortcut(shortcut)

@@ -453,7 +453,7 @@ class FormBuilderDialog(QDialog):
         self.table = project.table(spec.table)
         self.selected: FormControl | None = None
         self.tool = "pointer"
-        self.setWindowTitle(f"Form Designer — {spec.caption or spec.name}")
+        self.setWindowTitle(f"Form Designer ({spec.caption or spec.name})")
         self.resize(1160, 760)
         self._build_ui()
         self._load_page(0)
@@ -749,7 +749,7 @@ class FormBuilderDialog(QDialog):
         if self.selected is None:
             if key in ("name", "caption", "order"):
                 setattr(self.spec, key, str(value))
-                self.setWindowTitle(f"Form Designer — {self.spec.caption or self.spec.name}")
+                self.setWindowTitle(f"Form Designer ({self.spec.caption or self.spec.name})")
             elif key in ("width", "height"):
                 setattr(self.spec, key, max(120, int(value)))
                 self.canvas.load(self.spec, int(self.page_combo.currentData() or 0))

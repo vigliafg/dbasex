@@ -37,7 +37,7 @@ class TableBuilderDialog(QDialog):
         self.project = project
         self.original = table
         self.table = table.copy() if table else Table(name="", fields=[Field("nome", T.TEXT)])
-        self.setWindowTitle(f"Table Structure — {table.name if table else '(Untitled)'}")
+        self.setWindowTitle(f"Table Structure ({table.name if table else 'Untitled'})")
         self.resize(1040, 720)
         self._build_ui()
         self._load()

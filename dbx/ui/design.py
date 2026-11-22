@@ -238,13 +238,24 @@ QWidget { color: $text; }
 QMenuBar { background: $menu_bg; border-bottom: 1px solid $menu_border; }
 QMenuBar::item { padding: 4px 8px; background: transparent; }
 QMenuBar::item:selected { background: $menu_selected; color: $menu_selected_text; }
+QMenuBar::item:pressed { background: $menu_selected; color: $menu_selected_text; }
 QMenu { background: $menu_bg; border: 1px solid $menu_border; }
 QMenu::item { padding: 4px 24px 4px 20px; }
 QMenu::item:selected { background: $menu_item_selected; color: $menu_item_selected_text; }
+QMenu::item:disabled { color: $disabled; }
 QMenu::separator { height: 1px; background: $menu_border; margin: 3px 6px; }
-QToolBar { background: $toolbar_bg; border: 0; border-bottom: 1px solid $menu_border; spacing: 2px; padding: 3px; }
-QToolButton { padding: 3px 7px; border-radius: $toolbutton_radius; }
+QToolBar { background: $toolbar_bg; border: 0; border-bottom: 1px solid $menu_border; spacing: 1px; padding: 3px; }
+QToolBar::separator { width: 2px; background: transparent; border-left: 1px solid $panel_shadow; border-right: 1px solid $panel_light; margin: 2px 4px; }
+QToolButton { padding: 3px 5px; border: 1px solid transparent; border-radius: $toolbutton_radius; }
 QToolButton:hover { background: $toolbutton_hover; }
+QToolButton:pressed, QToolButton:checked {
+    background: $toolbutton_hover; border: 1px solid $panel_shadow;
+    border-top-color: $panel_dark; border-left-color: $panel_dark;
+    padding: 2px 4px;
+}
+QMdiArea { background: $window_bg; border-top: 1px solid $panel_dark; }
+QMdiSubWindow { background: $window_bg; }
+QLabel#status_field { padding: 0 8px; border-left: 1px solid $status_border; }
 QTabWidget::pane { border: 1px solid $tab_border; background: $tab_pane_bg; }
 QTabBar::tab {
     padding: 5px 12px; background: $tab_bg; border: 1px solid $tab_border; border-bottom: 0;
@@ -265,6 +276,10 @@ QTreeView, QTableView, QTableWidget, QListView, QPlainTextEdit, QTextEdit, QLine
     selection-color: $selection_text;
 }
 QTableView { alternate-background-color: $alternate_bg; gridline-color: $grid_line; }
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus,
+QPlainTextEdit:focus, QTextEdit:focus, QListView:focus, QTreeView:focus, QTableView:focus {
+    border: 1px dotted $focus;
+}
 QHeaderView::section {
     background: $header_bg; border: 1px solid $header_border;
     border-top-color: $button_light; border-left-color: $button_light;

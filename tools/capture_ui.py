@@ -71,6 +71,12 @@ def run(theme: str = "silver") -> int:
         widgets.append(window)
         captured.append(_capture(app, window, "01-desktop.png", (1280, 800)))
 
+        window.open_object("tables", "clienti")
+        window.open_object("forms", "form_clienti")
+        window.editors.cascade()
+        app.processEvents()
+        captured.append(_capture(app, window, "10-desktop-mdi.png", (1280, 800)))
+
         navigator = Navigator()
         navigator.set_project(project)
         widgets.append(navigator)

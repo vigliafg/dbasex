@@ -698,7 +698,7 @@ Regole:
 | Ondata | Stato | Checkpoint |
 |---|---|---|
 | O0 — Baseline e design token | `[x]` completata (2026-11-22) | — |
-| O1 — Shell/MDI/menu/tema | `[ ]` da iniziare | — |
+| O1 — Shell/MDI/menu/tema | `[x]` completata (2026-11-22) | — |
 | O2 — Navigator/Command/Browse | `[ ]` da iniziare | — |
 | O3 — Table Structure | `[ ]` da iniziare | **A** |
 | O4 — Form Designer/Expert/Runtime | `[ ]` da iniziare | — |
@@ -736,6 +736,6 @@ Regole:
 - `docs/reference/dbase55/README.md`
 - `docs/reference/dbase55/images/`
 - `docs/reference/dbx-ui/`
-- `docs/ui-parity.md` (da creare in O0)
+- `docs/ui-parity.md` (creato in O0)
 - `DIARIO.md`
 - `AGENTS.md`
