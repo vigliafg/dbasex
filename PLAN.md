@@ -701,7 +701,7 @@ Regole:
 | O1 — Shell/MDI/menu/tema | `[x]` completata (2026-11-22) | — |
 | O2 — Navigator/Command/Browse | `[x]` completata (2026-11-22) | — |
 | O3 — Table Structure | `[x]` completata (2026-11-22) | **A** |
-| O4 — Form Designer/Expert/Runtime | `[ ]` da iniziare | — |
+| O4 — Form Designer/Expert/Runtime | `[x]` completata (2026-11-22) | — |
 | O5 — Report Designer/Preview | `[ ]` da iniziare | — |
 | O6 — Script/Menu/Project | `[ ]` da iniziare | **B** |
 | O7 — QA e release 0.2 | `[ ]` da iniziare | **C** |

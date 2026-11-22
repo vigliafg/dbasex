@@ -41,8 +41,11 @@ def test_form_builder(qapp, demo_project) -> None:
     try:
         assert dialog.canvas.page is not None
         assert dialog.canvas.page.controls
-        assert dialog.inspector.object_combo.count() >= 2
+        assert dialog.object_combo.count() >= 2
         assert dialog.status_labels["Page"].text().endswith("1")
+        assert dialog.inspector.tree.topLevelItemCount() >= 2
+        combo_item = dialog.inspector.item("caption")
+        assert combo_item is not None
     finally:
         dialog.close()
 

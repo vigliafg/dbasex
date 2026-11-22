@@ -11,7 +11,7 @@
 | O1 — Shell/MDI/menu/tema | completata (2026-11-22) | — |
 | O2 — Navigator/Command/Browse | completata (2026-11-22) | — |
 | O3 — Table Structure | completata (2026-11-22) | A |
-| O4 — Form Designer/Expert/Runtime | da iniziare | — |
+| O4 — Form Designer/Expert/Runtime | completata (2026-11-22) | — |
 | O5 — Report Designer/Preview | da iniziare | — |
 | O6 — Script/Menu/Project | da iniziare | B |
 | O7 — QA e release 0.2 | da iniziare | C |
@@ -138,6 +138,38 @@
   - `Add Records` genera valori segnaposto per i campi obbligatori senza default.
 - **Prossimo passo:** **Checkpoint A**, poi Ondata 4 — Form Designer, Inspector, Form Expert e runtime form.
 
+### 2026-11-22 — Ondata 4 — avvio
+- **Stato:** in corso
+- **Obiettivo:** portare il Form Designer allo schema a tre zone con interazione completa, Inspector ad albero, Form Expert a cinque passi, eventi runtime e anteprima dentro l'MDI.
+- **File previsti:** `dbx/designers/form_builder.py`, `dbx/designers/form_expert.py` (nuovo), `dbx/ui/widgets.py`, `dbx/core/form_model.py`, `dbx/runtime/form_runtime.py`, `dbx/ui/main_window.py`, `dbx/ui/editor_host.py`, `dbx/ui/theme.py`, test, diario.
+
+### 2026-11-22 — Ondata 4 — chiusura
+- **Stato:** completata
+- **Branch/commit:** `main` — commit dell'ondata
+- **Obiettivo:** Form Designer a tre zone, Object Inspector ad albero, Form Expert, dispatcher eventi e runtime nell'MDI.
+- **File toccati:** `dbx/designers/form_builder.py` (riscritto), `dbx/designers/form_expert.py` (nuovo), `dbx/ui/widgets.py`, `dbx/ui/theme.py`, `dbx/ui/main_window.py`, `dbx/ui/editor_host.py`, `dbx/core/form_model.py`, `dbx/runtime/form_runtime.py`, `dbx/smoke.py`, `tools/capture_ui.py`, `tests/test_form_events.py` (nuovo), `tests/test_ui_form_designer.py` (nuovo), `tests/test_ui_form_runtime.py` (nuovo), `tests/test_ui_designers.py`, `docs/ui-parity.md`, rendering.
+- **Scelte/deviazioni:**
+  - `FormBuilderDialog` diventa `FormDesignerWidget` (`QWidget`) e vive nell'MDI; l'alias `FormBuilderDialog` resta per test, smoke e harness di cattura, senza doppia implementazione.
+  - Modello esteso in modo additivo e retrocompatibile: `FormControl.events`, `FormControl.methods`, `FormSpec.events`, `FormSpec.methods`, `backcolor`, `forecolor`, `font_name`. I JSON esistenti si caricano senza migrazione con valori vuoti.
+  - Eventi come **azione singola** dello stesso dispatcher dei pulsanti (`save`, `next`, `close`, `script:nome`, `report:nome`, `message:testo`): nessun linguaggio nuovo. Un `onClick` valorizzato sostituisce l'azione predefinita del pulsante; gli errori finiscono in `event_log` e nella status line, mai un crash.
+  - Inspector ad albero con gruppi `Font Properties`, `Geometry`, `Data`, `Behavior`, `Layout`, combo in-cell per scelte e booleani `.T./.F.`, `Quick Filter`, schede `Proprietà` / `Eventi` / `Metodi` editabili.
+  - Canvas con snap a 8 px, otto maniglie reali disegnate su un overlay trasparente, selezione multipla con Ctrl, spostamento con frecce a 8 px e Shift per il passo fine di 1 px, taglia/copia/incolla/duplica, allinea/distribuisci, porta avanti/indietro, undo/redo a snapshot.
+  - Pagine del form come tab strip con aggiunta, rinomina ed eliminazione; lo stato inferiore mostra `Object · Page · Top · Left · Height · Width`.
+  - Palette `Controls` con nomi dBASE compatti (`TEXT`, `ENTRYFIELD`, `MEMO`, `CHECKBOX`, …), schede `Standard` / `Custom`, pulsanti dBASE (`OKBUTTON`, `CLOSEBUTTON`, …) mappati sulle azioni runtime; palette `Field` con doppio clic e trascinamento tramite MIME `application/x-dbx-field`.
+  - Form Expert come `QWizard` a cinque passi (assistito o vuoto, tabella, campi, layout, font/colori/stile) integrato in `Oggetto → Nuovo form…`; genera un `FormSpec` valido con pulsanti di navigazione.
+  - Runtime con azioni estese (`cancel`, `help`, `info`, `browse`, `message:`), eventi `onOpen`/`onClose`, stato del record e log; anteprima aperta nell'MDI e non come dialog modale.
+  - `apply_theme` registra `dbx_theme` sull'applicazione: i canvas leggono i token del tema attivo e non più sempre Silver (corretto il contrasto del tema Dark).
+  - Nei subwindow MDI stretti le palette restano leggibili e il canvas usa le scrollbar: la palette non è ancora una finestra flottante come nell'originale.
+- **Test:** `146 passed`; smoke headless OK con Form Designer, Form Expert e Form Runtime; `tools/capture_ui.py` OK in Silver e Dark.
+- **Screenshot:** `05-form-designer.png` e `06-form-runtime.png` aggiornati; `10-desktop-mdi.png` mostra il designer a tre zone nell'MDI.
+- **Problemi aperti:**
+  - Palette in pannello ridimensionabile, non flottante/dockabile come in dBASE.
+  - Miniatura del Form Expert strutturale, non un rendering del form.
+  - Eventi limitati ad azione singola; i corpi dei metodi sono descrittivi e non eseguiti.
+  - La rinomina del form tramite `Name` rinomina l'artefatto ma non aggiorna eventuali riferimenti nei menu.
+  - Form molto larghi restano scrollabili dentro subwindow MDI strette.
+- **Prossimo passo:** Ondata 5 — Report Designer a bande impilate e Preview.
+
 ## Checkpoint A — fine Ondata 3 (2026-11-22)
 
 - **Stato ondate:** O0, O1, O2, O3 completate; O4, O5, O6, O7 da iniziare.
@@ -154,4 +186,4 @@
 
 ## Ripresa
 
-**Checkpoint A attivo.** Dopo `continua`: Ondata 4 — Form Designer, Inspector, Form Expert e runtime form. Non ripartire da O0–O3; non superare O6 senza Checkpoint B.
+**Ondata 4 completata.** Prossima azione: **Ondata 5 — Report Designer/Preview**. Non ripartire da O0–O4; fermarsi al **Checkpoint B** a fine O6.

@@ -263,6 +263,7 @@ QLabel#nav_header, QLabel#browse_header, QLabel#pane_title {
     background: $header_bg; border: 1px solid $panel_shadow; padding: 3px 6px; font-weight: 600;
 }
 QLabel#nav_hint { color: $disabled; padding: 2px; }
+QLabel#palette_section { font-weight: 600; padding: 2px 0; }
 QFrame#command_pane, QFrame#results_pane { border: 1px solid $panel_shadow; }
 QFrame#table_meta { background: $window_bg; border: 1px solid $panel_shadow; }
 QLabel#table_type { font-weight: 600; }

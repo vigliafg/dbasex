@@ -27,10 +27,10 @@ if str(ROOT) not in sys.path:
 from PyQt6.QtWidgets import QApplication, QWidget  # noqa: E402
 
 from dbx.core.form_model import FormSpec  # noqa: E402
-from dbx.designers.form_builder import FormBuilderDialog  # noqa: E402
+from dbx.designers.form_builder import FormDesignerWidget  # noqa: E402
 from dbx.designers.report_builder import ReportBuilderDialog  # noqa: E402
 from dbx.designers.table_builder import TableBuilderDialog  # noqa: E402
-from dbx.runtime.form_runtime import FormPreviewDialog  # noqa: E402
+from dbx.runtime.form_runtime import FormRuntime  # noqa: E402
 from dbx.runtime.report_engine import ReportSpec  # noqa: E402
 from dbx.samples import create_demo_project  # noqa: E402
 from dbx.ui.app import create_application  # noqa: E402
@@ -94,13 +94,13 @@ def run(theme: str = "silver") -> int:
         if form_artifact is None:
             raise RuntimeError("form_clienti non presente nel progetto demo")
         form_spec = FormSpec.from_dict(form_artifact)
-        form_dialog = FormBuilderDialog(project, form_spec)
+        form_dialog = FormDesignerWidget(project, form_spec)
         widgets.append(form_dialog)
         captured.append(_capture(app, form_dialog, "05-form-designer.png", (1160, 760)))
 
-        form_preview = FormPreviewDialog(project, FormSpec.from_dict(form_artifact))
+        form_preview = FormRuntime(project, FormSpec.from_dict(form_artifact))
         widgets.append(form_preview)
-        captured.append(_capture(app, form_preview, "06-form-runtime.png", (760, 560)))
+        captured.append(_capture(app, form_preview, "06-form-runtime.png", (860, 660)))
 
         report_artifact = project.artifact("reports", "fatture_per_cliente")
         if report_artifact is None:

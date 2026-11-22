@@ -1,17 +1,24 @@
-"""Runtime dei form: costruzione widget, navigazione e CRUD (D6, D7)."""
+"""Runtime dei form: costruzione widget, navigazione, CRUD ed eventi (D6, D7).
+
+Gli eventi non sono un linguaggio di scripting: il valore di ``onClick``,
+``onEnter``, ``onExit``, ``onOpen`` e ``onClose`` è un'azione singola dello
+stesso dispatcher usato dai pulsanti (``save``, ``next``, ``script:nome``,
+``report:nome``, ``message:testo``, ...). Un evento vuoto lascia attiva
+l'azione predefinita del controllo; un evento valorizzato la sostituisce.
+"""
 
 from __future__ import annotations
 
 from typing import Any
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QEvent, QObject, Qt
+from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDateEdit,
     QDialog,
     QDoubleSpinBox,
-    QFormLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -27,7 +34,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PyQt6.QtGui import QPixmap
 
 from ..core import types as T
 from ..core.ddl import INTERNAL_ID
@@ -48,7 +54,12 @@ class FieldBinder:
     def set_value(self, value: Any) -> None:
         widget = self.widget
         if isinstance(widget, QLineEdit):
-            widget.setText("" if value is None else T.format_value(value, self.field.type, self.field.fmt) if self.field else str(value))
+            if value is None:
+                widget.clear()
+            elif self.field is not None:
+                widget.setText(T.format_value(value, self.field.type, self.field.fmt))
+            else:
+                widget.setText(str(value))
         elif isinstance(widget, QPlainTextEdit):
             widget.setPlainText("" if value is None else str(value))
         elif isinstance(widget, QCheckBox):
@@ -63,8 +74,8 @@ class FieldBinder:
                 index = widget.findText("" if value is None else str(value))
             widget.setCurrentIndex(index if index >= 0 else -1)
         elif isinstance(widget, QDateEdit):
-            if value:
-                widget.setDate(value if hasattr(value, "year") else widget.date())
+            if value and hasattr(value, "year"):
+                widget.setDate(value)
 
     def get_value(self) -> Any:
         widget = self.widget
@@ -88,9 +99,15 @@ class FieldBinder:
 
 
 class FormRuntime(QWidget):
-    """Form eseguibile: una pagina per scheda, navigazione e salvataggio."""
+    """Form eseguibile: una pagina per scheda, navigazione, CRUD ed eventi."""
 
-    def __init__(self, project, spec: FormSpec, record_id: int | None = None, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        project,
+        spec: FormSpec,
+        record_id: int | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.project = project
         self.spec = spec
@@ -99,6 +116,7 @@ class FormRuntime(QWidget):
         self.binders: list[FieldBinder] = []
         self.buttons: list[tuple[QPushButton, str]] = []
         self.grids: list[tuple[QTableWidget, FormControl]] = []
+        self.event_log: list[str] = []
         self._new = False
         self._status = QLabel("")
         self._toolbar = QHBoxLayout()
@@ -112,6 +130,7 @@ class FormRuntime(QWidget):
         elif self.rowset.current is None and self.rowset.count():
             self.rowset.first()
         self.load_current()
+        self._run_form_event("onOpen")
 
     # ------------------------------------------------------------------ build
     def _build_ui(self) -> None:
@@ -122,11 +141,14 @@ class FormRuntime(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setWidget(self._pages)
         layout.addWidget(scroll, 1)
+        self._status.setObjectName("runtime_status")
         layout.addWidget(self._status)
         self.setWindowTitle(self.spec.caption or self.spec.name)
         for page in self.spec.pages:
             surface = QWidget()
             surface.setFixedSize(self.spec.width, self.spec.height)
+            if self.spec.backcolor:
+                surface.setStyleSheet(f"background: {self.spec.backcolor};")
             self._pages.addTab(surface, page.caption or "Dati")
             for control in page.controls:
                 self._add_control(surface, control)
@@ -148,7 +170,7 @@ class FormRuntime(QWidget):
             button.setAutoDefault(False)
             self._toolbar.addWidget(button)
         self._toolbar.addStretch(1)
-        close = icons.make_button("Chiudi", "chiudi", self._close, self)
+        close = icons.make_button("Chiudi", "chiudi", self._close, self, "Chiude il form")
         self._toolbar.addWidget(close)
 
     def _add_control(self, surface: QWidget, control: FormControl) -> None:
@@ -165,12 +187,10 @@ class FormRuntime(QWidget):
             widget = QPlainTextEdit() if kind == "memo" else QLineEdit()
             if kind == "date":
                 widget.setPlaceholderText("AAAA-MM-GG oppure GG/MM/AAAA")
-            binder = FieldBinder(control, widget, self.table)
-            self.binders.append(binder)
+            self._bind(control, widget)
         elif kind == "checkbox":
             widget = QCheckBox(control.text)
-            binder = FieldBinder(control, widget, self.table)
-            self.binders.append(binder)
+            self._bind(control, widget)
         elif kind == "number":
             field = self.table.field(control.field)
             if field is not None and field.type == T.INTEGER:
@@ -180,18 +200,17 @@ class FormRuntime(QWidget):
                 widget = QDoubleSpinBox()
                 widget.setRange(-1e12, 1e12)
                 widget.setDecimals(2)
-            binder = FieldBinder(control, widget, self.table)
-            self.binders.append(binder)
+            self._bind(control, widget)
         elif kind == "combo":
             widget = QComboBox()
             self._populate_combo(widget, control)
-            binder = FieldBinder(control, widget, self.table)
-            self.binders.append(binder)
+            self._bind(control, widget)
         elif kind == "button":
             button = QPushButton(control.text or "…")
             button.setAutoDefault(False)
-            button.clicked.connect(lambda _checked=False, a=control.action: self.perform(a))
+            button.clicked.connect(lambda _checked=False, c=control: self._activate_button(c))
             widget = button
+            self.buttons.append((button, control.id))
         elif kind == "grid":
             grid = QTableWidget()
             widget = grid
@@ -209,18 +228,32 @@ class FormRuntime(QWidget):
             if control.text and control.text.startswith("/"):
                 pixmap = QPixmap(control.text)
                 if not pixmap.isNull():
-                    label.setPixmap(pixmap.scaled(control.w, control.h, Qt.AspectRatioMode.KeepAspectRatio))
+                    label.setPixmap(
+                        pixmap.scaled(control.w, control.h, Qt.AspectRatioMode.KeepAspectRatio)
+                    )
             widget = label
         if widget is None:
             return
         widget.setParent(surface)
         widget.setGeometry(control.x, control.y, max(8, control.w), max(8, control.h))
+        if control.backcolor or control.forecolor:
+            widget.setStyleSheet(
+                f"background: {control.backcolor or 'transparent'};"
+                f"color: {control.forecolor or 'inherit'};"
+            )
         if control.kind in FIELD_KINDS and not isinstance(widget, QComboBox):
             font = widget.font()
+            if control.font_name:
+                font.setFamily(control.font_name)
             font.setBold(control.bold)
             font.setPointSize(max(6, control.font_size))
             widget.setFont(font)
+        if control.events.get("onEnter") or control.events.get("onExit"):
+            widget.installEventFilter(self)
         widget.show()
+
+    def _bind(self, control: FormControl, widget: QWidget) -> None:
+        self.binders.append(FieldBinder(control, widget, self.table))
 
     def _populate_combo(self, combo: QComboBox, control: FormControl) -> None:
         combo.clear()
@@ -234,8 +267,57 @@ class FormRuntime(QWidget):
         display = table.field(field_name)
         if display is None:
             return
-        for row in self.project.db.query(f'SELECT * FROM "{table.name}" ORDER BY "{display.name}"'):
+        for row in self.project.db.query(
+            f'SELECT * FROM "{table.name}" ORDER BY "{display.name}"'
+        ):
             combo.addItem(str(row[display.name]), row[display.name])
+
+    # ------------------------------------------------------------------ eventi
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # noqa: N802 - API Qt
+        control = self._control_for_widget(obj)
+        if control is not None:
+            if event.type() == QEvent.Type.Enter:
+                self._run_control_event(control, "onEnter")
+            elif event.type() == QEvent.Type.Leave:
+                self._run_control_event(control, "onExit")
+        return super().eventFilter(obj, event)
+
+    def _control_for_widget(self, obj: QObject) -> FormControl | None:
+        for binder in self.binders:
+            if binder.widget is obj:
+                return binder.control
+        return None
+
+    def _run_control_event(self, control: FormControl, name: str) -> bool:
+        action = str(control.events.get(name, "")).strip()
+        if not action:
+            return False
+        try:
+            self.perform(action)
+        except Exception as exc:  # pragma: no cover - difensivo
+            self._event_error(control, name, exc)
+        return True
+
+    def _run_form_event(self, name: str) -> None:
+        action = str(self.spec.events.get(name, "")).strip()
+        if not action:
+            return
+        try:
+            self.perform(action)
+        except Exception as exc:  # pragma: no cover - difensivo
+            self.event_log.append(f"{name}: {exc}")
+            self._status.setText(f"Errore evento {name}: {exc}")
+
+    def _activate_button(self, control: FormControl) -> None:
+        """Un ``onClick`` valorizzato sostituisce l'azione predefinita del pulsante."""
+        if self._run_control_event(control, "onClick"):
+            return
+        self.perform(control.action)
+
+    def _event_error(self, control: FormControl, name: str, exc: Exception) -> None:
+        message = f"{self.spec.control_object_name(control)}.{name}: {exc}"
+        self.event_log.append(message)
+        self._status.setText(f"Errore evento — {message}")
 
     # ------------------------------------------------------------- load/save
     def load_current(self) -> None:
@@ -256,16 +338,17 @@ class FormRuntime(QWidget):
             rows: list[dict[str, Any]] = []
             if record is not None and control.link_parent:
                 value = record.get(control.link_parent)
-                if value is None:
-                    rows = []
-                else:
+                if value is not None:
                     rows = Rowset(self.project.db, child).open(
-                        where=f'"{control.link_child or control.link_parent}" = ?', params=(value,)
+                        where=f'"{control.link_child or control.link_parent}" = ?',
+                        params=(value,),
                     ).rows()
             grid.setRowCount(len(rows))
             for r, row in enumerate(rows):
                 for c, field in enumerate(child.fields):
-                    item = QTableWidgetItem(T.format_value(row.get(field.name), field.type, field.fmt))
+                    item = QTableWidgetItem(
+                        T.format_value(row.get(field.name), field.type, field.fmt)
+                    )
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                     grid.setItem(r, c, item)
             grid.resizeColumnsToContents()
@@ -283,12 +366,13 @@ class FormRuntime(QWidget):
         try:
             record_id = self.rowset.save(self.collect())
         except RowsetError as exc:
+            self._status.setText(f"Salvataggio non riuscito: {exc}")
             QMessageBox.warning(self, "Salvataggio non riuscito", str(exc))
             return False
         self._new = False
         self._select_record(record_id)
         self.load_current()
-        self._status.setText("Record salvato")
+        self._status.setText(f"Record salvato · {self._position_text()}")
         return True
 
     def _select_record(self, record_id: int) -> None:
@@ -297,7 +381,11 @@ class FormRuntime(QWidget):
                 self.rowset.goto(index)
                 return
 
+    # --------------------------------------------------------------- azioni
     def perform(self, action: str) -> None:
+        action = (action or "").strip()
+        if not action or action == "none":
+            return
         if action == "new":
             self._new = True
             blank = self.rowset.new_record()
@@ -309,20 +397,13 @@ class FormRuntime(QWidget):
         if action == "save":
             self.save()
             return
-        if action == "delete":
-            if self.rowset.current is None:
-                return
-            answer = QMessageBox.question(self, "Elimina", "Eliminare il record corrente?")
-            if answer != QMessageBox.StandardButton.Yes:
-                return
-            try:
-                self.rowset.delete()
-            except RowsetError as exc:
-                QMessageBox.warning(self, "Eliminazione non riuscita", str(exc))
-                return
-            self.rowset.first()
+        if action == "cancel":
+            self._new = False
             self.load_current()
-            self._status.setText("Record eliminato")
+            self._status.setText("Modifiche annullate")
+            return
+        if action == "delete":
+            self.delete_current()
             return
         if action in ("first", "previous", "next", "last"):
             self._new = False
@@ -332,12 +413,53 @@ class FormRuntime(QWidget):
         if action == "close":
             self._close()
             return
+        if action == "help":
+            QMessageBox.information(
+                self,
+                "Aiuto",
+                "Naviga con Primo/Prec./Succ./Ultimo, crea record con Nuovo, "
+                "conferma con Salva e rimuovi con Elimina.",
+            )
+            self._status.setText("Aiuto mostrato")
+            return
+        if action == "info":
+            record = self.rowset.current or {}
+            detail = "\n".join(f"{key}: {value!r}" for key, value in record.items())
+            QMessageBox.information(self, "Record corrente", detail or "Nessun record")
+            return
+        if action == "browse":
+            self._browse()
+            return
         if action.startswith("script:"):
             self._run_script(action.split(":", 1)[1])
             return
         if action.startswith("report:"):
             self._print_report(action.split(":", 1)[1])
             return
+        if action.startswith("message:"):
+            text = action.split(":", 1)[1] or "Messaggio"
+            self._status.setText(text)
+            QMessageBox.information(self, "Form", text)
+            return
+        self._status.setText(f"Azione sconosciuta: {action}")
+        self.event_log.append(f"azione sconosciuta: {action}")
+
+    def delete_current(self) -> None:
+        if self.rowset.current is None:
+            self._status.setText("Nessun record da eliminare")
+            return
+        answer = QMessageBox.question(self, "Elimina", "Eliminare il record corrente?")
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            self.rowset.delete()
+        except RowsetError as exc:
+            self._status.setText(f"Eliminazione non riuscita: {exc}")
+            QMessageBox.warning(self, "Eliminazione non riuscita", str(exc))
+            return
+        self.rowset.first()
+        self.load_current()
+        self._status.setText(f"Record eliminato · {self._position_text()}")
 
     def _run_script(self, name: str) -> None:
         from .script_engine import ScriptEngine
@@ -345,31 +467,58 @@ class FormRuntime(QWidget):
         engine = ScriptEngine(self.project)
         result = engine.run_named(name, self.rowset.current)
         if result.error:
+            self.event_log.append(f"script {name}: {result.error}")
+            self._status.setText(f"Script non eseguito: {result.error}")
             QMessageBox.warning(self, "Script", result.error)
         else:
-            self._status.setText("Script eseguito")
+            self._status.setText(f"Script {name} eseguito")
 
     def _print_report(self, name: str) -> None:
         from ..ui.report_preview import ReportPreviewDialog
 
-        dialog = ReportPreviewDialog(self.project, name, self)
-        dialog.exec()
+        try:
+            dialog = ReportPreviewDialog(self.project, name)
+        except ValueError as exc:
+            self._status.setText(f"Report non disponibile: {exc}")
+            QMessageBox.warning(self, "Report", str(exc))
+            return
+        handler = getattr(self, "report_handler", None)
+        if callable(handler):
+            handler(dialog)
+        else:
+            dialog.exec()
+
+    def _browse(self) -> None:
+        handler = getattr(self, "browse_handler", None)
+        if callable(handler):
+            handler(self.spec.table)
+            return
+        self._status.setText("Browse: apri la tabella dal Navigator")
 
     def _close(self) -> None:
+        self._run_form_event("onClose")
         window = self.window()
         if isinstance(window, QDialog):
             window.accept()
         else:
             window.close()
 
-    def _update_status(self) -> None:
+    # ------------------------------------------------------------------ stato
+    def _position_text(self) -> str:
         position = self.rowset.index + 1 if self.rowset.current else 0
         total = max(self.rowset.count(), len(self.rowset))
-        self._status.setText(f"Record {position} di {total}")
+        return f"Record {position} di {total}"
+
+    def _update_status(self) -> None:
+        self._status.setText(self._position_text())
 
 
 class FormPreviewDialog(QDialog):
-    """Anteprima live di un form con dati reali (D11)."""
+    """Anteprima di un form con dati reali (D11).
+
+    La finestra principale apre il runtime direttamente nell'area MDI; questo
+    wrapper resta per i test, il capture e gli script che lavorano fuori dall'MDI.
+    """
 
     def __init__(self, project, spec: FormSpec, parent: QWidget | None = None) -> None:
         super().__init__(parent)

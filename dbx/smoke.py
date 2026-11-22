@@ -13,14 +13,15 @@ def run_smoke() -> int:
     from PyQt6.QtWidgets import QApplication
 
     from .core.form_model import FormSpec
-    from .core.project import Project
-    from .designers.form_builder import FormBuilderDialog
+    from .designers.form_builder import FormDesignerWidget
+    from .designers.form_expert import FormExpert
     from .designers.menu_builder import MenuBuilderDialog
     from .designers.project_builder import build_project, validate_project
     from .designers.report_builder import ReportBuilderDialog
     from .designers.script_builder import ScriptBuilderDialog
     from .designers.table_builder import TableBuilderDialog
     from .io.pdf_export import export_pdf, page_pixmap
+    from .runtime.form_runtime import FormRuntime
     from .runtime.report_engine import ReportSpec
     from .runtime.script_engine import ScriptEngine
     from .samples import create_demo_project
@@ -59,8 +60,21 @@ def run_smoke() -> int:
     checks.append("table builder")
 
     form_artifact = project.artifact("forms", "form_clienti")
-    FormBuilderDialog(project, FormSpec.from_dict(form_artifact))
-    checks.append("form builder")
+    form_designer = FormDesignerWidget(project, FormSpec.from_dict(form_artifact))
+    assert form_designer.canvas.page.controls
+    assert form_designer.object_combo.count() > 1
+    checks.append("form designer")
+
+    expert = FormExpert(project, suggested_name="form_smoke")
+    expert.initializePage(1)
+    expert_spec = expert.build_spec()
+    assert expert_spec.validate() == []
+    checks.append("form expert")
+
+    runtime = FormRuntime(project, FormSpec.from_dict(form_artifact))
+    runtime.perform("next")
+    assert runtime.rowset.index == 1
+    checks.append("form runtime + eventi")
 
     report_artifact = project.artifact("reports", "fatture_per_cliente")
     report_dialog = ReportBuilderDialog(project, ReportSpec.from_dict(report_artifact))
@@ -106,7 +120,7 @@ def run_smoke() -> int:
     print("SMOKE OK")
     for check in checks:
         print("  -", check)
-    del table_dialog, report_dialog
+    del table_dialog, report_dialog, form_designer, expert, runtime
     app.processEvents()
     return 0
 

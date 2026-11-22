@@ -223,6 +223,15 @@ class EditorHost(QObject):
         if sub is not None:
             sub.close()
 
+    def remove(self, key: str) -> None:
+        """Rimuove subito il documento con quella chiave, senza attendere deleteLater."""
+        sub = self.find(key)
+        if sub is None:
+            return
+        self.area.removeSubWindow(sub)
+        sub.close()
+        sub.deleteLater()
+
     def close_current(self) -> None:
         self.area.closeActiveSubWindow()
 

@@ -29,13 +29,14 @@ from .. import APP_NAME, __version__
 from ..config import add_recent, load_config, recent_projects, save_config
 from ..core.form_model import FormSpec
 from ..core.project import CATEGORY_LABELS, Project, ProjectError
-from ..designers.form_builder import FormBuilderDialog
+from ..designers.form_builder import FormDesignerWidget
+from ..designers.form_expert import FormExpert
 from ..designers.menu_builder import MenuBuilderDialog
 from ..designers.project_builder import BuildError, build_project, validate_project
 from ..designers.report_builder import ReportBuilderDialog
 from ..designers.script_builder import QtScriptUI, ScriptBuilderDialog
 from ..designers.table_builder import TableBuilderDialog
-from ..runtime.form_runtime import FormPreviewDialog
+from ..runtime.form_runtime import FormRuntime
 from ..runtime.report_engine import ReportSpec
 from ..runtime.script_engine import ScriptEngine
 from . import design, icons
@@ -57,10 +58,12 @@ OBJECT_ICONS = {
 MODES = {
     "DataView": "Sfoglia",
     "TableBuilderDialog": "Struttura",
+    "FormDesignerWidget": "Design",
     "FormBuilderDialog": "Design",
     "ReportBuilderDialog": "Design",
     "ScriptBuilderDialog": "Modifica",
     "MenuBuilderDialog": "Design",
+    "FormRuntime": "Esecuzione",
     "FormPreviewDialog": "Esecuzione",
     "ReportPreviewDialog": "Anteprima",
     "CommandWindow": "Comandi",
@@ -555,25 +558,22 @@ class MainWindow(QMainWindow):
             if not tables:
                 QMessageBox.information(self, "dBX", "Crea prima una tabella.")
                 return
+            if category == "forms":
+                self.new_form_wizard()
+                return
             table_name, ok = QInputDialog.getItem(
                 self, "Nuovo oggetto", "Tabella di riferimento:", tables, 0, False
             )
             if not ok:
                 return
             table = self.project.require_table(table_name)
-            if category == "forms":
-                spec = FormSpec.create(
-                    table, name=self._unique_name("forms", f"form_{table.name}")
-                )
-                dialog = FormBuilderDialog(self.project, spec, self)
-            else:
-                spec = ReportSpec.create(
-                    self._unique_name("reports", f"report_{table.name}"),
-                    table.name,
-                    f"Report {table.display_name()}",
-                )
-                spec.bands["detail"][0].expr = table.fields[0].name
-                dialog = ReportBuilderDialog(self.project, spec, self)
+            spec = ReportSpec.create(
+                self._unique_name("reports", f"report_{table.name}"),
+                table.name,
+                f"Report {table.display_name()}",
+            )
+            spec.bands["detail"][0].expr = table.fields[0].name
+            dialog = ReportBuilderDialog(self.project, spec, self)
             dialog.accepted.connect(self._refresh_navigator)
             self._open_designer(f"{category}:new:{id(dialog)}", dialog, category)
             return
@@ -601,13 +601,106 @@ class MainWindow(QMainWindow):
         if name:
             self.open_object("tables", name)
 
-    def _open_designer(self, key: str, dialog: QDialog, category: str):
-        return self.editors.open_dialog(
+    def _open_designer(self, key: str, widget: QWidget, category: str):
+        icon = icons.icon(OBJECT_ICONS.get(category, "finestra"))
+        if isinstance(widget, QDialog):
+            return self.editors.open_dialog(key, widget, icon=icon, size=widget.size())
+        return self.editors.open(
             key,
-            dialog,
-            icon=icons.icon(OBJECT_ICONS.get(category, "finestra")),
-            size=dialog.size(),
+            widget.windowTitle() or "Finestra",
+            widget,
+            icon=icon,
+            size=widget.size(),
         )
+
+    def new_form_wizard(self) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        tables = self.project.names("tables")
+        if not tables:
+            QMessageBox.information(self, "dBX", "Crea prima una tabella.")
+            return
+        suggested = self._unique_name("forms", f"form_{tables[0]}")
+        wizard = FormExpert(self.project, self, suggested_name=suggested)
+        if wizard.exec() != QDialog.DialogCode.Accepted:
+            return
+        spec = wizard.build_spec()
+        errors = spec.validate()
+        if errors:
+            QMessageBox.warning(self, "Form non valido", "\n".join(errors))
+            return
+        if self.project.artifact("forms", spec.name) is not None:
+            answer = QMessageBox.question(
+                self,
+                "Form esistente",
+                f"Il form «{spec.name}» esiste già. Sostituirlo?",
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+        self.project.put_object("forms", spec.to_dict())
+        self.project.save()
+        self._refresh_navigator()
+        self.open_form_designer(spec.name)
+        self.statusBar().showMessage(f"Form {spec.name} creato", 4000)
+
+    def open_form_designer(self, name: str) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        artifact = self.project.artifact("forms", name)
+        if artifact is None:
+            QMessageBox.warning(self, "Form", f"Form inesistente: {name}")
+            return
+        key = f"forms:{name}"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        designer = FormDesignerWidget(self.project, FormSpec.from_dict(artifact), self)
+        designer.preview_handler = self.preview_form
+        designer.saved.connect(self._refresh_navigator)
+        designer.status_message.connect(
+            lambda text: self.statusBar().showMessage(text, 4000)
+        )
+        sub = self.editors.open(
+            key,
+            f"Form Designer ({designer.spec.caption or designer.spec.name})",
+            designer,
+            icon=icons.icon("form"),
+            size=QSize(1160, 760),
+        )
+        designer.windowTitleChanged.connect(sub.setWindowTitle)
+
+    def preview_form(self, spec: FormSpec, record_id: int | None = None, key: str = "") -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        target = key or f"preview:forms:{spec.name}"
+        self.editors.remove(target)
+        try:
+            runtime = FormRuntime(self.project, spec, record_id)
+        except (ProjectError, ValueError) as exc:
+            QMessageBox.warning(self, "Form", str(exc))
+            return
+        runtime.browse_handler = lambda table: self.open_object("tables", table)
+        runtime.report_handler = self._show_report_preview
+        self.editors.open(
+            target,
+            f"{spec.caption or spec.name} — Esecuzione",
+            runtime,
+            icon=icons.icon("form"),
+            size=QSize(860, 660),
+        )
+
+    def _show_report_preview(self, dialog: ReportPreviewDialog) -> None:
+        name = getattr(getattr(dialog, "spec", None), "name", "")
+        key = f"preview:reports:{name}" if name else "preview:reports"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        self.editors.open_dialog(key, dialog, icon=icons.icon("report"), size=QSize(940, 800))
 
     def open_table_structure(self, name: str) -> None:
         if not self._require_project():
@@ -674,8 +767,9 @@ class MainWindow(QMainWindow):
                 self.mdi.setActiveSubWindow(existing)
                 return
             if category == "forms":
-                dialog = FormBuilderDialog(self.project, FormSpec.from_dict(artifact), self)
-            elif category == "reports":
+                self.open_form_designer(name)
+                return
+            if category == "reports":
                 dialog = ReportBuilderDialog(self.project, ReportSpec.from_dict(artifact), self)
             elif category == "scripts":
                 dialog = ScriptBuilderDialog(self.project, artifact, self)
@@ -695,12 +789,8 @@ class MainWindow(QMainWindow):
         elif category == "forms":
             artifact = self.project.artifact("forms", name)
             if artifact:
-                dialog = FormPreviewDialog(self.project, FormSpec.from_dict(artifact), self)
-                self.editors.open_dialog(
-                    f"preview:forms:{name}",
-                    dialog,
-                    icon=icons.icon("form"),
-                    size=QSize(760, 620),
+                self.preview_form(
+                    FormSpec.from_dict(artifact), key=f"preview:forms:{name}"
                 )
         elif category == "reports":
             dialog = ReportPreviewDialog(self.project, name, self)
