@@ -3,6 +3,66 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.3.0] — 2026-11-22
+
+Release del **Database Designer ER** e del flusso completo delle **query**: progettazione visuale,
+risultati in sola lettura e query come sorgente di form e report. Il Label Designer è stato rimosso.
+
+### Aggiunto
+
+- **Database Designer ER**: diagramma entità-relazione generato dalle tabelle reali, card con campi,
+  PK/FK, didascalie, archi ortogonali con crow’s foot, cardinalità 1:1/1:N e `ON DELETE`, pan/zoom
+  25–200%, auto-layout deterministico ed export PNG/SVG.
+- **Modifica schema dal canvas**: nuova tabella e modifica tabella con il Table Builder, creazione e
+  rimozione di relazioni con conferma, applicazione tramite `Project.apply_table` e backup del
+  database; eliminazione bloccata per tabelle referenziate.
+- **Categoria Schema** nel Navigator al posto di Etichette, con artefatto
+  `objects/diagrams/schema.diagram.json` per posizioni, zoom e note.
+- **Modello query**: `QuerySpec` serializzabile con tabella base, campi e alias, INNER/LEFT JOIN,
+  filtri a valore letterale, ordinamento multiplo, `DISTINCT` e validazione dei riferimenti.
+- **Motore query**: SQL sempre parametrizzato con `?`, conversione dei valori secondo il tipo reale
+  del campo, operatori `eq/ne/gt/ge/lt/le/contains/starts/ends/null/notnull`, escape dei caratteri
+  jolly in `LIKE` e `QueryResult` con colonne tipizzate.
+- **Query Designer**: albero tabelle/campi a spunta, schede Campi / Filtri / Ordinamento / SQL /
+  Risultato, join proposti dalle foreign key, anteprima SQL con parametri, risultato read-only
+  limitato a 500 righe mostrate, salvataggio e rinomina come `objects/queries/*.query.json`.
+- **Query Results**: finestra MDI read-only con intestazioni e formati dBX, aggiornamento,
+  conteggio righe/colonne ed export CSV.
+- **Query come sorgente dati**: `FormSpec` e `ReportSpec` accettano `source_type` tabella o query;
+  il Form Expert e il nuovo report scelgono la sorgente. I form su query mostrano i campi calcolati
+  in sola lettura, con Nuovo/Salva/Elimina disabilitati; i report su query supportano campi, gruppi,
+  totali, filtro e ordinamento.
+- **Demo**: query `fatture_clienti` (INNER JOIN) e `clienti_attivi` (filtro), form
+  `form_clienti_attivi`, report `fatture_clienti_report` e relative voci di menu.
+- **QA visiva**: nuovi rendering `16-query-designer.png` … `19-report-query.png`.
+
+### Cambiato
+
+- La categoria progetto `queries` entra in `CATEGORIES` e nella validazione e nella build.
+- `validate_project` controlla le query e i riferimenti `query` di form e report.
+- Il Navigator abilita la categoria **Query** e il filtro `*.query.json`; `Oggetto → Nuova query…`
+  crea una query dal desktop.
+- Il Report Designer mostra la sorgente come **Tabella · nome** o **Query · nome** e usa una tabella
+  sintetica delle colonne per i dialoghi Insert Field, Group, Total e Sort Order.
+- Il formato data predefinito `DD/MM/YYYY` viene tradotto correttamente in `strftime`.
+
+### Corretto
+
+- Le date nelle griglie e nei risultati delle query usano il formato dBX invece della rappresentazione
+  ISO.
+- L'ordinamento delle righe di query gestisce valori mancanti e `NULL` senza alterare l'ordine degli
+  altri campi.
+
+### Note di aggiornamento
+
+- I progetti 0.1 e 0.2 si aprono senza migrazione: `source_type` vale `table`, `query` è vuoto e la
+  categoria `queries` viene creata al primo salvataggio.
+- Il Label Designer e la categoria Etichette non fanno più parte dell'applicazione; usare il
+  Database Designer per lo schema e il Report Designer per la stampa.
+- Le query sono statiche: niente parametri interattivi, RIGHT/FULL JOIN, aggregazioni o query annidate.
+- I form su query sono in sola lettura nella 0.3; per inserire e modificare dati usare una tabella.
+- Query Results è una vista di controllo, non un Browse editabile.
+
 ## [0.2.2] — 2026-11-22
 
 Correzione della reattività delle voci dei menu a discesa della barra principale.
@@ -117,6 +177,7 @@ report a bande impilate, program editor e project editor.
 - Query Designer e Label Designer non fanno parte della 0.2 e restano previsti per la 0.3.
 - Gli screenshot di riferimento sono in `docs/reference/dbx-ui/renders/`.
 
+[0.3.0]: https://github.com/vigliafg/dbasex/releases/tag/v0.3.0
 [0.2.2]: https://github.com/vigliafg/dbasex/releases/tag/v0.2.2
 [0.2.1]: https://github.com/vigliafg/dbasex/releases/tag/v0.2.1
 [0.2.0]: https://github.com/vigliafg/dbasex/releases/tag/v0.2.0

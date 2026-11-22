@@ -1,11 +1,11 @@
-# Stato di parità UI — dBX 0.2 vs dBASE 5.5
+# Stato di parità UI — dBX 0.3 vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (0.3.0 in corso, Checkpoint B dopo O6)
+Aggiornato: 2026-11-22 (release 0.3.0)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
-`fuori scope` = escluso dalla 0.2 per decisione di piano; `mancante` = non implementato.
+`fuori scope` = escluso dalla 0.3 per decisione di piano; `mancante` = non implementato.
 
-| Finestra originale | Riferimento | Modulo dBX | Stato 0.2 | Gap principale |
+| Finestra originale | Riferimento | Modulo dBX | Stato 0.3 | Gap principale |
 |---|---|---|---|---|
 | Desktop + menu + SpeedBar | `01`, `43` | `dbx/ui/main_window.py` | fatto | — |
 | Navigator | `01`, `42`, `43` | `dbx/ui/navigator.py` | fatto | Immagini/Suoni/Cataloghi/Personalizzati disabilitate |
@@ -25,7 +25,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Menu Designer | — | `dbx/designers/menu_builder.py` | fatto | Anteprima come menu bar, non popup sempre aperto |
 | Project Editor/Builder | — | `dbx/designers/project_builder.py` | fatto | Build sincrono, senza barra di avanzamento |
 | Label Designer | — | — | rimosso | Sostituito dal Database Designer ER |
-| Interactive Tutor | `03` | — | fuori scope 0.2 | Non previsto nella 0.2 |
+| Interactive Tutor | `03` | — | fuori scope 0.3 | Non previsto nella 0.3 |
 | About | `42`, `43` | `dbx/ui/main_window.py` | parziale | Testo e versione presenti; chrome Borland non replicato |
 
 ## Note
@@ -38,6 +38,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - `15-database-designer.png`, `16-query-designer.png`, `17-query-results.png` coprono Database
   Designer, Query Designer e Query Results.
 - `18-form-query.png` e `19-report-query.png` mostrano form e report alimentati da query.
-- La checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md`.
+- Le checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md` e
+  `docs/qa-0.3.md`.
 - Il Label Designer è stato rimosso: la categoria Etichette è stata sostituita da **Schema**.
-- Query Designer, Query Results e le query come sorgente di form/report sono attivi in 0.3/O6.
+- Query Designer, Query Results e le query come sorgente di form/report sono parte della release 0.3.0.

@@ -1,6 +1,6 @@
 """dBX — personal database desktop ispirato a dBASE 5.5 for Windows."""
 
-__version__ = "0.2.2"
+__version__ = "0.3.0"
 APP_NAME = "dBX"
 APP_TITLE = "dBX — Personal Database"
 ORGANIZATION = "dBX"

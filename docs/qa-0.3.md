@@ -1,7 +1,7 @@
-# Collaudo dBX 0.3.0 — stato Checkpoint B
+# Collaudo dBX 0.3.0 — release
 
 Data: 2026-11-22. Scope: Database Designer ER, motore Query, Query Designer, Query Results e query
-come sorgente di form e report. Checkpoint A e B superati; O7 (release) da iniziare.
+come sorgente di form e report. Checkpoint A, B e C raggiunti; release 0.3.0 pubblicata.
 
 ## Comandi eseguiti
 
@@ -12,7 +12,7 @@ python tools/capture_ui.py
 python tools/capture_ui.py --theme dark
 ```
 
-Esito Checkpoint B: `269 passed`, smoke OK, cattura Aurora/Dark OK.
+Esito release: `269 passed`, smoke OK, cattura Aurora/Dark OK.
 
 ## Database Designer ER — O1–O3
 
@@ -99,7 +99,9 @@ Esito Checkpoint B: `269 passed`, smoke OK, cattura Aurora/Dark OK.
 - Query Results non offre modifica inline: è una vista di controllo, non un Browse.
 - I report su query usano le colonne della query; sottoreport e query annidate non sono previsti.
 
-## Prossimo passo
+## Release
 
-Checkpoint B superato. O0–O6 completate; prossimo passo O7 — QA finale, versione 0.3.0, CHANGELOG,
-tag `v0.3.0` e note di rilascio. Fermarsi e attendere `continua`.
+- Versione `0.3.0` in `dbx/__init__.py` e `pyproject.toml`.
+- CHANGELOG con sezione 0.3.0, note di aggiornamento e link al tag.
+- Tag `v0.3.0` su `main`.
+- I progetti 0.1/0.2 si aprono senza migrazione.

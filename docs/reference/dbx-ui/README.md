@@ -1,6 +1,6 @@
 # Rendering dell'interfaccia dBX
 
-Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.3.0 in corso), generati con:
+Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.3.0), generati con:
 
 ```bash
 python tools/capture_ui.py
@@ -8,7 +8,7 @@ python tools/capture_ui.py --theme dark
 ```
 
 La cattura usa il progetto demo, gira headless e scrive in `renders/`. I file in `renders/` sono
-l'unica fonte di verità per README, `docs/ui-parity.md` e `docs/qa-0.2.md`.
+l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `docs/qa-0.3.md`.
 
 | File | Finestra |
 |---|---|

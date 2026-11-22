@@ -1,14 +1,16 @@
 # dBX — personal database in stile dBASE 5.5
 
-**Versione 0.2.2** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
+**Versione 0.3.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
 con motore **SQLite**, ispirato a *dBASE 5.5 for Windows* (Borland). Riunisce in un'unica applicazione
 i costruttori visivi che resero celebre dBASE: tabelle, form, report, script, menu e progetto.
 L'interfaccia usa il tema **Aurora**: zone colorate con gradienti, menu con icona e descrizione,
 focus visibile e superfici chiare al posto del grigio Win16.
 
-La 0.2 realizza il **clone strutturale + chrome dBASE** concordato nel piano: desktop MDI, Navigator a
-categorie, Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande impilate,
-Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
+La 0.3 porta il **Database Designer ER** al posto del Label Designer e completa il flusso delle
+**query**: Query Designer visuale, Query Results in sola lettura e query usate come sorgente di form
+e report. Restano il **clone strutturale + chrome dBASE** concordato nel piano: desktop MDI, Navigator
+a categorie, Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande
+impilate, Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
 
 ## Funzioni
 
@@ -79,19 +81,25 @@ MioProgetto/
 ```
 
 I metadati (didascalie, formati, regole, relazioni) vivono nei JSON, versionabili con git;
-il database fisico è generato e migrato dal Table Builder. I JSON 0.1 si aprono senza migrazione:
-i campi introdotti nella 0.2 hanno default vuoti.
+il database fisico è generato e migrato dal Table Builder. I JSON 0.1 e 0.2 si aprono senza
+migrazione: i campi introdotti nelle versioni successive hanno default vuoti o `table`.
 
 ## Flusso di lavoro tipico
 
 1. **Progetto → Nuovo progetto**, poi **Oggetto → Nuova tabella**: definisci campi, indici e relazioni.
-2. **Oggetto → Nuovo form**: parti dal Form Expert o da un form vuoto, trascina i controlli, regola
+2. **Oggetto → Database Designer…** per vedere lo schema ER, creare relazioni e modificare le tabelle
+   con conferma e backup.
+3. **Oggetto → Nuova query**: scegli campi, join, filtri e ordinamento, prova l'SQL e il risultato,
+   poi salva. **Query Results** mostra la griglia read-only con export CSV.
+4. **Oggetto → Nuovo form**: parti dal Form Expert o da un form vuoto, trascina i controlli, regola
    le proprietà a destra e premi **Anteprima** per provare inserimento/modifica con dati reali.
-3. **Oggetto → Nuovo report**: scegli tabella, filtro, ordinamento, gruppi e bande; anteprima e PDF.
-4. **Oggetto → Nuovo script**: concatena azioni, prova con **Esegui**, salva.
-5. **Oggetto → Nuovo menu**: componi le voci e le azioni del menu runtime.
-6. **Progetto → Modifica progetto…**: imposta titolo, form e menu principale, valida e crea la build.
-7. **Procedure → Esegui progetto** per la prova finale, **Procedure → Build distribuibile** per
+   Scegliendo una query, il form mostra le colonne calcolate in sola lettura.
+5. **Oggetto → Nuovo report**: scegli tabella o query, filtro, ordinamento, gruppi e bande;
+   anteprima e PDF.
+6. **Oggetto → Nuovo script**: concatena azioni, prova con **Esegui**, salva.
+7. **Oggetto → Nuovo menu**: componi le voci e le azioni del menu runtime.
+8. **Progetto → Modifica progetto…**: imposta titolo, form e menu principale, valida e crea la build.
+9. **Procedure → Esegui progetto** per la prova finale, **Procedure → Build distribuibile** per
    ottenere cartella e zip pronti da consegnare.
 
 ## Ambienti dell'interfaccia
@@ -167,11 +175,14 @@ le scorciatoie principali.
 ```
 dbx/
   core/       db.py · metadata.py · types.py · ddl.py · expressions.py · form_model.py · project.py
-  runtime/    rowset.py · form_runtime.py · report_engine.py · script_engine.py
-  designers/  table_builder.py · form_builder.py · form_expert.py · report_builder.py
-              script_builder.py · menu_builder.py · project_builder.py
-  ui/         main_window.py · editor_host.py · navigator.py · data_view.py · report_preview.py
-              command_window.py · project_runner.py · widgets.py · theme.py · design.py · icons.py
+              query_model.py · query_engine.py
+  runtime/    rowset.py · query_rowset.py · form_runtime.py · report_engine.py · script_engine.py
+  designers/  table_builder.py · database_designer.py · query_builder.py · form_builder.py
+              form_expert.py · report_builder.py · script_builder.py · menu_builder.py
+              project_builder.py
+  ui/         main_window.py · editor_host.py · navigator.py · data_view.py · query_results.py
+              report_preview.py · command_window.py · project_runner.py · widgets.py · theme.py
+              design.py · icons.py
   io/         csv_io.py · pdf_export.py
   samples.py  progetto dimostrativo
 ```

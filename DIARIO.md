@@ -23,7 +23,7 @@
 | 0.3.0 — O4 Motore Query | completata (2026-11-22) | — |
 | 0.3.0 — O5 Query Designer | completata (2026-11-22) | — |
 | 0.3.0 — O6 Query Results/sorgente | completata (2026-11-22) | B |
-| 0.3.0 — O7 Release | da iniziare | C |
+| 0.3.0 — O7 Release | completata (2026-11-22) | C |
 
 ## Registro
 
@@ -517,3 +517,39 @@
 - **RIPRESA:** Checkpoint B attivo. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
   `git status`/`git log` e iniziare l'**Ondata 7 — release 0.3.0**: QA finale, versione 0.3.0,
   CHANGELOG, tag `v0.3.0`, note di rilascio. Non ripartire da O0–O6.
+
+### 2026-11-22 — Ondata 0.3.0 — O7 Release 0.3.0
+- **Stato:** in corso
+- **Obiettivo:** QA finale, versione 0.3.0, CHANGELOG, note di aggiornamento, tag `v0.3.0`.
+- **Scope:** bump versione, documentazione di release, verifica completa test/smoke/screenshot,
+  checkpoint C.
+- **File:** `dbx/__init__.py`, `pyproject.toml`, `CHANGELOG.md`, `README.md`, `PLAN.md`,
+  `docs/qa-0.3.md`, `docs/ui-parity.md`, `docs/reference/dbx-ui/README.md`,
+  `tests/test_ui_shell.py`, rendering `01`–`19`.
+- **Scelte:**
+  - versione `0.3.0` in `dbx/__init__.py`, `pyproject.toml`, README e test di release;
+  - CHANGELOG 0.3.0 con sezioni Aggiunto / Cambiato / Corretto / Note di aggiornamento e link al tag;
+  - README aggiornato al flusso query (Database Designer → Query Designer → Query Results → form e
+    report su query) e all'architettura con `query_model`, `query_engine`, `query_rowset`,
+    `query_builder`, `query_results`, `database_designer`;
+  - `docs/ui-parity.md` e `docs/reference/dbx-ui/README.md` riallineati alla release 0.3.0;
+  - `docs/qa-0.3.md` chiuso come collaudo di release.
+- **Test:** `269 passed`; smoke headless OK; catture Aurora e Dark OK; `dbx --version` = 0.3.0.
+- **Screenshot:** serie canonica `01`–`19` rigenerata in Aurora; Dark verificato.
+- **Problemi aperti:** nessuno bloccante; restano i limiti dichiarati della 0.3.
+- **Prossimo passo:** Checkpoint C e attesa di nuove istruzioni.
+
+## Checkpoint C — release 0.3.0 (2026-11-22)
+
+- **Stato ondate:** O0–O7 completate. Release 0.3.0 con Database Designer ER, motore Query,
+  Query Designer, Query Results e query come sorgente di form e report.
+- **Test eseguiti:** `269 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK;
+  `python tools/capture_ui.py` OK; `python tools/capture_ui.py --theme dark` OK.
+- **Screenshot:** serie `01`–`19` in Aurora; nuovi `16-query-designer.png`, `17-query-results.png`,
+  `18-form-query.png`, `19-report-query.png`.
+- **Rilascio:** versione `0.3.0`, tag `v0.3.0`, CHANGELOG e note di aggiornamento; progetti 0.1/0.2
+  compatibili senza migrazione.
+- **Decisioni rimandate all'utente:** eventuale 0.4 (aggregazioni, parametri query, più diagrammi,
+  form su query modificabili, RIGHT/FULL JOIN, Label Designer alternativo) da pianificare.
+- **RIPRESA:** piano 0.3.0 concluso con il Checkpoint C. La prima attività non completata è la
+  definizione della prossima release; non ripartire da O0–O7 senza una nuova pianificazione.
