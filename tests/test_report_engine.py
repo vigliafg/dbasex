@@ -227,3 +227,25 @@ def test_underline_roundtrip():
 def test_field_display_name_uses_table_and_field():
     assert field_display_name("fatture", "cliente") == "fatture->cliente"
     assert field_display_name("", "cliente") == "cliente"
+
+
+def test_text_control_interpolates_bracketed_fields():
+    spec = make_spec()
+    spec.bands["group_header"] = [
+        Control("gh", "text", x=0, y=0, w=170, h=6, text="Cliente: [cliente]")
+    ]
+    spec.groups = [{"field": "cliente", "label": "Cliente"}]
+    pages = render_report(spec, ROWS)
+    values = [op.text for op in pages[0].ops if op.text.startswith("Cliente: ")]
+    assert values == ["Cliente: Alfa", "Cliente: Beta"]
+
+
+def test_total_accepts_bare_field_name_and_counts_text_values():
+    spec = make_spec()
+    spec.bands["detail"] = [Control("c", "field", x=0, y=0, w=100, h=6, expr="cliente")]
+    spec.bands["summary"] = [
+        Control("n", "total", x=0, y=0, w=60, h=6, expr="cliente", func="count", label="Clienti: ")
+    ]
+    pages = render_report(spec, ROWS)
+    all_text = texts(pages)
+    assert "Clienti: 3" in all_text

@@ -1,35 +1,39 @@
-# Stato di parità UI — dBX vs dBASE 5.5
+# Stato di parità UI — dBX 0.2 vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (Checkpoint B, dopo Ondata 6)
+Aggiornato: 2026-11-22 (release 0.2.0, Checkpoint C)
 
-Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire; `mancante` = non implementato.
+Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
+`fuori scope` = escluso dalla 0.2 per decisione di piano; `mancante` = non implementato.
 
-| Finestra originale | Riferimento | Modulo dBX | Stato 0.1 | Target | Gap principale |
-|---|---|---|---|---|---|
-| Desktop + menu + SpeedBar | `01`, `43` | `dbx/ui/main_window.py` | fatto (O1, O4) | O1 | allinea/distribuisci attivi sul Form Designer |
-| Navigator | `01`, `42`, `43` | `dbx/ui/navigator.py` | fatto (O2) | O2 | Query/Etichette/Immagini/Suoni/Cataloghi/Personalizzati disabilitate |
-| Command Window | `01`, `02`, `04` | `dbx/ui/command_window.py` | fatto (O2) | O2 | comandi limitati a HELP/TABELLE/USE/RECORD/CLEAR/espressioni |
-| Browse / Table | `07`, `11`, `18` | `dbx/ui/data_view.py` | fatto (O2) | O2 | `Struttura…` si apre in MDI (O3) |
-| Table Structure | `08`, `09`, `13`, `14` | `dbx/designers/table_builder.py` | fatto (O3) | O3 | rinomina tabella rimandata; stampa minimale |
-| Query Designer | `15`, `19`, `20`, `21` | — | mancante | 0.3 | non implementato |
-| Query Results | `16`, `17` | — | mancante | 0.3 | non implementato |
-| Form Expert | `22`–`26` | `dbx/designers/form_expert.py` | fatto (O4) | O4 | query non disponibili; miniatura layout strutturale |
-| Form Designer | `27`–`31`, `40` | `dbx/designers/form_builder.py` | fatto (O4) | O4 | palette in pannello ridimensionabile, non flottante |
-| Properties Inspector | `30`, `31`, `40` | `dbx/ui/widgets.py` | fatto (O4) | O4 | inspector condiviso anche col Report Designer in O5 |
-| Program Editor | `31`, `32` | `dbx/designers/script_builder.py` | fatto (O6) | O6 | nessuna esecuzione passo-passo |
-| Menu Designer | — | `dbx/designers/menu_builder.py` | fatto (O6) | O6 | anteprima come menu bar, non popup aperto |
-| Project Editor/Builder | — | `dbx/designers/project_builder.py` | fatto (O6) | O6 | build sincrono, senza barra di avanzamento |
-| Report Designer | `32`–`38`, `41` | `dbx/designers/report_builder.py` | fatto (O5) | O5 | selezione singola; ordine bande di flusso fisso |
-| Report Preview | `39` | `dbx/ui/report_preview.py` | fatto (O5) | O5 | zoom persistente per sessione; pagina singola/continua |
-| Label Designer | — | — | mancante | 0.3 | non implementato |
-| Form Runtime | `40` | `dbx/runtime/form_runtime.py` | fatto (O4) | O4 | dispatcher di azioni, non linguaggio di scripting |
+| Finestra originale | Riferimento | Modulo dBX | Stato 0.2 | Gap principale |
+|---|---|---|---|---|
+| Desktop + menu + SpeedBar | `01`, `43` | `dbx/ui/main_window.py` | fatto | — |
+| Navigator | `01`, `42`, `43` | `dbx/ui/navigator.py` | fatto | Query/Etichette/Immagini/Suoni/Cataloghi/Personalizzati disabilitate |
+| Command Window | `01`, `02`, `04` | `dbx/ui/command_window.py` | fatto | Comandi limitati a HELP/TABELLE/USE/RECORD/CLEAR/espressioni |
+| Browse / Table | `07`, `11`, `18` | `dbx/ui/data_view.py` | fatto | — |
+| Table Structure | `08`, `09`, `13`, `14` | `dbx/designers/table_builder.py` | fatto | Rinomina tabella rimandata al motore; stampa minimale |
+| Query Designer | `15`, `19`, `20`, `21` | — | fuori scope 0.2 | Previsto per la 0.3 |
+| Query Results | `16`, `17` | — | fuori scope 0.2 | Previsto per la 0.3 |
+| Form Expert | `22`–`26` | `dbx/designers/form_expert.py` | fatto | Query non disponibili; miniatura layout strutturale |
+| Form Designer | `27`–`31`, `40` | `dbx/designers/form_builder.py` | fatto | Palette in pannello ridimensionabile, non flottante |
+| Properties Inspector | `30`, `31`, `40` | `dbx/ui/widgets.py` | fatto | Albero condiviso con il Report Designer |
+| Form Runtime | `40` | `dbx/runtime/form_runtime.py` | fatto | Dispatcher di azioni, non linguaggio di scripting |
+| Report Designer | `32`–`38`, `41` | `dbx/designers/report_builder.py` | fatto | Selezione singola; ordine delle bande di flusso fisso |
+| Report Preview | `39` | `dbx/ui/report_preview.py` | fatto | Zoom persistente per sessione; pagina singola/continua |
+| Program Editor | `31`, `32` | `dbx/designers/script_builder.py` | fatto | Nessuna esecuzione passo-passo |
+| Menu Designer | — | `dbx/designers/menu_builder.py` | fatto | Anteprima come menu bar, non popup sempre aperto |
+| Project Editor/Builder | — | `dbx/designers/project_builder.py` | fatto | Build sincrono, senza barra di avanzamento |
+| Label Designer | — | — | fuori scope 0.2 | Previsto per la 0.3 |
+| Interactive Tutor | `03` | — | fuori scope 0.2 | Non previsto nella 0.2 |
+| About | `42`, `43` | `dbx/ui/main_window.py` | parziale | Testo e versione presenti; chrome Borland non replicato |
 
 ## Note
 
 - Lo stato si riferisce alla struttura e al chrome, non al pixel-perfect.
-- Baseline O0 (tema Silver): `docs/reference/dbx-ui/renders/01-desktop.png` … `09-command-window.png`.
-- O1 aggiunge `10-desktop-mdi.png` con Browse e Form Designer aperti nell'area MDI.
-- O4 aggiorna `05-form-designer.png` (tre zone, righelli, Inspector ad albero) e `06-form-runtime.png` (runtime con barra di navigazione).
-- O5 aggiorna `07-report-designer.png` (foglio a bande impilate, due toolbar) e `08-report-preview.png` (toolbar inferiore completa).
-- O6 aggiunge `11-script-editor.png`, `12-menu-designer.png` e `13-project-editor.png`.
-- Ogni ondata aggiorna questa tabella.
+- Rendering canonici: `docs/reference/dbx-ui/renders/01-desktop.png` … `13-project-editor.png`;
+  indice in `docs/reference/dbx-ui/README.md`.
+- `10-desktop-mdi.png` mostra Browse e Form Designer nell'area MDI.
+- `11-script-editor.png`, `12-menu-designer.png` e `13-project-editor.png` coprono gli strumenti O6.
+- La checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md`.
+- Query Designer e Label Designer restano fuori dalla 0.2 per decisione di piano: le categorie del
+  Navigator sono visibili ma disabilitate, così l'assenza è esplicita e non un errore.

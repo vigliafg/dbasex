@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtWidgets import QToolBar
 
-from dbx.ui import design
+from dbx import __version__
+from dbx.ui import design, icons
 from dbx.ui.main_window import MainWindow
 
 
@@ -124,5 +126,41 @@ def test_command_window_opens_in_mdi_once(qapp, demo_project) -> None:
         qapp.processEvents()
         assert len(window.editors.windows()) == 1
         assert "Command Window" in window.object_label.text()
+    finally:
+        window.close()
+
+
+def test_release_version_and_pinned_pyqt() -> None:
+    assert __version__ == "0.2.0"
+
+
+def test_high_dpi_policy_and_icon_sizes(qapp) -> None:
+    assert (
+        QGuiApplication.highDpiScaleFactorRoundingPolicy()
+        == Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
+    sizes = {size.width() for size in icons.icon("nuovo").availableSizes()}
+    assert max(sizes) >= 32
+    assert {16, 20, 24, 32, 48}.issubset(sizes)
+
+
+def test_focus_is_visible_in_qss() -> None:
+    for theme in ("silver", "dark"):
+        sheet = design.qss(theme)
+        assert "QPushButton:focus" in sheet
+        assert "QToolButton:focus" in sheet
+
+
+def test_accessible_names_on_shell_and_navigator(qapp, demo_project) -> None:
+    window = MainWindow(demo_project)
+    try:
+        assert window.navigator.list.accessibleName() == "Oggetti del progetto"
+        assert window.navigator.filter_combo.accessibleName() == "Filtro dei file"
+        assert window.navigator._buttons["tables"].accessibleName() == "Tabelle"
+        window.open_command_window()
+        qapp.processEvents()
+        command = window.editors.current_editor()
+        assert command.input.accessibleName() == "Comando"
+        assert command.output.accessibleName() == "Risultati dei comandi"
     finally:
         window.close()

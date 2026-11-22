@@ -14,7 +14,7 @@
 | O4 — Form Designer/Expert/Runtime | completata (2026-11-22) | — |
 | O5 — Report Designer/Preview | completata (2026-11-22) | — |
 | O6 — Script/Menu/Project | completata (2026-11-22) | B |
-| O7 — QA e release 0.2 | da iniziare | C |
+| O7 — QA e release 0.2 | completata (2026-11-22) | C |
 
 ## Registro
 
@@ -250,8 +250,52 @@
 
 - **A** — raggiunto il 2026-11-22 (fine O3).
 - **B** — raggiunto il 2026-11-22 (fine O6).
-- **C** — previsto a fine O7 (release 0.2).
+- **C** — raggiunto il 2026-11-22 (release 0.2.0).
 
 ## Ripresa
 
-**Checkpoint B attivo.** Dopo `continua`: **Ondata 7 — QA e release 0.2**, poi **Checkpoint C**. Non ripartire da O0–O6.
+**Release 0.2.0 pubblicata.** Nessuna ondata successiva prevista nel piano 0.2; Query/Label Designer e Tutor restano per la 0.3.
+
+
+### 2026-11-22 — Ondata 7 — avvio
+- **Stato:** in corso
+- **Obiettivo:** QA visiva e funzionale, accessibilità, HiDPI, prestazioni, CI e release 0.2.0.
+- **File previsti:** README, CHANGELOG, `docs/ui-parity.md`, `docs/reference/dbase55/ui-spec.md`, `docs/qa-0.2.md`, CI, token/QSS, engine report, test, diario.
+
+### 2026-11-22 — Ondata 7 — chiusura
+- **Stato:** completata
+- **Branch/commit:** `main` — commit di release; tag `v0.2.0`
+- **Obiettivo:** passata finale sulla parità, accessibilità, HiDPI, prestazioni, documentazione e release.
+- **File toccati:** `README.md` (riscritto), `CHANGELOG.md` (nuovo), `docs/qa-0.2.md` (nuovo), `docs/ui-parity.md`, `docs/reference/dbase55/ui-spec.md`, `docs/reference/dbx-ui/README.md` (nuovo), `docs/reference/dbx-ui/renders/*`, `.github/workflows/ci.yml`, `pyproject.toml`, `dbx/__init__.py`, `dbx/runtime/report_engine.py`, `dbx/samples.py`, `dbx/ui/app.py`, `dbx/ui/design.py`, `dbx/ui/icons.py`, `dbx/ui/navigator.py`, `dbx/ui/widgets.py`, `dbx/ui/data_view.py`, `dbx/ui/command_window.py`, `dbx/designers/form_builder.py`, `dbx/designers/report_builder.py`, `dbx/designers/script_builder.py`, `dbx/designers/menu_builder.py`, `dbx/designers/project_builder.py`, `tests/test_ui_shell.py`, `tests/test_report_engine.py`, `tests/test_performance.py` (nuovo), `PLAN.md`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - Versione portata a **0.2.0** in `dbx/__init__.py` e `pyproject.toml`; `PyQt6` fissato a `6.10.2` per riproducibilità della CI.
+  - Correzione funzionale dei report: i testi fissi interpolano `[campo]` (l'intestazione gruppo mostra il valore, non il segnaposto); i totali accettano nomi di campo nudi; il conteggio conta anche valori non numerici. Il progetto demo usa `[numero]` per il totale fatture.
+  - QA visiva: palette del Form Designer compattata (altezza 22 px, font 8 px, splitter 420/260) così tutti i pulsanti dBASE e tutti i campi restano visibili nel pannello; nessuna modifica al modello.
+  - Accessibilità: nomi accessibili su Navigator, Command Window, Inspector, canvas, griglie ed editor; ordine di tabulazione in Navigator e designer; focus tratteggiato su pulsanti, tool button e schede; guida `F1` e README con le scorciatoie.
+  - HiDPI: politica di scala `PassThrough`, icone già multi-risoluzione 16–48 px; verifica visiva a 150% con rendering nitido di desktop, Form Designer e Report Designer.
+  - Prestazioni: nuovo `tests/test_performance.py` con budget 2 s per apertura demo e form con 100 controlli; misura reale ampiamente sotto il budget.
+  - CI: test headless con `QT_QPA_PLATFORM=offscreen` su Linux/Windows/macOS, smoke, cattura screenshot su Linux e artifact `dbx-screenshots-silver`.
+  - Documentazione: README riscritto per la 0.2 (funzioni, scorciatoie, accessibilità, HiDPI, limiti); `CHANGELOG.md` con note di rilascio; `docs/qa-0.2.md` con checklist finestra per finestra; `ui-spec.md` aggiornata nella sezione di corrispondenza.
+  - Rimossi i sette screenshot obsoleti della 0.1 in `docs/reference/dbx-ui/` (restano nella storia git); aggiunto un indice che punta a `renders/` come fonte canonica.
+  - Query Designer, Query Results, Label Designer e Interactive Tutor restano fuori scope 0.2 e sono dichiarati come tali, con categorie Navigator disabilitate.
+- **Test:** `205 passed`; smoke headless OK; cattura Silver e Dark OK; verifica HiDPI a 150% OK.
+- **Screenshot:** tutti i rendering `01`–`13` rigenerati in Silver; cattura Dark verificata. Versione 0.2.0 visibile nella barra di stato.
+- **Problemi aperti:**
+  - Palette non flottante e Report Designer a selezione singola.
+  - Ordine personalizzato delle bande di flusso non invertibile.
+  - Build sincrona; nessun debugger passo-passo.
+  - Anteprima menu come barra, non popup sempre aperto.
+  - La CI su Windows/macOS va confermata al primo push del workflow aggiornato.
+- **Prossimo passo:** nessuna ondata 0.2; aprire la 0.3 con Query Designer, Query Results e Label Designer.
+
+## Checkpoint C — release 0.2.0 (2026-11-22)
+
+- **Stato ondate:** O0–O7 completate; piano 0.2 chiuso.
+- **Versione:** `0.2.0`; tag `v0.2.0`.
+- **Test eseguiti:** `205 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK; `python tools/capture_ui.py` OK in Silver e Dark; verifica HiDPI a 150%.
+- **Screenshot:** `01`–`13` in `docs/reference/dbx-ui/renders/`; indice in `docs/reference/dbx-ui/README.md`.
+- **Documenti:** `README.md`, `CHANGELOG.md`, `docs/qa-0.2.md`, `docs/ui-parity.md`, `docs/reference/dbase55/ui-spec.md`.
+- **Decisioni rimandate all'utente:**
+  - Confermare la pubblicazione GitHub della release `v0.2.0` se il tag locale non basta.
+  - Decidere se la 0.3 debba partire da Query Designer o da Label Designer.
+- **RIPRESA:** piano 0.2 concluso. Per una nuova sessione leggere `PLAN.md` e questo diario; la prima attività non completata è la **0.3 — Query Designer, Query Results e Label Designer**. Non ripartire da O0–O7.

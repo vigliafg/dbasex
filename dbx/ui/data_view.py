@@ -181,6 +181,7 @@ class DataView(QWidget):
         filter_row = QHBoxLayout()
         filter_row.addWidget(QLabel("Cerca:"))
         self.search_edit = QLineEdit()
+        self.search_edit.setAccessibleName("Cerca nei record")
         self.search_edit.setPlaceholderText("testo in qualsiasi campo")
         self.search_edit.returnPressed.connect(self.apply_filter)
         filter_row.addWidget(self.search_edit, 1)
@@ -198,6 +199,7 @@ class DataView(QWidget):
         layout.addWidget(self.table_header)
 
         self.grid = QTableWidget(0, len(self.table.fields))
+        self.grid.setAccessibleName("Griglia dei record")
         self.grid.setHorizontalHeaderLabels([f.display_name() for f in self.table.fields])
         self.grid.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.grid.setEditTriggers(

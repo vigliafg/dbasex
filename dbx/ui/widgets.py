@@ -94,6 +94,7 @@ class PropertyInspector(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setAccessibleName("Object Inspector")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(6, 6, 6, 6)
         layout.setSpacing(4)
@@ -103,6 +104,7 @@ class PropertyInspector(QWidget):
         self.filter_edit = QLineEdit()
         self.filter_edit.setPlaceholderText("filtra le proprietà")
         self.filter_edit.setClearButtonEnabled(True)
+        self.filter_edit.setAccessibleName("Filtro rapido delle proprietà")
         self.filter_edit.textChanged.connect(self.apply_filter)
         filter_row.addWidget(self.filter_edit, 1)
         layout.addLayout(filter_row)
@@ -112,6 +114,7 @@ class PropertyInspector(QWidget):
         self.tree.setColumnCount(2)
         self.tree.setHeaderLabels(["Property", "Value"])
         self.tree.setRootIsDecorated(True)
+        self.tree.setAccessibleName("Proprietà dell'oggetto")
         self.tree.setAlternatingRowColors(False)
         self.tree.header().setStretchLastSection(True)
         self.tree.setColumnWidth(0, 104)
@@ -121,6 +124,7 @@ class PropertyInspector(QWidget):
         self.tabs.addTab(self.tree, "Proprietà")
 
         self.events = QTableWidget(0, 2)
+        self.events.setAccessibleName("Eventi dell'oggetto")
         self.events.setHorizontalHeaderLabels(["Evento", "Azione"])
         self.events.horizontalHeader().setStretchLastSection(True)
         self.events.verticalHeader().setVisible(False)
@@ -139,6 +143,7 @@ class PropertyInspector(QWidget):
         self.tabs.addTab(events_page, "Eventi")
 
         self.methods = QTableWidget(0, 2)
+        self.methods.setAccessibleName("Metodi dell'oggetto")
         self.methods.setHorizontalHeaderLabels(["Metodo", "Corpo"])
         self.methods.horizontalHeader().setStretchLastSection(True)
         self.methods.verticalHeader().setVisible(False)

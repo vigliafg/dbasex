@@ -7,10 +7,13 @@ schermo, stampante o PDF dallo stesso risultato.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field as dc_field
 from typing import Any, Iterable
 
 from ..core.expressions import Expression, ExpressionError
+
+_FIELD_TOKEN = re.compile(r"\[([^\[\]]+)\]")
 
 MM_PER_PT = 0.3527778
 LINE_FACTOR = 1.28
@@ -426,6 +429,9 @@ class _Accumulator:
     def add(self, value: Any) -> None:
         if value is None or value == "":
             return
+        if self.func == "count":
+            self.count += 1
+            return
         try:
             number = float(value)
         except (TypeError, ValueError):
@@ -595,12 +601,21 @@ class ReportRenderer:
             values.append("" if value is None else str(value))
         return tuple(values)
 
+    def _value_of(self, source: str, record: dict[str, Any]) -> Any:
+        """Valore di un campo o di un'espressione, con nomi nudi tollerati."""
+        source = str(source or "").strip()
+        if not source:
+            return None
+        if "[" not in source and "(" not in source:
+            return record.get(source)
+        try:
+            return Expression(source).evaluate(record, self.variables, self.spec.table)
+        except ExpressionError:
+            return record.get(source)
+
     def _accumulate(self, record: dict[str, Any], group: tuple[str, ...] | None) -> None:
         for control in self._total_controls:
-            try:
-                value = Expression(control.expr).evaluate(record, self.variables, self.spec.table)
-            except ExpressionError:
-                value = None
+            value = self._value_of(control.expr, record)
             self._report_acc[control.id].add(value)
             if not group:
                 continue
@@ -622,28 +637,29 @@ class ReportRenderer:
         if control.kind in ("line", "rect", "image"):
             return ""
         if control.kind == "text":
-            return control.text
+            return self._interpolate(control.text, record)
         if control.kind == "total":
             value = self._total_value(control, group)
             text = format_number(value)
             return f"{control.label}{text}" if control.label else text
         if record is None:
             return ""
-        expression_source = control.expr
-        if control.kind == "field" and "[" not in expression_source and "(" not in expression_source:
-            value = record.get(expression_source)
-        else:
-            try:
-                value = Expression(expression_source).evaluate(record, self.variables, self.spec.table)
-            except ExpressionError:
-                value = ""
+        value = self._value_of(control.expr, record)
         return _format_value(value, control.fmt)
 
+    def _interpolate(self, text: str, record: dict[str, Any] | None) -> str:
+        """Sostituisce i riferimenti ``[campo]`` nei testi fissi, se c'è un record."""
+        if record is None or "[" not in text:
+            return text
+
+        def replace(match: re.Match[str]) -> str:
+            value = self._value_of(match.group(1), record)
+            return "" if value is None else str(value)
+
+        return _FIELD_TOKEN.sub(replace, text)
+
     def _sort_key(self, record: dict[str, Any], field: str) -> tuple[int, Any]:
-        try:
-            value = Expression(field).evaluate(record, self.variables, self.spec.table)
-        except ExpressionError:
-            value = record.get(field)
+        value = self._value_of(field, record)
         if value is None or value == "":
             return (3, "")
         if isinstance(value, (int, float)) and not isinstance(value, bool):

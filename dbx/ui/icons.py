@@ -475,6 +475,7 @@ def make_action(
     if shortcut:
         action.setShortcut(shortcut)
     action.setToolTip(tooltip or text)
+    action.setStatusTip(tooltip or text)
     return action
 
 

@@ -324,6 +324,7 @@ class FormCanvas(QWidget):
         self._start_rects: dict[str, QRect] = {}
         self._start_rect = QRect()
         self.overlay = SelectionOverlay(self)
+        self.setAccessibleName("Area di disegno del form")
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAcceptDrops(True)
         self.setStyleSheet("background: %s;" % _tokens()["workspace"])
@@ -702,8 +703,8 @@ class PalettePanel(QWidget):
             button.setIconSize(icons.ICON_SIZE)
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
             button.setCheckable(True)
-            button.setFixedHeight(26)
-            button.setStyleSheet("font-size: 9px;")
+            button.setFixedHeight(22)
+            button.setStyleSheet("font-size: 8px;")
             button.setToolTip(f"Inserisci {name}")
             button.clicked.connect(
                 lambda _checked=False, n=name: self.button_selected.emit(n)
@@ -727,6 +728,7 @@ class PalettePanel(QWidget):
         field_layout.addWidget(self._section("Field"))
 
         self.fields = FieldList()
+        self.fields.setAccessibleName("Campi della tabella")
         self.fields.setIconSize(icons.ICON_SIZE)
         self.fields.setDragEnabled(True)
         self.fields.setDragDropMode(QAbstractItemView.DragDropMode.DragOnly)
@@ -745,7 +747,7 @@ class PalettePanel(QWidget):
         splitter = QSplitter(Qt.Orientation.Vertical)
         splitter.addWidget(upper_scroll)
         splitter.addWidget(field_box)
-        splitter.setSizes([560, 130])
+        splitter.setSizes([420, 260])
         layout.addWidget(splitter, 1)
         self.setMinimumWidth(240)
 
@@ -758,8 +760,8 @@ class PalettePanel(QWidget):
         button.setIconSize(icons.ICON_SIZE)
         button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         button.setCheckable(True)
-        button.setFixedHeight(26)
-        button.setStyleSheet("font-size: 9px;")
+        button.setFixedHeight(22)
+        button.setStyleSheet("font-size: 8px;")
         button.setToolTip(f"Inserisci {text}")
         button.clicked.connect(lambda _checked=False, k=key: self.tool_selected.emit(k))
         self.group.addButton(button)
@@ -983,6 +985,8 @@ class FormDesignerWidget(QWidget):
             status_row.addWidget(label)
         status_row.addStretch(1)
         layout.addLayout(status_row)
+        self.setTabOrder(self.object_combo, self.inspector.filter_edit)
+        self.setTabOrder(self.inspector.filter_edit, self.canvas)
         self._install_shortcuts()
 
     def _build_centre(self) -> QWidget:

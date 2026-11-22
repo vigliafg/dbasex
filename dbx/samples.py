@@ -85,7 +85,7 @@ def _report() -> ReportSpec:
     spec.bands["summary"] = [
         Control(id=new_id(), kind="line", x=0, y=0, w=170, h=2),
         Control(id=new_id(), kind="total", x=110, y=2, w=60, h=9, expr="[importo]", func="sum", label="Totale generale: ", font_size=12, bold=True, align="right"),
-        Control(id=new_id(), kind="total", x=0, y=2, w=60, h=8, expr="numero", func="count", label="Fatture: ", font_size=10),
+        Control(id=new_id(), kind="total", x=0, y=2, w=60, h=8, expr="[numero]", func="count", label="Fatture: ", font_size=10),
     ]
     return spec
 

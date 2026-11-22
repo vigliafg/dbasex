@@ -104,6 +104,7 @@ class Navigator(QWidget):
             button.setFixedHeight(46)
             button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             button.setProperty("nav_category", key)
+            button.setAccessibleName(label)
             if available:
                 button.setToolTip(f"Mostra {label.lower()}")
                 button.clicked.connect(
@@ -117,6 +118,10 @@ class Navigator(QWidget):
         column_layout.addStretch(1)
         outer.addWidget(column)
 
+        ordered = [self._buttons[key] for key in SELECTABLE_CATEGORIES if key in self._buttons]
+        for first, second in zip(ordered, ordered[1:]):
+            self.setTabOrder(first, second)
+
         right = QWidget()
         right_layout = QVBoxLayout(right)
         right_layout.setContentsMargins(8, 8, 8, 8)
@@ -128,6 +133,7 @@ class Navigator(QWidget):
         self.directory_edit.setReadOnly(True)
         self.directory_edit.setPlaceholderText("(nessun progetto)")
         self.directory_edit.setToolTip("Cartella del progetto corrente")
+        self.directory_edit.setAccessibleName("Directory corrente del progetto")
         directory_row.addWidget(self.directory_edit, 1)
         browse = QToolButton()
         browse.setText("…")
@@ -137,6 +143,7 @@ class Navigator(QWidget):
         right_layout.addLayout(directory_row)
 
         self.filter_combo = QComboBox()
+        self.filter_combo.setAccessibleName("Filtro dei file")
         for text, data in FILTERS:
             self.filter_combo.addItem(text, data)
         self.filter_combo.currentIndexChanged.connect(self._on_filter_changed)
@@ -147,6 +154,7 @@ class Navigator(QWidget):
         right_layout.addWidget(self.list_header)
 
         self.list = QListWidget()
+        self.list.setAccessibleName("Oggetti del progetto")
         self.list.setAlternatingRowColors(False)
         self.list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.list.customContextMenuRequested.connect(self._context_menu)
@@ -158,6 +166,11 @@ class Navigator(QWidget):
         self.hint = QLabel("Seleziona una categoria per iniziare.")
         self.hint.setWordWrap(True)
         self.hint.setObjectName("nav_hint")
+
+        if ordered:
+            self.setTabOrder(ordered[-1], self.directory_edit)
+        self.setTabOrder(self.directory_edit, self.filter_combo)
+        self.setTabOrder(self.filter_combo, self.list)
         right_layout.addWidget(self.hint)
         outer.addWidget(right, 1)
 

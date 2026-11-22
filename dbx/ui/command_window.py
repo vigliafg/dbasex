@@ -51,6 +51,7 @@ class CommandWindow(QWidget):
 
         command_frame, command_layout = self._pane("Command", "command_pane")
         self.input = QLineEdit()
+        self.input.setAccessibleName("Comando")
         self.input.setPlaceholderText(
             "espressione (2 + 2, UPPER(\"ciao\"), TODAY()) oppure comando (HELP, TABELLE, USE nome, RECORD)"
         )
@@ -61,6 +62,7 @@ class CommandWindow(QWidget):
 
         results_frame, results_layout = self._pane("Command Results", "results_pane")
         self.output = QPlainTextEdit()
+        self.output.setAccessibleName("Risultati dei comandi")
         self.output.setReadOnly(True)
         self.output.setFont(QFont(design.CODE_FONT.family, int(design.CODE_FONT.size_pt)))
         self.output.setMaximumBlockCount(5000)

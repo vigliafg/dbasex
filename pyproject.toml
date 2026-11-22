@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dbx"
-version = "0.1.0"
+version = "0.2.0"
 description = "dBX — personal database desktop ispirato a dBASE 5.5 for Windows, motore SQLite, interfaccia PyQt6"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "dBX contributors" }]
 keywords = ["database", "sqlite", "pyqt6", "dbase", "report", "form designer"]
-dependencies = ["PyQt6>=6.5"]
+dependencies = ["PyQt6==6.10.2"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.2", "ruff>=0.4"]

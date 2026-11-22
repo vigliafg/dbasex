@@ -254,6 +254,7 @@ QToolBar { background: $toolbar_bg; border: 0; border-bottom: 1px solid $menu_bo
 QToolBar::separator { width: 2px; background: transparent; border-left: 1px solid $panel_shadow; border-right: 1px solid $panel_light; margin: 2px 4px; }
 QToolButton { padding: 3px 5px; border: 1px solid transparent; border-radius: $toolbutton_radius; }
 QToolButton:hover { background: $toolbutton_hover; }
+QToolButton:focus, QPushButton:focus, QTabBar::tab:focus { border: 1px dotted $focus; }
 QToolButton:pressed, QToolButton:checked {
     background: $toolbutton_hover; border: 1px solid $panel_shadow;
     border-top-color: $panel_dark; border-left-color: $panel_dark;
@@ -320,6 +321,7 @@ QPushButton:pressed {
 }
 QPushButton:default { background: $default_button_bg; color: $default_button_text; border-color: $default_button_border; }
 QPushButton:default:hover { background: $default_button_hover; }
+QPushButton:focus { border: 1px dotted $focus; }
 QStatusBar { background: $status_bg; border-top: 1px solid $status_border; }
 QGroupBox { border: 1px solid $groupbox_border; border-radius: $groupbox_radius; margin-top: 10px; padding-top: 8px; }
 QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 4px; }

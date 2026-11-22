@@ -123,6 +123,7 @@ class ReportCanvas(QWidget):
         self._start_rect = QRectF()
         self._start_band_height = 0.0
         self._offset_mm = (0.0, 0.0)
+        self.setAccessibleName("Foglio del report")
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
 
@@ -950,6 +951,9 @@ class ReportDesignerWidget(QWidget):
         self.status_label = QLabel("L:— R:— · Banda: Details · Zoom 100%")
         self.status_label.setObjectName("report_status")
         layout.addWidget(self.status_label)
+        self.setTabOrder(self.name_edit, self.title_edit)
+        self.setTabOrder(self.title_edit, self.table_combo)
+        self.setTabOrder(self.table_combo, self.canvas)
         self._install_shortcuts()
 
     def _tool_button(self, text: str, tooltip: str, slot, *, checkable: bool = False) -> QToolButton:

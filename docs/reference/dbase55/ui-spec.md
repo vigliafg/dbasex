@@ -103,23 +103,35 @@ Colori di selezione: navy `#000080` con testo bianco; focus tratteggiato 1 px (m
   `1 of 1`, zoom, stampa, esporta, fax, `Close`, `10 of 10`, `Total: 10`, `100%`.
 - status bar: `Invoices   L:1.00   R:4.46`.
 
-## 7. Corrispondenza con dBX
+## 7. Corrispondenza con dBX 0.2
 
-| Finestra originale | Modulo dBX | Stato attuale | Da fare per la replica |
+La tabella di dettaglio, con stato e gap residui, è in `../../ui-parity.md`; la checklist di collaudo
+è in `../../qa-0.2.md`. Sintesi:
+
+| Finestra originale | Modulo dBX | Stato 0.2 | Nota |
 |---|---|---|---|
-| Desktop + menu | `dbx/ui/main_window.py` | menu in italiano, toolbar con sole icone | menu con la sequenza originale, toolbar a gruppi, status bar a campi |
-| Navigator | `dbx/ui/navigator.py` | albero a categorie | colonna icone verticale, filtro file, campo Current Directory, `[Untitled]` |
-| Command Window | `dbx/ui/command_window.py` | dialog a due aree | riquadri `Command`/`Command Results` affiancati e non modali |
-| Table Structure | `dbx/designers/table_builder.py` | schede Campi/Indici/Relazioni/DDL | finestra unica con intestazione Name/Type/metadati e griglia Field/Name/Type/Width/Decimal/Index |
-| Query Designer | — | non implementato (solo filtri) | griglia di query con relazioni trascinabili |
-| Form Expert | — | non implementato | wizard a 5 passi |
-| Form Designer | `dbx/designers/form_builder.py` | dialog con canvas e inspector | tre zone (palette, anteprima live, proprietà), righelli, griglia di punti, palette Controls/Field, Inspector a schede |
-| Properties Inspector | `dbx/ui/widgets.py` (`PropertyEditor`) | form etichetta/widget | albero con gruppi espandibili, combo oggetto, schede Properties/Events/Methods |
-| Browse / Table | `dbx/ui/data_view.py` | griglia con pulsanti | intestazione scura, colonna selettore, status con record |
-| Report Designer | `dbx/designers/report_builder.py` | canvas a bande con inspector | bande etichettate, due toolbar, griglia, dialoghi Insert Field / Sort Order |
-| Report Preview | `dbx/ui/report_preview.py` | pagine + Stampa/PDF | toolbar inferiore completa (navigazione, zoom, 100%) |
+| Desktop + menu + SpeedBar + status | `dbx/ui/main_window.py` | fatto | Sequenza menu dBASE, toolbar a icone, status a campi, MDI |
+| Navigator | `dbx/ui/navigator.py` | fatto | Categorie, filtro, directory, `[Untitled]`; categorie 0.3 disabilitate |
+| Command Window | `dbx/ui/command_window.py` | fatto | Due riquadri non modali nell'MDI |
+| Browse / Table | `dbx/ui/data_view.py` | fatto | Selettore, navigazione, filtro, ordinamento, editing |
+| Table Structure | `dbx/designers/table_builder.py` | fatto | Griglia unica e metadati; rinomina tabella rimandata al motore |
+| Query Designer / Query Results | — | fuori scope 0.2 | Previsti per la 0.3 |
+| Form Expert | `dbx/designers/form_expert.py` | fatto | Wizard a cinque passi |
+| Form Designer | `dbx/designers/form_builder.py` | fatto | Tre zone, righelli, maniglie, Inspector ad albero |
+| Properties Inspector | `dbx/ui/widgets.py` | fatto | Albero condiviso con il Report Designer |
+| Form Runtime | `dbx/runtime/form_runtime.py` | fatto | CRUD, sottomaschere, eventi come azioni singole |
+| Report Designer | `dbx/designers/report_builder.py` | fatto | Bande impilate, due toolbar, dialoghi |
+| Report Preview | `dbx/ui/report_preview.py` | fatto | Pagina singola/continua, zoom, stampa, PDF |
+| Program Editor | `dbx/designers/script_builder.py` | fatto | Numeri di riga, sintassi, vista bidirezionale |
+| Menu Designer | `dbx/designers/menu_builder.py` | fatto | Albero, azioni tipizzate, anteprima |
+| Project Editor / Builder | `dbx/designers/project_builder.py` | fatto | Validazione e build |
+| Label Designer | — | fuori scope 0.2 | Previsto per la 0.3 |
+| Interactive Tutor / About | `dbx/ui/main_window.py` | parziale | About presente; Tutor non previsto nella 0.2 |
 
-## 8. Ordine di lavoro consigliato
+Le palette dei designer sono pannelli ridimensionabili, non finestre tool flottanti; il target resta
+clone strutturale e chrome, non pixel-perfect Win16.
+
+## 8. Ordine di lavoro seguito nella 0.2
 
 1. QSS "Win95" (grigio argento, bordi infossati, pulsanti 3D) e tipografia: cambia l'aspetto di **tutte** le finestre in un colpo.
 2. Desktop: menu originali, toolbar a gruppi, status bar a campi, pulsanti `Command`/`Navigator`.
@@ -128,3 +140,6 @@ Colori di selezione: navy `#000080` con testo bianco; focus tratteggiato 1 px (m
 5. Table Structure unificata.
 6. Report Designer + Preview con toolbar originale.
 7. Wizard (Form Expert) e Query Designer.
+
+I punti 1–6 sono stati completati nella 0.2; il Form Expert è incluso. Query Designer, Query Results
+e Label Designer sono rinviati alla 0.3.

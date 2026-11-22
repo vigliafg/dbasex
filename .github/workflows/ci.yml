@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+env:
+  QT_QPA_PLATFORM: offscreen
+
 jobs:
   test:
     strategy:
@@ -24,9 +27,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: Test
+      - name: Test headless
         run: python -m pytest
       - name: Smoke headless
-        env:
-          QT_QPA_PLATFORM: offscreen
         run: python -m dbx --smoke
+      - name: Cattura screenshot
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: python tools/capture_ui.py
+      - name: Artifact screenshot Silver
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbx-screenshots-silver
+          path: docs/reference/dbx-ui/renders/*.png
+          if-no-files-found: error

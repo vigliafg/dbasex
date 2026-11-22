@@ -596,6 +596,10 @@ Default retrocompatibili; i JSON attuali devono caricarsi senza modifiche. Aggio
 - README e screenshot corrispondono all'app reale.
 - Tag `v0.2.0` e note di rilascio.
 
+**Esito 2026-11-22:** release 0.2.0. `205 passed`; smoke e cattura Silver/Dark verdi. Query Designer,
+Query Results e Label Designer restano esplicitamente fuori scope 0.2, con categorie disabilitate nel
+Navigator. Checklist in `docs/qa-0.2.md`; note in `CHANGELOG.md`; tag `v0.2.0`.
+
 ---
 
 ## 6. Checkpoint e protocollo di ripresa
@@ -704,7 +708,7 @@ Regole:
 | O4 — Form Designer/Expert/Runtime | `[x]` completata (2026-11-22) | — |
 | O5 — Report Designer/Preview | `[x]` completata (2026-11-22) | — |
 | O6 — Script/Menu/Project | `[x]` completata (2026-11-22) | **B** |
-| O7 — QA e release 0.2 | `[ ]` da iniziare | **C** |
+| O7 — QA e release 0.2 | `[x]` completata (2026-11-22) — versione 0.2.0 | **C** |
 
 ---
 

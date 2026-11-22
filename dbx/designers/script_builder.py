@@ -408,6 +408,7 @@ class ScriptBuilderWidget(QWidget):
 
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
         self.tree = QTreeWidget()
+        self.tree.setAccessibleName("Azioni dello script")
         self.tree.setHeaderLabels(["Azione", "Parametri"])
         self.tree.setColumnWidth(0, 200)
         self.tree.setAlternatingRowColors(False)
@@ -421,6 +422,7 @@ class ScriptBuilderWidget(QWidget):
         editor_layout.setContentsMargins(0, 0, 0, 0)
         editor_layout.setSpacing(2)
         self.text_view = CodeEditor()
+        self.text_view.setAccessibleName("Sorgente MiniScript")
         self.text_view.textChanged.connect(self._on_source_changed)
         editor_layout.addWidget(self.text_view, 1)
         text_bar = QHBoxLayout()
@@ -438,6 +440,7 @@ class ScriptBuilderWidget(QWidget):
         centre.addWidget(editor_box)
 
         self.log = QPlainTextEdit()
+        self.log.setAccessibleName("Log di esecuzione")
         self.log.setReadOnly(True)
         self.log.setObjectName("script_log")
         self.log.setFixedHeight(150)

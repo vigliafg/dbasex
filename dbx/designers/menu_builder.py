@@ -91,6 +91,7 @@ class MenuBuilderWidget(QWidget):
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         self.tree = QTreeWidget()
+        self.tree.setAccessibleName("Voci del menu")
         self.tree.setHeaderLabels(["Voce", "Azione", "Destinazione"])
         self.tree.setColumnWidth(0, 200)
         self.tree.setColumnWidth(1, 120)
@@ -126,6 +127,7 @@ class MenuBuilderWidget(QWidget):
         preview_layout.setContentsMargins(6, 6, 6, 6)
         preview_layout.addWidget(QLabel("Anteprima"))
         self.preview_bar = QMenuBar()
+        self.preview_bar.setAccessibleName("Anteprima del menu")
         preview_layout.addWidget(self.preview_bar)
         preview_layout.addStretch(1)
         self.preview_state = QLabel("")

@@ -223,6 +223,7 @@ class ProjectEditorWidget(QWidget):
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         self.tree = QTreeWidget()
+        self.tree.setAccessibleName("Oggetti del progetto")
         self.tree.setHeaderLabels(["Oggetto", "Tipo"])
         self.tree.setColumnWidth(0, 240)
         self.tree.itemDoubleClicked.connect(self._activate)
