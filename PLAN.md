@@ -697,7 +697,7 @@ Regole:
 
 | Ondata | Stato | Checkpoint |
 |---|---|---|
-| O0 — Baseline e design token | `[ ]` da iniziare | — |
+| O0 — Baseline e design token | `[x]` completata (2026-11-22) | — |
 | O1 — Shell/MDI/menu/tema | `[ ]` da iniziare | — |
 | O2 — Navigator/Command/Browse | `[ ]` da iniziare | — |
 | O3 — Table Structure | `[ ]` da iniziare | **A** |

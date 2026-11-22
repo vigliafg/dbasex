@@ -36,7 +36,7 @@ from ..designers.table_builder import TableBuilderDialog
 from ..runtime.form_runtime import FormPreviewDialog
 from ..runtime.report_engine import ReportSpec
 from ..runtime.script_engine import ScriptEngine
-from . import icons
+from . import design, icons
 from .command_window import CommandWindow
 from .data_view import DataView
 from .navigator import Navigator
@@ -593,7 +593,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Demo creata in {folder}", 6000)
 
     def toggle_theme(self, dark: bool) -> None:
-        theme = "dark" if dark else "light"
+        theme = "dark" if dark else design.DEFAULT_THEME
         self.config["theme"] = theme
         save_config(self.config)
         app = QApplication.instance()

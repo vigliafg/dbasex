@@ -14,6 +14,13 @@ Le immagini **non** sono asset dell'applicazione: servono solo come documentazio
 La guida Borland è relativa a dBASE 5.0 for Windows: l'interfaccia è la stessa di Visual dBASE 5.5,
 cambiano solo il nome nella barra del titolo e la finestra About (confronta `42-…` con `43-…`).
 
+## Provenienza e licenza
+
+Le immagini sono schermate di prodotto Borland/WinWorld/Gladir raccolte esclusivamente come
+documentazione di riferimento per la replica dell'interfaccia. **Non sono asset distribuiti con dBX**
+e non sono coperte dalla licenza MIT del progetto. Prima di una distribuzione pubblica del repository
+valutarne la rimozione o la sostituzione con link alle fonti originali.
+
 ## Indice delle immagini
 
 Cartella `images/`.

@@ -13,15 +13,17 @@ from PyQt6.QtWidgets import QApplication, QMessageBox, QSplashScreen
 
 from .. import APP_NAME, APP_TITLE, ORGANIZATION, __version__
 from ..config import config_dir
+from . import design
 from .theme import apply_theme
 
 
-def app_icon(size: int = 128) -> QIcon:
+def app_icon(size: int = 128, theme: str | None = None) -> QIcon:
+    accent, accent_text = design.brand(theme)
     pixmap = QPixmap(size, size)
-    pixmap.fill(QColor("#2f6f4f"))
+    pixmap.fill(QColor(accent))
     painter = QPainter(pixmap)
     try:
-        painter.setPen(QColor("#ffffff"))
+        painter.setPen(QColor(accent_text))
         font = QFont()
         font.setBold(True)
         font.setPointSize(int(size * 0.28))
@@ -32,12 +34,13 @@ def app_icon(size: int = 128) -> QIcon:
     return QIcon(pixmap)
 
 
-def splash() -> QSplashScreen:
+def splash(theme: str | None = None) -> QSplashScreen:
+    accent, accent_text = design.brand(theme)
     pixmap = QPixmap(460, 220)
-    pixmap.fill(QColor("#2f6f4f"))
+    pixmap.fill(QColor(accent))
     painter = QPainter(pixmap)
     try:
-        painter.setPen(QColor("#ffffff"))
+        painter.setPen(QColor(accent_text))
         font = QFont()
         font.setBold(True)
         font.setPointSize(34)
@@ -80,14 +83,15 @@ def install_exception_hook() -> None:
     sys.excepthook = hook
 
 
-def create_application(argv: list[str] | None = None, theme: str = "light") -> QApplication:
+def create_application(argv: list[str] | None = None, theme: str | None = None) -> QApplication:
+    resolved = design.normalize_theme(theme)
     app = QApplication(argv if argv is not None else sys.argv)
     app.setApplicationName(APP_NAME)
     app.setApplicationDisplayName(APP_TITLE)
     app.setOrganizationName(ORGANIZATION)
     app.setApplicationVersion(__version__)
-    app.setWindowIcon(app_icon())
-    apply_theme(app, theme)
+    app.setWindowIcon(app_icon(theme=resolved))
+    apply_theme(app, resolved)
     install_exception_hook()
     return app
 

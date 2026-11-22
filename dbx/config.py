@@ -29,7 +29,7 @@ def config_path() -> Path:
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "recent": [],
-    "theme": "light",
+    "theme": "silver",
     "last_dir": str(Path.home()),
     "window": None,
     "max_recent": 8,

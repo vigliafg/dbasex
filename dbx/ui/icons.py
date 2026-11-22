@@ -12,6 +12,8 @@ from PyQt6.QtCore import QPointF, QRectF, QSize, Qt
 from PyQt6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap, QPolygonF
 from PyQt6.QtWidgets import QApplication, QDialogButtonBox, QPushButton, QWidget
 
+from . import design
+
 ICON_SIZE = QSize(18, 18)
 
 BUTTON_ACTION_ICONS = {
@@ -25,8 +27,8 @@ BUTTON_ACTION_ICONS = {
     "close": "chiudi",
 }
 
-_dark = False
-_cache: dict[tuple[str, bool], QIcon] = {}
+_theme = design.DEFAULT_THEME
+_cache: dict[tuple[str, str], QIcon] = {}
 
 
 # --------------------------------------------------------------------- glifi
@@ -304,16 +306,22 @@ _GLYPHS: dict[str, Callable[[QPainter], None]] = {
 
 
 # ------------------------------------------------------------------- API
-def set_dark(dark: bool) -> None:
-    """Imposta il tema corrente delle icone (chiaro/scuro)."""
-    global _dark
-    if _dark != dark:
-        _dark = dark
+def set_theme(name: str | None = None) -> None:
+    """Imposta il tema corrente delle icone."""
+    global _theme
+    resolved = design.normalize_theme(name)
+    if _theme != resolved:
+        _theme = resolved
         _cache.clear()
 
 
+def set_dark(dark: bool) -> None:
+    """Compatibilità: seleziona il tema scuro o il default."""
+    set_theme("dark" if dark else design.DEFAULT_THEME)
+
+
 def _color() -> str:
-    return "#d9e6dc" if _dark else "#2b3a30"
+    return design.icon_color(_theme)
 
 
 def _pixmap(glyph: Callable[[QPainter], None], size: int) -> QPixmap:
@@ -338,7 +346,7 @@ def icon(name: str) -> QIcon:
     """Icona per nome; nomi sconosciuti ricadono sul simbolo «nuovo»."""
     if QApplication.instance() is None:  # pragma: no cover - senza GUI
         return QIcon()
-    key = (name, _dark)
+    key = (name, _theme)
     cached = _cache.get(key)
     if cached is not None:
         return cached
