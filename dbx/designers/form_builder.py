@@ -43,6 +43,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from ..core.query_engine import source_table
 from ..core.form_model import (
     BUTTON_ACTIONS,
     CONTROL_EVENTS,
@@ -53,7 +54,7 @@ from ..core.form_model import (
     FormPage,
     FormSpec,
 )
-from ..core.metadata import new_id
+from ..core.metadata import Table, new_id
 from ..core.project import Project, ProjectError
 from ..ui import design, icons
 from ..ui.menu import DescriptiveMenu, add_entry
@@ -780,9 +781,9 @@ class PalettePanel(QWidget):
         if button is not None:
             button.setChecked(True)
 
-    def set_table(self, table_name: str) -> None:
+    def set_table(self, table: Table | str | None) -> None:
         self.fields.clear()
-        table = self.project.table(table_name)
+        table = table if isinstance(table, Table) else self.project.table(table)
         if table is None:
             return
         for field in table.fields:
@@ -849,7 +850,9 @@ class FormDesignerWidget(QWidget):
         self.setObjectName("form_designer")
         self.project = project
         self.spec = spec
-        self.table = project.table(spec.table)
+        self.table = source_table(
+            project, spec.source_type, spec.table, spec.query
+        )
         self.clipboard: list[dict[str, Any]] = []
         self.page_index = 0
         self.tool = "pointer"
@@ -957,7 +960,7 @@ class FormDesignerWidget(QWidget):
         self.palette.tool_selected.connect(self._on_tool_selected)
         self.palette.button_selected.connect(self._on_button_selected)
         self.palette.field_activated.connect(self.add_field_control)
-        self.palette.set_table(self.spec.table)
+        self.palette.set_table(self.table)
         self.splitter.addWidget(self.palette)
 
         self.splitter.addWidget(self._build_centre())
@@ -1344,11 +1347,28 @@ class FormDesignerWidget(QWidget):
                     "• Data",
                     [
                         (
-                            "table",
-                            "Table",
-                            "choice",
-                            self.spec.table,
-                            self._table_choices(),
+                            "source",
+                            "Source",
+                            "ro",
+                            (
+                                f"Query · {self.spec.query}"
+                                if self.spec.source_type == "query"
+                                else f"Tabella · {self.spec.table}"
+                            ),
+                            None,
+                        ),
+                        *(
+                            [
+                                (
+                                    "table",
+                                    "Table",
+                                    "choice",
+                                    self.spec.table,
+                                    self._table_choices(),
+                                )
+                            ]
+                            if self.spec.source_type != "query"
+                            else []
                         ),
                     ],
                 ),
@@ -1471,7 +1491,7 @@ class FormDesignerWidget(QWidget):
             if key == "table":
                 self.spec.table = str(value or "")
                 self.table = self.project.table(self.spec.table)
-                self.palette.set_table(self.spec.table)
+                self.palette.set_table(self.table)
             elif key in ("width", "height"):
                 setattr(self.spec, key, max(120, int(value)))
                 self.canvas.load(self.spec, self.page_index)
@@ -1560,7 +1580,7 @@ class FormDesignerWidget(QWidget):
             self.table = self.project.table(self.spec.table)
             self.canvas.selection = []
             self._load_page(min(self.page_index, len(self.spec.pages) - 1))
-            self.palette.set_table(self.spec.table)
+            self.palette.set_table(self.table)
         finally:
             self._in_undo = False
         self._mark_dirty()

@@ -211,9 +211,9 @@ def from_storage(value: Any, type_name: str) -> Any:
 
 def python_format(fmt: str, type_name: str) -> str:
     """Traduce un formato dBASE (DD/MM/YYYY) in formato strftime."""
-    if not fmt:
-        return DEFAULT_FORMATS.get(type_name, "")
-    result = fmt
+    result = fmt or DEFAULT_FORMATS.get(type_name, "")
+    if not result:
+        return ""
     for token, repl in _FORMAT_TOKENS:
         result = result.replace(token, repl)
     return result

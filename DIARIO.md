@@ -22,7 +22,7 @@
 | 0.3.0 — O3 Editing schema | completata (2026-11-22) | A |
 | 0.3.0 — O4 Motore Query | completata (2026-11-22) | — |
 | 0.3.0 — O5 Query Designer | completata (2026-11-22) | — |
-| 0.3.0 — O6 Query Results/sorgente | da iniziare | B |
+| 0.3.0 — O6 Query Results/sorgente | completata (2026-11-22) | B |
 | 0.3.0 — O7 Release | da iniziare | C |
 
 ## Registro
@@ -471,3 +471,49 @@
 - **Screenshot:** `16-query-designer.png`.
 - **Prossimo passo:** O6 — Query Results, query come sorgente dati di form/report, validazione,
   build, QA e Checkpoint B.
+
+
+### 2026-11-22 — Ondata 0.3.0 — O6 Query Results e query come sorgente
+- **Stato:** completata
+- **Obiettivo:** chiudere il flusso delle query con Query Results, form e report alimentati da query,
+  validazione di progetto e QA del Checkpoint B.
+- **File:** `dbx/ui/query_results.py`, `dbx/runtime/query_rowset.py` (nuovi),
+  `dbx/designers/query_builder.py`, `dbx/designers/form_expert.py`,
+  `dbx/designers/form_builder.py`, `dbx/designers/report_builder.py`,
+  `dbx/runtime/form_runtime.py`, `dbx/runtime/report_engine.py`, `dbx/ui/report_preview.py`,
+  `dbx/ui/main_window.py`, `dbx/ui/navigator.py`, `dbx/core/form_model.py`,
+  `dbx/core/query_engine.py`, `dbx/core/types.py`, `dbx/designers/project_builder.py`,
+  `dbx/samples.py`, `dbx/smoke.py`, `tools/capture_ui.py`, test e documentazione.
+- **Scelte:**
+  - `QueryResult.as_table()` e `query_table()` espongono colonne, tipi e didascalie come una `Table`
+    sintetica, riusata da form, report, designer ed export senza duplicare il modello.
+  - `QueryRowset` fornisce navigazione read-only con la stessa interfaccia minima di `Rowset`;
+    `save`/`delete` sollevano `RowsetError` e i pulsanti Nuovo/Salva/Elimina sono disabilitati.
+  - `FormSpec` e `ReportSpec` hanno `source_type`/`query` additivi, con default `table`.
+  - Form Expert sceglie tabella o query; su query genera solo campi e navigazione, senza CRUD.
+  - Il nuovo report sceglie tabella o query; il Report Designer usa una tabella sintetica per i
+    dialoghi Insert Field / Group / Total / Sort Order; anteprima, filtri e ordinamento lavorano
+    sulle righe della query.
+  - Query Results è una griglia read-only con formattazione dBX, aggiornamento ed export CSV.
+  - `validate_project` valida le `QuerySpec` e i riferimenti `query` di form e report.
+  - Corretto `types.python_format`: il formato data predefinito ora viene tradotto in strftime.
+  - Demo: `form_clienti_attivi` (query read-only) e `fatture_clienti_report` (report su query), più
+    due voci nel menu principale.
+- **Test:** 269 test; nuovi test su cursore read-only, Query Results, export CSV, form/report su
+  query, Form Expert query, validazione delle sorgenti. Suite completa, smoke e catture verdi.
+- **Screenshot:** `17-query-results.png`, `18-form-query.png`, `19-report-query.png`.
+- **Prossimo passo:** Checkpoint B, poi O7 — release 0.3.0.
+
+## Checkpoint B — fine O6 (2026-11-22)
+
+- **Stato ondate:** O0–O6 completate; O7 da iniziare. Database Designer, Query Designer, Query Results
+  e query come sorgente di form/report sono funzionanti.
+- **Test eseguiti:** `269 passed`; smoke headless OK con Query Designer, Query Results, form e report
+  su query; catture Aurora e Dark OK.
+- **Screenshot:** serie `01`–`19`; nuovi `17-query-results.png`, `18-form-query.png`,
+  `19-report-query.png`.
+- **Decisioni:** form su query in sola lettura nella 0.3; query statiche senza parametri interattivi;
+  report su query con filtro/ordine applicati alle righe; version resta 0.2.2 fino a O7.
+- **RIPRESA:** Checkpoint B attivo. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
+  `git status`/`git log` e iniziare l'**Ondata 7 — release 0.3.0**: QA finale, versione 0.3.0,
+  CHANGELOG, tag `v0.3.0`, note di rilascio. Non ripartire da O0–O6.

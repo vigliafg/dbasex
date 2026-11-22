@@ -36,7 +36,7 @@ from ..designers.query_builder import NewQueryDialog, QueryDesignerWidget
 from ..designers.form_expert import FormExpert
 from ..designers.menu_builder import MenuBuilderWidget
 from ..designers.project_builder import BuildError, ProjectEditorWidget, build_project, validate_project
-from ..designers.report_builder import ReportDesignerWidget
+from ..designers.report_builder import NewReportDialog, ReportDesignerWidget
 from ..designers.script_builder import QtScriptUI, ScriptBuilderWidget
 from ..designers.table_builder import TableBuilderDialog
 from ..runtime.form_runtime import FormRuntime
@@ -48,6 +48,7 @@ from .data_view import DataView
 from .editor_host import EditorHost, editor_title, editor_widget
 from .menu import DescriptiveMenu, add_entry, add_submenu_entry
 from .navigator import Navigator
+from .query_results import QueryResultsWidget
 from .report_preview import ReportPreviewDialog
 from .theme import apply_theme
 
@@ -66,6 +67,7 @@ MODES = {
     "TableBuilderDialog": "Struttura",
     "DatabaseDesignerWidget": "Schema",
     "QueryDesignerWidget": "Query",
+    "QueryResultsWidget": "Risultati",
     "FormDesignerWidget": "Design",
     "FormBuilderDialog": "Design",
     "ReportBuilderDialog": "Design",
@@ -617,18 +619,23 @@ class MainWindow(QMainWindow):
             if category == "forms":
                 self.new_form_wizard()
                 return
-            table_name, ok = QInputDialog.getItem(
-                self, "Nuovo oggetto", "Tabella di riferimento:", tables, 0, False
-            )
-            if not ok:
+            suggested = self._unique_name("reports", f"report_{tables[0]}")
+            dialog = NewReportDialog(self.project, self, suggested)
+            if dialog.exec() != QDialog.DialogCode.Accepted:
                 return
-            table = self.project.require_table(table_name)
-            spec = ReportSpec.create(
-                self._unique_name("reports", f"report_{table.name}"),
-                table.name,
-                f"Report {table.display_name()}",
-            )
-            spec.bands["detail"][0].expr = table.fields[0].name
+            spec = dialog.spec()
+            errors = spec.validate()
+            if errors:
+                QMessageBox.warning(self, "Report non valido", "\n".join(errors))
+                return
+            if self.project.artifact("reports", spec.name) is not None:
+                answer = QMessageBox.question(
+                    self,
+                    "Report esistente",
+                    f"Il report «{spec.name}» esiste già. Sostituirlo?",
+                )
+                if answer != QMessageBox.StandardButton.Yes:
+                    return
             designer = ReportDesignerWidget(self.project, spec, self)
             self._wire_report_designer(designer)
             self._open_designer(f"reports:new:{id(designer)}", designer, category)
@@ -749,6 +756,7 @@ class MainWindow(QMainWindow):
         spec = QuerySpec.from_dict(artifact)
         designer = QueryDesignerWidget(self.project, spec, self)
         designer.saved.connect(self._refresh_navigator)
+        designer.results_requested.connect(self.open_query_results)
         designer.status_message.connect(
             lambda text: self.statusBar().showMessage(text, 4000)
         )
@@ -760,6 +768,33 @@ class MainWindow(QMainWindow):
             size=QSize(1120, 760),
         )
         designer.windowTitleChanged.connect(sub.setWindowTitle)
+
+    def open_query_results(self, name: str) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        artifact = self.project.artifact("queries", name)
+        if artifact is None:
+            QMessageBox.warning(self, "Query", f"Query inesistente: {name}")
+            return
+        key = f"results:queries:{name}"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        spec = QuerySpec.from_dict(artifact)
+        try:
+            results = QueryResultsWidget(self.project, spec, self)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Query Results", str(exc))
+            return
+        self.editors.open(
+            key,
+            f"Query Results — {spec.caption or spec.name}",
+            results,
+            icon=icons.icon("cerca"),
+            size=QSize(1000, 620),
+        )
 
     def open_form_designer(self, name: str) -> None:
         if not self._require_project():
@@ -1080,7 +1115,7 @@ class MainWindow(QMainWindow):
                     FormSpec.from_dict(artifact), key=f"preview:forms:{name}"
                 )
         elif category == "queries":
-            self.open_query_designer(name)
+            self.open_query_results(name)
         elif category == "reports":
             dialog = ReportPreviewDialog(self.project, name, self)
             self.editors.open_dialog(

@@ -171,6 +171,8 @@ class FormSpec:
     name: str
     caption: str = ""
     table: str = ""
+    source_type: str = "table"
+    query: str = ""
     width: int = 620
     height: int = 440
     order: str = ""
@@ -194,8 +196,12 @@ class FormSpec:
         errors: list[str] = []
         if not self.name:
             errors.append("Il form non ha un nome")
-        if not self.table:
+        if self.source_type not in ("table", "query"):
+            errors.append(f"Tipo di sorgente sconosciuto: {self.source_type}")
+        if self.source_type == "table" and not self.table:
             errors.append("Nessuna tabella collegata al form")
+        if self.source_type == "query" and not self.query:
+            errors.append("Nessuna query collegata al form")
         if not self.pages:
             errors.append("Il form non ha pagine")
         for page in self.pages:
@@ -213,6 +219,8 @@ class FormSpec:
             "name": self.name,
             "caption": self.caption,
             "table": self.table,
+            "source_type": self.source_type,
+            "query": self.query,
             "width": self.width,
             "height": self.height,
             "order": self.order,
@@ -232,6 +240,8 @@ class FormSpec:
             name=str(data.get("name", "")),
             caption=str(data.get("caption", "")),
             table=str(data.get("table", "")),
+            source_type=str(data.get("source_type", "table") or "table"),
+            query=str(data.get("query", "")),
             width=int(data.get("width", 620) or 620),
             height=int(data.get("height", 440) or 440),
             order=str(data.get("order", "")),
@@ -244,11 +254,33 @@ class FormSpec:
 
     # ------------------------------------------------------- generazione form
     @classmethod
+    def create_from_query(
+        cls, columns_table: Table, query: str, name: str | None = None
+    ) -> "FormSpec":
+        """Form generato dalle colonne di una query, in sola lettura."""
+        spec = cls.create(columns_table, name=name or f"form_{slugify(query)}")
+        spec.source_type = "query"
+        spec.query = query
+        spec.table = ""
+        spec.caption = columns_table.display_name()
+        for page in spec.pages:
+            page.controls = [
+                control
+                for control in page.controls
+                if not (
+                    control.kind == "button"
+                    and control.action in ("new", "save", "delete")
+                )
+            ]
+        return spec
+
+    @classmethod
     def create(cls, table: Table, name: str | None = None) -> "FormSpec":
         spec = cls(
             name=name or f"form_{slugify(table.name)}",
             caption=table.display_name(),
             table=table.name,
+            source_type="table",
             width=620,
             height=120 + 32 * max(1, len(table.fields)),
         )

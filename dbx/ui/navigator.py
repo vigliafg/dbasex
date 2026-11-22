@@ -310,7 +310,7 @@ class Navigator(QWidget):
                     structure = icons.make_action("Struttura…", "tabella", menu)
                     structure.triggered.connect(lambda _checked=False, n=name: self.structure_object.emit(n))
                     add_entry(menu, structure, "Modifica campi, indici e relazioni della tabella")
-                if category in ("tables", "forms", "reports", "scripts"):
+                if category in ("tables", "queries", "forms", "reports", "scripts"):
                     run = icons.make_action("Esegui", "esegui", menu)
                     run.triggered.connect(
                         lambda _checked=False, c=category, n=name: self.run_object.emit(c, n)

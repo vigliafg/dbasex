@@ -28,6 +28,7 @@ from PyQt6.QtWidgets import (
 from ..core.form_model import FormSpec, form_references
 from ..core.metadata import validate_project_tables
 from ..core.project import Project
+from ..core.query_model import QuerySpec
 from ..runtime.report_engine import ReportSpec
 from ..runtime.script_engine import ACTIONS
 
@@ -44,12 +45,22 @@ def validate_project(project: Project) -> list[str]:
     table_names = {name.lower() for name in tables}
     form_names = {name.lower() for name in project.names("forms")}
     report_names = {name.lower() for name in project.names("reports")}
+    query_names = {name.lower() for name in project.names("queries")}
     script_names = {name.lower() for name in project.names("scripts")}
+
+    for name, artifact in project.objects["queries"].items():
+        spec = QuerySpec.from_dict(artifact)
+        for error in spec.validate(tables):
+            errors.append(f"Query {name}: {error}")
 
     for name, artifact in project.objects["forms"].items():
         spec = FormSpec.from_dict(artifact)
         for error in spec.validate():
             errors.append(f"Form {name}: {error}")
+        if spec.source_type == "query":
+            if spec.query.lower() not in query_names:
+                errors.append(f"Form {name}: query inesistente {spec.query}")
+            continue
         for table in form_references(spec):
             if table and table.lower() not in table_names:
                 errors.append(f"Form {name}: tabella inesistente {table}")
@@ -58,7 +69,10 @@ def validate_project(project: Project) -> list[str]:
         spec = ReportSpec.from_dict(artifact)
         for error in spec.validate():
             errors.append(f"Report {name}: {error}")
-        if spec.table and spec.table.lower() not in table_names:
+        if spec.source_type == "query":
+            if spec.query.lower() not in query_names:
+                errors.append(f"Report {name}: query inesistente {spec.query}")
+        elif spec.table and spec.table.lower() not in table_names:
             errors.append(f"Report {name}: tabella inesistente {spec.table}")
 
     for name, artifact in project.objects["scripts"].items():

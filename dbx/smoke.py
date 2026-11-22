@@ -22,6 +22,7 @@ def run_smoke() -> int:
     from .designers.menu_builder import MenuBuilderWidget
     from .designers.project_builder import ProjectEditorWidget
     from .designers.report_builder import ReportDesignerWidget
+    from .ui.query_results import QueryResultsWidget
     from .designers.script_builder import ScriptBuilderWidget
     from .designers.table_builder import TableBuilderDialog
     from .io.pdf_export import export_pdf, page_pixmap
@@ -32,7 +33,7 @@ def run_smoke() -> int:
     from .ui.app import create_application
     from .ui.data_view import DataView
     from .ui.main_window import MainWindow
-    from .ui.report_preview import build_pages
+    from .ui.report_preview import ReportPreviewDialog, build_pages
 
     app = QApplication.instance() or create_application(["dbx-smoke"])
     # In headless non devono comparire dialoghi modali: le traceback vanno su stderr.
@@ -98,6 +99,20 @@ def run_smoke() -> int:
     assert query_designer.tree.topLevelItemCount() == 2
     checks.append("query designer")
 
+    query_results = QueryResultsWidget(project, "fatture_clienti")
+    assert query_results.table.rowCount() == 5
+    assert query_results.table.columnCount() == 5
+    checks.append("query results")
+
+    query_form = FormRuntime(project, FormSpec.from_dict(project.artifact("forms", "form_clienti_attivi")))
+    assert query_form.read_only is True
+    assert query_form.rowset.count() == 2
+    checks.append("form su query")
+
+    query_report = ReportPreviewDialog(project, "fatture_clienti_report")
+    assert query_report.pages
+    checks.append("report su query")
+
     script_editor = ScriptBuilderWidget(project, project.artifact("scripts", "riepilogo_fatture"))
     assert script_editor.tree.topLevelItemCount() > 0
     assert script_editor.text_view.line_number_width() > 0
@@ -113,7 +128,6 @@ def run_smoke() -> int:
 
     spec = ReportSpec.from_dict(report_artifact)
     from .ui.project_runner import ProjectRunner
-    from .ui.report_preview import ReportPreviewDialog
 
     preview = ReportPreviewDialog(project, "fatture_per_cliente")
     assert preview.pages, "anteprima report vuota"
@@ -146,7 +160,21 @@ def run_smoke() -> int:
     print("SMOKE OK")
     for check in checks:
         print("  -", check)
-    del table_dialog, report_dialog, database_designer, query_designer, form_designer, expert, runtime, script_editor, menu_designer, project_editor
+    del (
+    table_dialog,
+    report_dialog,
+    database_designer,
+    query_designer,
+    query_results,
+    query_form,
+    query_report,
+    form_designer,
+    expert,
+    runtime,
+    script_editor,
+    menu_designer,
+    project_editor,
+)
     app.processEvents()
     return 0
 

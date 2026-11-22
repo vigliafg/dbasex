@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFormLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -37,7 +38,9 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from ..core.metadata import new_id, slugify
+from ..core.metadata import Table, new_id, slugify
+from ..core.query_engine import QueryError, query_table, run_query
+from ..core.query_model import QuerySpec
 from ..core.project import Project, ProjectError
 from ..runtime.report_engine import (
     BAND_LABELS,
@@ -56,6 +59,16 @@ GUTTER = 96
 SNAP_MM = 0.5
 MIN_CONTROL_MM = 2.0
 MIN_BAND_MM = 4.0
+
+
+def _table_model(project: Project, table: Table | str | None) -> Table | None:
+    if isinstance(table, Table):
+        return table
+    return project.table(table) if table else None
+
+
+def _source_name(table: Table | str | None) -> str:
+    return table.name if isinstance(table, Table) else str(table or "")
 
 
 def _tokens() -> dict[str, str]:
@@ -324,7 +337,12 @@ class ReportCanvas(QWidget):
         else:
             text = control.text or control.expr
             if control.kind == "field" and control.expr:
-                text = field_display_name(self.spec.table if self.spec else "", control.expr)
+                source = ""
+                if self.spec is not None:
+                    source = (
+                        self.spec.query if self.spec.source_type == "query" else self.spec.table
+                    )
+                text = field_display_name(source, control.expr)
             elif control.kind == "expr":
                 text = f"= {control.expr}"
             elif control.kind == "total":
@@ -515,20 +533,43 @@ class ReportCanvas(QWidget):
 class FieldDataDialog(QDialog):
     """``Browse Field Data…``: primi valori distinti del campo."""
 
-    def __init__(self, project: Project, table: str, field: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        project: Project,
+        table: Table | str,
+        field: str,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
-        self.setWindowTitle(f"Field Data — {field_display_name(table, field)}")
+        name = _source_name(table)
+        self.setWindowTitle(f"Field Data — {field_display_name(name, field)}")
         layout = QVBoxLayout(self)
         self.list = QListWidget()
-        try:
-            rows = project.db.query(
-                f'SELECT DISTINCT "{field}" AS value FROM "{table}" '
-                f'WHERE "{field}" IS NOT NULL LIMIT 50'
-            )
-        except Exception:  # pragma: no cover - difensivo
-            rows = []
-        for row in rows:
-            self.list.addItem(str(row.get("value")))
+        values: list[str] = []
+        query = QuerySpec.from_project(project, name) if isinstance(table, Table) else None
+        if query is not None:
+            try:
+                result = run_query(project, query)
+                seen: list[str] = []
+                for row in result.rows:
+                    value = row.get(field)
+                    text = "" if value is None else str(value)
+                    if text and text not in seen:
+                        seen.append(text)
+                values = seen[:50]
+            except QueryError:
+                values = []
+        else:
+            try:
+                rows = project.db.query(
+                    f'SELECT DISTINCT "{field}" AS value FROM "{name}" '
+                    f'WHERE "{field}" IS NOT NULL LIMIT 50'
+                )
+                values = [str(row.get("value")) for row in rows]
+            except Exception:  # pragma: no cover - difensivo
+                values = []
+        for value in values:
+            self.list.addItem(value)
         layout.addWidget(self.list, 1)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
@@ -541,18 +582,21 @@ class FieldDataDialog(QDialog):
 class InsertFieldDialog(QDialog):
     """``Insert Database Field`` con elenco ``TABELLA->CAMPO``."""
 
-    def __init__(self, project: Project, table: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, project: Project, table: Table | str, parent: QWidget | None = None
+    ) -> None:
         super().__init__(parent)
         self.project = project
         self.table = table
+        name = _source_name(table)
         self.setWindowTitle("Insert Database Field")
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel(f"Campi di {table or '(nessuna tabella)'}"))
+        layout.addWidget(QLabel(f"Campi di {name or '(nessuna tabella)'}"))
         self.list = QListWidget()
         self.list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        model = project.table(table) if table else None
+        model = _table_model(project, table)
         for field in (model.fields if model else []):
-            item = QListWidgetItem(field_display_name(table, field.name))
+            item = QListWidgetItem(field_display_name(name, field.name))
             item.setData(Qt.ItemDataRole.UserRole, field.name)
             item.setToolTip(f"{field.type} · {field.display_name()}")
             self.list.addItem(item)
@@ -627,7 +671,7 @@ class SortOrderDialog(QDialog):
     def __init__(
         self,
         project: Project,
-        table: str,
+        table: Table | str,
         sort_fields: list[dict[str, str]],
         parent: QWidget | None = None,
     ) -> None:
@@ -635,15 +679,16 @@ class SortOrderDialog(QDialog):
         self.setWindowTitle("Record Sort Order")
         self.project = project
         self.table = table
+        self.source_name = _source_name(table)
         self._entries = [dict(entry) for entry in sort_fields]
         layout = QVBoxLayout(self)
         columns = QHBoxLayout()
         left = QVBoxLayout()
         left.addWidget(QLabel("Report Fields"))
         self.available = QListWidget()
-        model = project.table(table) if table else None
+        model = _table_model(project, table)
         for field in (model.fields if model else []):
-            item = QListWidgetItem(field_display_name(table, field.name))
+            item = QListWidgetItem(field_display_name(self.source_name, field.name))
             item.setData(Qt.ItemDataRole.UserRole, field.name)
             self.available.addItem(item)
         left.addWidget(self.available)
@@ -693,7 +738,7 @@ class SortOrderDialog(QDialog):
         self.sorted.clear()
         for entry in self._entries:
             direction = "A" if entry.get("direction", "asc") == "asc" else "D"
-            label = field_display_name(self.table, entry["field"]) + f"  ({direction})"
+            label = field_display_name(self.source_name, entry["field"]) + f"  ({direction})"
             item = QListWidgetItem(label)
             item.setData(Qt.ItemDataRole.UserRole, dict(entry))
             self.sorted.addItem(item)
@@ -734,7 +779,7 @@ class SortOrderDialog(QDialog):
         if not (0 <= row < len(self._entries)):
             return
         entry = self._entries.pop(row)
-        item = QListWidgetItem(field_display_name(self.table, entry["field"]))
+        item = QListWidgetItem(field_display_name(self.source_name, entry["field"]))
         item.setData(Qt.ItemDataRole.UserRole, entry["field"])
         self.available.addItem(item)
         self._refresh_sorted()
@@ -755,16 +800,19 @@ class SortOrderDialog(QDialog):
 class GroupDialog(QDialog):
     """``Insert Group`` minimo: campo e didascalia."""
 
-    def __init__(self, project: Project, table: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, project: Project, table: Table | str, parent: QWidget | None = None
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Insert Group")
         layout = QVBoxLayout(self)
         form = QHBoxLayout()
         form.addWidget(QLabel("Campo:"))
         self.field_combo = QComboBox()
-        model = project.table(table) if table else None
+        model = _table_model(project, table)
+        name = _source_name(table)
         for field in (model.fields if model else []):
-            self.field_combo.addItem(field_display_name(table, field.name), field.name)
+            self.field_combo.addItem(field_display_name(name, field.name), field.name)
         form.addWidget(self.field_combo, 1)
         form.addWidget(QLabel("Didascalia:"))
         self.label_edit = QLineEdit()
@@ -788,16 +836,19 @@ class GroupDialog(QDialog):
 class TotalDialog(QDialog):
     """``Insert Total`` minimo: campo, funzione, prefisso e banda."""
 
-    def __init__(self, project: Project, table: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, project: Project, table: Table | str, parent: QWidget | None = None
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Total")
         layout = QVBoxLayout(self)
         grid = QHBoxLayout()
         grid.addWidget(QLabel("Campo:"))
         self.field_combo = QComboBox()
-        model = project.table(table) if table else None
+        model = _table_model(project, table)
+        name = _source_name(table)
         for field in (model.fields if model else []):
-            self.field_combo.addItem(field_display_name(table, field.name), field.name)
+            self.field_combo.addItem(field_display_name(name, field.name), field.name)
         grid.addWidget(self.field_combo, 1)
         grid.addWidget(QLabel("Funzione:"))
         self.func_combo = QComboBox()
@@ -846,6 +897,72 @@ class TotalDialog(QDialog):
         return str(self.band_combo.currentData() or "summary"), control
 
 
+class NewReportDialog(QDialog):
+    """Sceglie nome, titolo e sorgente (tabella o query) del nuovo report."""
+
+    def __init__(
+        self, project: Project, parent: QWidget | None = None, suggested_name: str = ""
+    ) -> None:
+        super().__init__(parent)
+        self.project = project
+        self.setWindowTitle("Nuovo report")
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+        self.name_edit = QLineEdit(suggested_name)
+        self.title_edit = QLineEdit()
+        self.title_edit.setPlaceholderText("Titolo stampato nel report")
+        self.source_combo = QComboBox()
+        for name in project.names("tables"):
+            self.source_combo.addItem(f"Tabella · {name}", ("table", name))
+        for name in project.names("queries"):
+            self.source_combo.addItem(f"Query · {name}", ("query", name))
+        form.addRow("Nome", self.name_edit)
+        form.addRow("Titolo", self.title_edit)
+        form.addRow("Sorgente", self.source_combo)
+        layout.addLayout(form)
+        hint = QLabel(
+            "Una query è una sorgente in sola lettura con campi calcolati, join e filtri. "
+            "Il report usa le colonne della query come campi del dettaglio."
+        )
+        hint.setObjectName("nav_hint")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+        self.resize(460, 240)
+
+    def accept(self) -> None:
+        if not self.name_edit.text().strip():
+            QMessageBox.warning(self, "Nuovo report", "Indica un nome per il report.")
+            return
+        if not self.source_combo.currentData():
+            QMessageBox.warning(self, "Nuovo report", "Crea prima una tabella o una query.")
+            return
+        super().accept()
+
+    def spec(self) -> ReportSpec:
+        data = self.source_combo.currentData()
+        kind, name = str(data[0]), str(data[1])
+        title = self.title_edit.text().strip()
+        report_name = self.name_edit.text().strip()
+        if kind == "query":
+            table = query_table(self.project, name)
+            fields = [field.name for field in table.fields]
+            return ReportSpec.create_for_query(
+                report_name, name, fields, title or f"Report {table.display_name()}"
+            )
+        table = self.project.require_table(name)
+        spec = ReportSpec.create(
+            report_name, table.name, title or f"Report {table.display_name()}"
+        )
+        spec.bands["detail"][0].expr = table.fields[0].name if table.fields else ""
+        return spec
+
+
 # ------------------------------------------------------------------- designer
 class ReportDesignerWidget(QWidget):
     """Report Designer a foglio unico, ospitato nell'area MDI."""
@@ -874,6 +991,37 @@ class ReportDesignerWidget(QWidget):
         self._build_ui()
         self._load()
 
+    # ------------------------------------------------------------------ fonte
+    def _source_entries(self) -> list[tuple[str, str, str]]:
+        entries = [
+            ("table", name, f"Tabella · {name}") for name in self.project.names("tables")
+        ]
+        entries += [
+            ("query", name, f"Query · {name}") for name in self.project.names("queries")
+        ]
+        return entries
+
+    def _source_key(self) -> tuple[str, str]:
+        if self.spec.source_type == "query":
+            return ("query", self.spec.query)
+        return ("table", self.spec.table)
+
+    def _source_index(self, key: tuple[str, str]) -> int:
+        for index in range(self.table_combo.count()):
+            if self.table_combo.itemData(index) == key:
+                return index
+        return -1
+
+    def _field_table(self) -> Table | str:
+        if self.spec.source_type == "query":
+            try:
+                return query_table(
+                    self.project, self.spec.query, self.spec.title or self.spec.name
+                )
+            except QueryError:
+                return ""
+        return self.spec.table
+
     # --------------------------------------------------------------------- UI
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -887,9 +1035,9 @@ class ReportDesignerWidget(QWidget):
         self.title_edit = QLineEdit(self.spec.title)
         self.title_edit.setPlaceholderText("Titolo")
         self.table_combo = QComboBox()
-        for name in self.project.names("tables"):
-            self.table_combo.addItem(name, name)
-        self.table_combo.setCurrentIndex(max(0, self.table_combo.findData(self.spec.table)))
+        for kind, name, label in self._source_entries():
+            self.table_combo.addItem(label, (kind, name))
+        self.table_combo.setCurrentIndex(max(0, self._source_index(self._source_key())))
         self.filter_edit = QLineEdit(self.spec.filter)
         self.filter_edit.setPlaceholderText("Filtro SQL")
         self.order_edit = QLineEdit(self.spec.order)
@@ -897,7 +1045,7 @@ class ReportDesignerWidget(QWidget):
         for label, widget, stretch in (
             ("Nome:", self.name_edit, 2),
             ("Titolo:", self.title_edit, 3),
-            ("Tabella:", self.table_combo, 2),
+            ("Sorgente:", self.table_combo, 2),
             ("Filtro:", self.filter_edit, 3),
             ("Ordine:", self.order_edit, 2),
         ):
@@ -1112,7 +1260,7 @@ class ReportDesignerWidget(QWidget):
         self.title_edit.setText(self.spec.title)
         self.filter_edit.setText(self.spec.filter)
         self.order_edit.setText(self.spec.order)
-        index = self.table_combo.findData(self.spec.table)
+        index = self._source_index(self._source_key())
         self.table_combo.setCurrentIndex(max(0, index))
         self._loading = False
         self.canvas.load(self.spec)
@@ -1126,7 +1274,16 @@ class ReportDesignerWidget(QWidget):
     def _apply_header(self) -> None:
         self.spec.name = self.name_edit.text().strip() or self.spec.name
         self.spec.title = self.title_edit.text()
-        self.spec.table = str(self.table_combo.currentData() or self.spec.table)
+        data = self.table_combo.currentData()
+        if isinstance(data, tuple) and len(data) == 2:
+            kind, name = str(data[0]), str(data[1])
+            self.spec.source_type = kind
+            if kind == "query":
+                self.spec.query = name
+                self.spec.table = ""
+            else:
+                self.spec.table = name
+                self.spec.query = ""
         self.spec.filter = self.filter_edit.text().strip()
         self.spec.order = self.order_edit.text().strip()
 
@@ -1232,11 +1389,14 @@ class ReportDesignerWidget(QWidget):
                         ("name", "Name", "text", self.spec.name, None),
                         ("title", "Title", "text", self.spec.title, None),
                         (
-                            "table",
-                            "Table",
+                            "source",
+                            "Source",
                             "choice",
-                            self.spec.table,
-                            [(name, name) for name in self.project.names("tables")],
+                            f"{self.spec.source_type}:{self.spec.query or self.spec.table}",
+                            [
+                                (f"{kind}:{name}", label)
+                                for kind, name, label in self._source_entries()
+                            ],
                         ),
                         (
                             "page_size",
@@ -1367,11 +1527,20 @@ class ReportDesignerWidget(QWidget):
             self._sync_format_buttons(control)
             self._refresh_status()
             return
-        if key in ("name", "title", "table", "page_size", "orientation", "filter", "order"):
+        if key in ("name", "title", "source", "page_size", "orientation", "filter", "order"):
             self._push_undo()
-            if key == "table":
-                self.spec.table = str(value or "")
-                index = self.table_combo.findData(self.spec.table)
+            if key == "source":
+                raw = str(value or "")
+                kind, _, name = raw.partition(":")
+                if kind == "query":
+                    self.spec.source_type = "query"
+                    self.spec.query = name
+                    self.spec.table = ""
+                else:
+                    self.spec.source_type = "table"
+                    self.spec.table = name
+                    self.spec.query = ""
+                index = self._source_index(self._source_key())
                 self.table_combo.blockSignals(True)
                 self.table_combo.setCurrentIndex(max(0, index))
                 self.table_combo.blockSignals(False)
@@ -1458,7 +1627,7 @@ class ReportDesignerWidget(QWidget):
 
     def insert_field(self) -> None:
         self._apply_header()
-        dialog = InsertFieldDialog(self.project, self.spec.table, self)
+        dialog = InsertFieldDialog(self.project, self._field_table(), self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         field = dialog.selected_field()
@@ -1478,7 +1647,7 @@ class ReportDesignerWidget(QWidget):
 
     def insert_total(self) -> None:
         self._apply_header()
-        dialog = TotalDialog(self.project, self.spec.table, self)
+        dialog = TotalDialog(self.project, self._field_table(), self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         band, control = dialog.control()
@@ -1486,7 +1655,7 @@ class ReportDesignerWidget(QWidget):
 
     def insert_group(self) -> None:
         self._apply_header()
-        dialog = GroupDialog(self.project, self.spec.table, self)
+        dialog = GroupDialog(self.project, self._field_table(), self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         group = dialog.group()
@@ -1513,7 +1682,9 @@ class ReportDesignerWidget(QWidget):
 
     def edit_sort_order(self) -> None:
         self._apply_header()
-        dialog = SortOrderDialog(self.project, self.spec.table, self.spec.sort_fields, self)
+        dialog = SortOrderDialog(
+            self.project, self._field_table(), self.spec.sort_fields, self
+        )
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         self._push_undo()
@@ -1633,7 +1804,7 @@ class ReportDesignerWidget(QWidget):
             QMessageBox.warning(self, "Report non valido", "\n".join(errors))
             return False
         if not self.spec.name:
-            self.spec.name = f"report_{slugify(self.spec.table)}"
+            self.spec.name = f"report_{slugify(self.spec.table or self.spec.query)}"
         try:
             self.project.put_object(
                 "reports", self.spec.to_dict(), previous_name=self.original_name

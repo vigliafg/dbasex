@@ -15,7 +15,11 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtPrintSupport import QPrintDialog, QPrinter
 
+from ..core.expressions import Expression, ExpressionError
+from ..core.query_engine import QueryError, run_query
+from ..core.query_model import QuerySpec
 from ..io.pdf_export import ExportError, export_pdf, page_pixmap, render_to_printer
+from ..runtime.query_rowset import sort_rows
 from ..runtime.report_engine import ReportRenderer, ReportSpec
 from ..runtime.rowset import Rowset, RowsetError
 from . import icons
@@ -25,6 +29,23 @@ _SESSION_ZOOM: float | None = None
 
 
 def build_pages(project, spec: ReportSpec):
+    if spec.source_type == "query":
+        query = QuerySpec.from_project(project, spec.query)
+        if query is None:
+            raise ValueError(f"Query del report inesistente: {spec.query}")
+        try:
+            result = run_query(project, query)
+        except QueryError as exc:
+            raise ValueError(f"Query del report non valida: {exc}") from exc
+        rows = result.rows
+        if spec.filter:
+            try:
+                expression = Expression(spec.filter)
+                rows = [row for row in rows if expression.evaluate(row, {}, spec.query)]
+            except ExpressionError as exc:
+                raise ValueError(f"Filtro del report non valido: {exc}") from exc
+        rows = sort_rows(rows, spec.order)
+        return ReportRenderer(spec, rows).layout()
     table = project.table(spec.table)
     if table is None:
         raise ValueError(f"Tabella del report inesistente: {spec.table}")

@@ -28,6 +28,9 @@ l'unica fonte di verità per README, `docs/ui-parity.md` e `docs/qa-0.2.md`.
 | `14-menu-progetto.png` | Menu Progetto con icona + descrizione |
 | `15-database-designer.png` | Database Designer ER con tabelle e relazioni |
 | `16-query-designer.png` | Query Designer con campi, join e risultato |
+| `17-query-results.png` | Query Results in sola lettura con export CSV |
+| `18-form-query.png` | Form runtime alimentato da una query, sola lettura |
+| `19-report-query.png` | Report a bande su query con gruppi e totali |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.

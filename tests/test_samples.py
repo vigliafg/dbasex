@@ -19,8 +19,8 @@ def demo(tmp_path, monkeypatch):
 
 def test_demo_is_valid_and_run_without_errors(demo):
     assert validate_project(demo) == []
-    assert demo.names("forms") == ["form_clienti", "form_fatture"]
-    assert demo.names("reports") == ["fatture_per_cliente"]
+    assert demo.names("forms") == ["form_clienti", "form_clienti_attivi", "form_fatture"]
+    assert demo.names("reports") == ["fatture_clienti_report", "fatture_per_cliente"]
     assert demo.names("diagrams") == ["schema"]
     assert demo.names("queries") == ["clienti_attivi", "fatture_clienti"]
     assert demo.names("scripts") == ["riepilogo_fatture"]

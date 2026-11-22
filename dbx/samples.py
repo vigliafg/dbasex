@@ -10,6 +10,7 @@ from .core.form_model import FormSpec
 from .core.schema_graph import SchemaGraph
 from .core.metadata import Field, ForeignKey, Index, Table, new_id
 from .core.project import Project
+from .core.query_engine import query_table
 from .core.query_model import QueryField, QueryFilter, QueryJoin, QuerySort, QuerySpec
 from .runtime.report_engine import Control, ReportSpec
 from .runtime.rowset import Rowset
@@ -149,6 +150,60 @@ def create_demo_project(path: str | Path, name: str = "Rubrica") -> Project:
     query_clienti.sorts = [QuerySort("clienti.nome", "asc")]
     project.add_object("queries", query_clienti.to_dict())
 
+    query_form = FormSpec.create_from_query(
+        query_table(project, "clienti_attivi"),
+        "clienti_attivi",
+        name="form_clienti_attivi",
+    )
+    query_form.caption = "Clienti attivi (query)"
+    project.add_object("forms", query_form.to_dict())
+
+    query_report = ReportSpec.create_for_query(
+        "fatture_clienti_report",
+        "fatture_clienti",
+        [field.name for field in query_table(project, "fatture_clienti").fields],
+        "Fatture per cliente (query)",
+    )
+    query_report.group_by = "cliente_nome"
+    query_report.group_label = "Cliente"
+    query_report.order = "cliente_nome, numero"
+    query_report.bands["group_header"] = [
+        Control(
+            id=new_id(),
+            kind="text",
+            x=0,
+            y=0,
+            w=170,
+            h=8,
+            text="Cliente: [cliente_nome]",
+            font_size=12,
+            bold=True,
+        )
+    ]
+    query_report.bands["detail"] = [
+        Control(id=new_id(), kind="field", x=0, y=0, w=20, h=6, expr="numero"),
+        Control(id=new_id(), kind="field", x=22, y=0, w=28, h=6, expr="data", fmt="DD/MM/YYYY"),
+        Control(id=new_id(), kind="field", x=54, y=0, w=24, h=6, expr="pagata"),
+        Control(id=new_id(), kind="field", x=84, y=0, w=24, h=6, expr="importo", align="right"),
+    ]
+    query_report.bands["summary"] = [
+        Control(id=new_id(), kind="line", x=0, y=0, w=170, h=2),
+        Control(
+            id=new_id(),
+            kind="total",
+            x=110,
+            y=2,
+            w=60,
+            h=8,
+            expr="[importo]",
+            func="sum",
+            label="Totale query: ",
+            bold=True,
+            align="right",
+        ),
+    ]
+    project.add_object("reports", query_report.to_dict())
+
     form_clienti = FormSpec.create(clienti, name="form_clienti")
     form_clienti.caption = "Clienti"
     project.add_object("forms", form_clienti.to_dict())
@@ -167,6 +222,8 @@ def create_demo_project(path: str | Path, name: str = "Rubrica") -> Project:
                 {"label": "Clienti", "action": "open_form", "target": "form_clienti"},
                 {"label": "Clienti e fatture", "action": "open_form", "target": "form_fatture"},
                 {"label": "Fatture per cliente", "action": "open_report", "target": "fatture_per_cliente"},
+                {"label": "Clienti attivi (query)", "action": "open_form", "target": "form_clienti_attivi"},
+                {"label": "Fatture per cliente (query)", "action": "open_report", "target": "fatture_clienti_report"},
                 {"label": "Riepilogo fatture", "action": "run_script", "target": "riepilogo_fatture"},
             ],
         },

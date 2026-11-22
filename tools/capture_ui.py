@@ -46,6 +46,7 @@ from dbx.ui.command_window import CommandWindow  # noqa: E402
 from dbx.ui.data_view import DataView  # noqa: E402
 from dbx.ui.main_window import MainWindow  # noqa: E402
 from dbx.ui.navigator import Navigator  # noqa: E402
+from dbx.ui.query_results import QueryResultsWidget  # noqa: E402
 from dbx.ui.report_preview import ReportPreviewDialog  # noqa: E402
 from dbx.ui.theme import apply_theme  # noqa: E402
 
@@ -175,6 +176,28 @@ def run(theme: str = "aurora") -> int:
         widgets.append(query_designer)
         query_designer.run_preview()
         captured.append(_capture(app, query_designer, "16-query-designer.png", (1120, 760)))
+
+        query_results = QueryResultsWidget(project, "fatture_clienti")
+        widgets.append(query_results)
+        captured.append(_capture(app, query_results, "17-query-results.png", (1000, 620)))
+
+        query_form_artifact = project.artifact("forms", "form_clienti_attivi")
+        if query_form_artifact is None:
+            raise RuntimeError("form_clienti_attivi non presente nel progetto demo")
+        query_form_preview = FormRuntime(project, FormSpec.from_dict(query_form_artifact))
+        widgets.append(query_form_preview)
+        captured.append(_capture(app, query_form_preview, "18-form-query.png", (860, 660)))
+
+        query_report_artifact = project.artifact("reports", "fatture_clienti_report")
+        if query_report_artifact is None:
+            raise RuntimeError("fatture_clienti_report non presente nel progetto demo")
+        query_report_preview = ReportPreviewDialog(
+            project, ReportSpec.from_dict(query_report_artifact)
+        )
+        widgets.append(query_report_preview)
+        captured.append(
+            _capture(app, query_report_preview, "19-report-query.png", (940, 800))
+        )
     finally:
         for widget in reversed(widgets):
             widget.close()

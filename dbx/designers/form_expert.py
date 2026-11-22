@@ -32,6 +32,8 @@ from PyQt6.QtWidgets import (
 
 from ..core.form_model import FormControl, FormPage, FormSpec
 from ..core.metadata import Table, new_id, slugify
+from ..core.query_engine import QueryError, query_table
+from ..core.query_model import QuerySpec
 from ..core.project import Project
 from ..ui import design
 
@@ -192,15 +194,30 @@ class FormExpert(QWizard):
         page.setTitle("Tabella o query")
         page.setSubTitle("Scegli la tabella su cui lavora il form.")
         layout = QVBoxLayout(page)
+        self.source_combo = QComboBox()
+        self.source_combo.addItem("Tabella", "table")
+        self.source_combo.addItem("Query (sola lettura)", "query")
+        layout.addWidget(QLabel("Tipo di sorgente"))
+        layout.addWidget(self.source_combo)
         self.table_combo = QComboBox()
         for name in self.project.names("tables"):
             table = self.project.table(name)
             label = table.display_name() if table is not None else name
             self.table_combo.addItem(f"{label} ({name})", name)
-        layout.addWidget(QLabel("Tabella"))
+        self.table_label = QLabel("Tabella")
+        layout.addWidget(self.table_label)
         layout.addWidget(self.table_combo)
+        self.query_combo = QComboBox()
+        for name in self.project.names("queries"):
+            query = QuerySpec.from_project(self.project, name)
+            label = query.caption if query is not None else name
+            self.query_combo.addItem(f"{label} ({name})", name)
+        self.query_label = QLabel("Query")
+        layout.addWidget(self.query_label)
+        layout.addWidget(self.query_combo)
         query_note = QLabel(
-            "Query: non disponibili in dBX 0.2. Il form usa sempre una tabella del progetto."
+            "I form su query mostrano i campi calcolati e sono in sola lettura; "
+            "usa una tabella per inserire e modificare i dati."
         )
         query_note.setObjectName("nav_hint")
         query_note.setWordWrap(True)
@@ -212,17 +229,48 @@ class FormExpert(QWizard):
         form.addRow("Ordine", self.order_combo)
         layout.addLayout(form)
         layout.addStretch(1)
+        self.source_combo.currentIndexChanged.connect(self._on_source_changed)
         self.table_combo.currentIndexChanged.connect(self._refresh_order_fields)
         self.table_combo.currentIndexChanged.connect(lambda _index: self._reload_fields())
-        self._refresh_order_fields()
+        self.query_combo.currentIndexChanged.connect(self._refresh_order_fields)
+        self.query_combo.currentIndexChanged.connect(lambda _index: self._reload_fields())
+        self._on_source_changed()
         return page
+
+    def _source_kind(self) -> str:
+        return str(self.source_combo.currentData() or "table")
+
+    def _source_name(self) -> str:
+        if self._source_kind() == "query":
+            return str(self.query_combo.currentData() or "")
+        return str(self.table_combo.currentData() or "")
+
+    def _source_table(self) -> Table | None:
+        if self._source_kind() == "query":
+            name = self._source_name()
+            if not name:
+                return None
+            try:
+                return query_table(self.project, name)
+            except QueryError:
+                return None
+        return self.project.table(self._source_name())
+
+    def _on_source_changed(self) -> None:
+        is_query = self._source_kind() == "query"
+        self.table_label.setVisible(not is_query)
+        self.table_combo.setVisible(not is_query)
+        self.query_label.setVisible(is_query)
+        self.query_combo.setVisible(is_query)
+        self._refresh_order_fields()
+        self._reload_fields()
 
     def _refresh_order_fields(self) -> None:
         current = self.order_combo.currentData()
         self.order_combo.blockSignals(True)
         self.order_combo.clear()
         self.order_combo.addItem("(naturale)", "")
-        table = self.project.table(str(self.table_combo.currentData() or ""))
+        table = self._source_table()
         if table is not None:
             for field in table.fields:
                 self.order_combo.addItem(field.display_name(), field.name)
@@ -291,7 +339,9 @@ class FormExpert(QWizard):
         self._update_finish_text()
 
     def _reload_fields(self) -> None:
-        table = self.project.table(str(self.table_combo.currentData() or ""))
+        if not hasattr(self, "source_list"):
+            return
+        table = self._source_table()
         self.source_list.clear()
         self.destination_list.clear()
         for item in self._field_items(table):
@@ -422,13 +472,17 @@ class FormExpert(QWizard):
 
     # ------------------------------------------------------------------ output
     def build_spec(self) -> FormSpec:
-        table = self.project.table(str(self.table_combo.currentData() or ""))
+        kind = self._source_kind()
+        table = self._source_table()
         name = self.name_edit.text().strip() or self.suggested_name or "form"
         caption = self.caption_edit.text().strip() or (table.display_name() if table else name)
+        source_name = self._source_name()
         spec = FormSpec(
             name=slugify(name),
             caption=caption,
-            table=table.name if table else "",
+            table=source_name if kind == "table" and table else "",
+            source_type=kind,
+            query=source_name if kind == "query" else "",
             width=620,
             height=440,
             order=str(self.order_combo.currentData() or ""),
@@ -444,7 +498,17 @@ class FormExpert(QWizard):
         ]
         if not fields:
             fields = [field.name for field in table.fields]
-        spec.pages = [self._build_page(table, fields)]
+        page = self._build_page(table, fields)
+        if kind == "query":
+            page.controls = [
+                control
+                for control in page.controls
+                if not (
+                    control.kind == "button"
+                    and control.action in ("new", "save", "delete")
+                )
+            ]
+        spec.pages = [page]
         spec.height = max(spec.height, self._required_height(fields))
         return spec
 

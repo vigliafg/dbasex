@@ -134,6 +134,23 @@ def test_join_dialog_suggests_foreign_key(qapp, demo_project) -> None:
         dialog.close()
 
 
+def test_open_results_emits_after_save(qapp, demo_project) -> None:
+    designer = _designer(demo_project)
+    emitted: list[str] = []
+    designer.results_requested.connect(emitted.append)
+    try:
+        designer.open_results()
+        assert emitted == ["fatture_clienti"]
+        designer.add_filter("fatture.importo", "gt", "1000")
+        designer.open_results()
+        assert emitted[-1] == "fatture_clienti"
+        artifact = demo_project.artifact("queries", "fatture_clienti")
+        assert artifact is not None
+        assert artifact["filters"][0]["field"] == "fatture.importo"
+    finally:
+        designer.close()
+
+
 def test_save_and_rename(qapp, demo_project) -> None:
     designer = _designer(demo_project)
     try:

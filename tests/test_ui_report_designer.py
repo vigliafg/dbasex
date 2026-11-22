@@ -406,13 +406,16 @@ def test_alias_keeps_legacy_name(qapp, demo_project) -> None:
 
 
 def test_new_report_object_opens_designer(qapp, demo_project, monkeypatch) -> None:
-    from PyQt6.QtWidgets import QInputDialog
+    from PyQt6.QtWidgets import QDialog
 
-    monkeypatch.setattr(
-        QInputDialog,
-        "getItem",
-        staticmethod(lambda *args, **kwargs: ("fatture", True)),
+    from dbx.designers.report_builder import NewReportDialog
+
+    spec = ReportSpec.create(
+        demo_project.names("reports")[0] + "_nuovo", "fatture", "Nuovo report"
     )
+    spec.bands["detail"][0].expr = "numero"
+    monkeypatch.setattr(NewReportDialog, "exec", lambda self: QDialog.DialogCode.Accepted)
+    monkeypatch.setattr(NewReportDialog, "spec", lambda self: spec)
     window = MainWindow(demo_project)
     try:
         window.show()

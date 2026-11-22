@@ -12,7 +12,7 @@ from dataclasses import dataclass, field as dc_field
 from typing import Any, Iterable
 
 from . import types as T
-from .metadata import Table
+from .metadata import Field, Table
 from .query_model import (
     LIKE_OPERATORS,
     OPERATORS,
@@ -118,6 +118,21 @@ class QueryResult:
     def to_dicts(self) -> list[dict[str, Any]]:
         return [dict(row) for row in self.rows]
 
+    def as_table(self, name: str = "", caption: str = "") -> Table:
+        """Vista ``Table`` delle colonne, per form, report e export."""
+        title = name or "query"
+        fields = [
+            Field(
+                column.key,
+                column.type,
+                size=column.size,
+                caption=column.caption,
+                fmt=column.fmt,
+            )
+            for column in self.columns
+        ]
+        return Table(name=title, caption=caption or title, fields=fields)
+
 
 class QueryEngine:
     """Compila ed esegue query statiche sulle tabelle di un progetto."""
@@ -212,6 +227,28 @@ class QueryEngine:
 def engine_for(project) -> QueryEngine:
     """Motore collegato alle tabelle e al database di un progetto."""
     return QueryEngine(project.tables(), project.db)
+
+
+def query_table(project, name: str, caption: str = "") -> Table:
+    """Tabella sintetica delle colonne di una query salvata.
+
+    Non esiste nel database: serve a form, report e designer per conoscere
+    campi, tipi e didascalie senza duplicare il modello.
+    """
+    spec = QuerySpec.from_project(project, name)
+    if spec is None:
+        raise QueryError(f"Query sconosciuta: {name}")
+    columns = engine_for(project).columns(spec)
+    return QueryResult(columns=columns).as_table(
+        name=spec.name, caption=caption or spec.caption or spec.name
+    )
+
+
+def source_table(project, source_type: str, table: str = "", query: str = "") -> Table | None:
+    """Risolve la sorgente ``table`` o ``query`` in una ``Table`` di metadati."""
+    if source_type == "query":
+        return query_table(project, query)
+    return project.table(table)
 
 
 def run_query(project, spec: QuerySpec | dict[str, Any]) -> QueryResult:

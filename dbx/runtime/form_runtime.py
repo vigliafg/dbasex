@@ -39,7 +39,10 @@ from ..core import types as T
 from ..core.ddl import INTERNAL_ID
 from ..core.form_model import FIELD_KINDS, FormControl, FormSpec
 from ..core.metadata import Table
+from ..core.query_engine import QueryError, query_table, run_query
+from ..core.query_model import QuerySpec
 from ..ui import icons
+from .query_rowset import QueryRowset
 from .rowset import Rowset, RowsetError
 
 
@@ -112,8 +115,20 @@ class FormRuntime(QWidget):
         self.setObjectName("form_runtime")
         self.project = project
         self.spec = spec
-        self.table = project.require_table(spec.table)
-        self.rowset = Rowset(project.db, self.table).open(order=spec.order or "")
+        self.read_only = spec.source_type == "query"
+        if self.read_only:
+            query_spec = QuerySpec.from_project(project, spec.query)
+            if query_spec is None:
+                raise ValueError(f"Query del form inesistente: {spec.query}")
+            try:
+                self.table = query_table(project, spec.query)
+                result = run_query(project, query_spec)
+            except QueryError as exc:
+                raise ValueError(f"Query del form non valida: {exc}") from exc
+            self.rowset = QueryRowset(result, order=spec.order or "")
+        else:
+            self.table = project.require_table(spec.table)
+            self.rowset = Rowset(project.db, self.table).open(order=spec.order or "")
         self.binders: list[FieldBinder] = []
         self.buttons: list[tuple[QPushButton, str]] = []
         self.grids: list[tuple[QTableWidget, FormControl]] = []
@@ -169,6 +184,9 @@ class FormRuntime(QWidget):
                 caption, glyph, lambda _checked=False, a=action: self.perform(a), self, tip
             )
             button.setAutoDefault(False)
+            if self.read_only and action in ("new", "save", "delete"):
+                button.setEnabled(False)
+                button.setToolTip("Form su query: sorgente in sola lettura")
             self._toolbar.addWidget(button)
         self._toolbar.addStretch(1)
         close = icons.make_button("Chiudi", "chiudi", self._close, self, "Chiude il form")
@@ -210,6 +228,9 @@ class FormRuntime(QWidget):
             button = QPushButton(control.text or "…")
             button.setAutoDefault(False)
             button.clicked.connect(lambda _checked=False, c=control: self._activate_button(c))
+            if self.read_only and control.action in ("new", "save", "delete"):
+                button.setEnabled(False)
+                button.setToolTip("Form su query: sorgente in sola lettura")
             widget = button
             self.buttons.append((button, control.id))
         elif kind == "grid":
@@ -364,6 +385,9 @@ class FormRuntime(QWidget):
         return values
 
     def save(self) -> bool:
+        if self.read_only:
+            self._status.setText("Form in sola lettura: la sorgente è una query")
+            return False
         try:
             record_id = self.rowset.save(self.collect())
         except RowsetError as exc:
@@ -386,6 +410,9 @@ class FormRuntime(QWidget):
     def perform(self, action: str) -> None:
         action = (action or "").strip()
         if not action or action == "none":
+            return
+        if self.read_only and action in ("new", "save", "delete"):
+            self._status.setText("Form in sola lettura: la sorgente è una query")
             return
         if action == "new":
             self._new = True
@@ -446,6 +473,9 @@ class FormRuntime(QWidget):
         self.event_log.append(f"azione sconosciuta: {action}")
 
     def delete_current(self) -> None:
+        if self.read_only:
+            self._status.setText("Form in sola lettura: la sorgente è una query")
+            return
         if self.rowset.current is None:
             self._status.setText("Nessun record da eliminare")
             return
@@ -511,7 +541,8 @@ class FormRuntime(QWidget):
         return f"Record {position} di {total}"
 
     def _update_status(self) -> None:
-        self._status.setText(self._position_text())
+        suffix = " · sola lettura" if self.read_only else ""
+        self._status.setText(f"{self._position_text()}{suffix}")
 
 
 class FormPreviewDialog(QDialog):

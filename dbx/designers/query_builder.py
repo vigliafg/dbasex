@@ -265,6 +265,7 @@ class QueryDesignerWidget(QWidget):
 
     saved = pyqtSignal(str)
     status_message = pyqtSignal(str)
+    results_requested = pyqtSignal(str)
 
     def __init__(self, project: Project, spec: QuerySpec, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -310,6 +311,10 @@ class QueryDesignerWidget(QWidget):
         self.run_button = icons.make_button(
             "Esegui anteprima", "esegui", self.run_preview, self, "Esegue la query in sola lettura"
         )
+        self.results_button = icons.make_button(
+            "Query Results", "cerca", self.open_results, self,
+            "Apre il risultato in una finestra dedicata",
+        )
         self.add_field_button = icons.make_button(
             "Aggiungi campo", "campo", self.add_selected_field, self, "Aggiunge il campo selezionato"
         )
@@ -323,6 +328,7 @@ class QueryDesignerWidget(QWidget):
         for button in (
             self.save_button,
             self.run_button,
+            self.results_button,
             self.add_field_button,
             self.add_table_button,
             self.remove_table_button,
@@ -913,6 +919,12 @@ class QueryDesignerWidget(QWidget):
         if self.tabs.currentWidget() is self.result_page:
             if self._result_stale:
                 self.run_preview()
+
+    # --------------------------------------------------------------- risultati
+    def open_results(self) -> None:
+        if self.is_dirty() and not self.save():
+            return
+        self.results_requested.emit(self.spec.name)
 
     # --------------------------------------------------------------- salvataggio
     def save(self) -> bool:

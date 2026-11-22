@@ -131,6 +131,8 @@ class ReportSpec:
     name: str
     title: str = ""
     table: str = ""
+    source_type: str = "table"
+    query: str = ""
     filter: str = ""
     order: str = ""
     group_by: str = ""
@@ -150,19 +152,36 @@ class ReportSpec:
     @classmethod
     def create(cls, name: str, table: str, title: str = "") -> "ReportSpec":
         spec = cls(name=name, table=table, title=title or name)
-        spec.bands["title"].append(
-            Control(id="titolo", kind="text", x=0, y=0, w=170, h=12, text=title or name, font_size=16, bold=True)
+        spec._default_bands()
+        return spec
+
+    @classmethod
+    def create_for_query(
+        cls, name: str, query: str, fields: list[str], title: str = ""
+    ) -> "ReportSpec":
+        """Report sulle colonne di una query, con dettaglio sul primo campo."""
+        spec = cls(
+            name=name,
+            title=title or name,
+            source_type="query",
+            query=query,
         )
-        spec.bands["page_header"].append(
+        spec._default_bands(fields[0] if fields else "")
+        return spec
+
+    def _default_bands(self, first_field: str = "") -> None:
+        self.bands["title"].append(
+            Control(id="titolo", kind="text", x=0, y=0, w=170, h=12, text=self.title or self.name, font_size=16, bold=True)
+        )
+        self.bands["page_header"].append(
             Control(id="intestazione", kind="text", x=0, y=0, w=170, h=6, text="dBX — report", font_size=8, color="#666666")
         )
-        spec.bands["detail"].append(
-            Control(id="dettaglio", kind="field", x=0, y=0, w=170, h=6, expr="", font_size=10, border=False)
+        self.bands["detail"].append(
+            Control(id="dettaglio", kind="field", x=0, y=0, w=170, h=6, expr=first_field, font_size=10, border=False)
         )
-        spec.bands["page_footer"].append(
+        self.bands["page_footer"].append(
             Control(id="pagina", kind="text", x=0, y=0, w=170, h=6, text="Pagina {PAGINA} di {PAGINE}", font_size=8, align="right")
         )
-        return spec
 
     def band(self, name: str) -> list[Control]:
         return self.bands.get(name, [])
@@ -199,8 +218,12 @@ class ReportSpec:
         errors: list[str] = []
         if not self.name:
             errors.append("Il report non ha un nome")
-        if not self.table:
+        if self.source_type not in ("table", "query"):
+            errors.append(f"Tipo di sorgente sconosciuto: {self.source_type}")
+        if self.source_type == "table" and not self.table:
             errors.append("Nessuna tabella sorgente selezionata")
+        if self.source_type == "query" and not self.query:
+            errors.append("Nessuna query sorgente selezionata")
         for band_name in self.bands:
             if band_name not in BAND_NAMES:
                 errors.append(f"Banda sconosciuta: {band_name}")
@@ -232,6 +255,8 @@ class ReportSpec:
             "name": self.name,
             "title": self.title,
             "table": self.table,
+            "source_type": self.source_type,
+            "query": self.query,
             "filter": self.filter,
             "order": self.order,
             "group_by": self.group_by,
@@ -298,6 +323,8 @@ class ReportSpec:
             name=str(data.get("name", "")),
             title=str(data.get("title", "")),
             table=str(data.get("table", "")),
+            source_type=str(data.get("source_type", "table") or "table"),
+            query=str(data.get("query", "")),
             filter=str(data.get("filter", "")),
             order=str(data.get("order", "")),
             group_by=str(data.get("group_by", "")),
