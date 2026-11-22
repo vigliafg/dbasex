@@ -1,6 +1,6 @@
 # Stato di parità UI — dBX 0.2 vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (release 0.2.0, Checkpoint C)
+Aggiornato: 2026-11-22 (release 0.2.1, tema Aurora)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
 `fuori scope` = escluso dalla 0.2 per decisione di piano; `mancante` = non implementato.
@@ -29,8 +29,8 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 
 ## Note
 
-- Lo stato si riferisce alla struttura e al chrome, non al pixel-perfect.
-- Rendering canonici: `docs/reference/dbx-ui/renders/01-desktop.png` … `13-project-editor.png`;
+- Lo stato si riferisce alla struttura e al chrome, non al pixel-perfect. Il tema predefinito è Aurora; Silver resta selezionabile con `--theme silver`.
+- Rendering canonici: `docs/reference/dbx-ui/renders/01-desktop.png` … `14-menu-progetto.png`;
   indice in `docs/reference/dbx-ui/README.md`.
 - `10-desktop-mdi.png` mostra Browse e Form Designer nell'area MDI.
 - `11-script-editor.png`, `12-menu-designer.png` e `13-project-editor.png` coprono gli strumenti O6.

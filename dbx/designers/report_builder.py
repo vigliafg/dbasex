@@ -48,6 +48,7 @@ from ..runtime.report_engine import (
     field_display_name,
 )
 from ..ui import design, icons
+from ..ui.menu import DescriptiveMenu, add_entry
 from ..ui.widgets import PropertyInspector
 
 BASE_SCALE = 3.0  # px per mm a zoom 100%
@@ -857,6 +858,7 @@ class ReportDesignerWidget(QWidget):
 
     def __init__(self, project: Project, spec: ReportSpec, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("report_designer")
         self.project = project
         self.spec = spec
         self.original_name = spec.name
@@ -1002,7 +1004,7 @@ class ReportDesignerWidget(QWidget):
         self.bands_button.setIconSize(icons.ICON_SIZE)
         self.bands_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.bands_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        self.bands_menu = QMenu(self.bands_button)
+        self.bands_menu = DescriptiveMenu(self.bands_button)
         self.bands_button.setMenu(self.bands_menu)
         bar.addWidget(self.bands_button)
         bar.addStretch(1)
@@ -1157,14 +1159,23 @@ class ReportDesignerWidget(QWidget):
     def _refresh_bands_menu(self) -> None:
         self.bands_menu.clear()
         for name in self.spec.effective_band_order():
-            action = self.bands_menu.addAction(BAND_LABELS.get(name, name))
+            action = icons.make_action(
+                BAND_LABELS.get(name, name), "linea", self.bands_menu
+            )
             action.setCheckable(True)
             action.setChecked(self.spec.is_visible(name))
             action.triggered.connect(
                 lambda checked, band=name: self.set_band_visible(band, checked)
             )
+            add_entry(
+                self.bands_menu,
+                action,
+                f"Mostra o nascondi la banda {BAND_LABELS.get(name, name)}",
+            )
         self.bands_menu.addSeparator()
-        self.bands_menu.addAction("Mostra tutte le bande", self.show_all_bands)
+        show_all = icons.make_action("Mostra tutte le bande", "ok", self.bands_menu)
+        show_all.triggered.connect(self.show_all_bands)
+        add_entry(self.bands_menu, show_all, "Ripristina la visibilità di tutte le bande")
 
     def set_band_visible(self, name: str, visible: bool) -> None:
         self._push_undo()

@@ -204,6 +204,7 @@ class ProjectEditorWidget(QWidget):
 
     def __init__(self, project: Project, parent=None) -> None:
         super().__init__(parent)
+        self.setObjectName("project_editor")
         self.project = project
         self.setWindowTitle(f"Project Editor ({project.name})")
         self.resize(900, 620)
@@ -231,7 +232,7 @@ class ProjectEditorWidget(QWidget):
 
         right = QWidget()
         right_layout = QVBoxLayout(right)
-        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setContentsMargins(10, 0, 0, 0)
         right_layout.setSpacing(6)
 
         settings = QWidget()

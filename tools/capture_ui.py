@@ -5,6 +5,7 @@ Uso:
     python tools/capture_ui.py [--theme silver|dark]
 
 Le immagini vengono salvate in ``docs/reference/dbx-ui/renders/``.
+Il tema predefinito è ``aurora``; ``silver`` resta per il confronto storico.
 Lo script usa il progetto demo e non apre dialoghi modali.
 """
 
@@ -24,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from PyQt6.QtCore import QPoint  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QWidget  # noqa: E402
 
 from dbx.core.form_model import FormSpec  # noqa: E402
@@ -62,7 +64,21 @@ def _capture(app: QApplication, widget: QWidget, name: str, size: tuple[int, int
     return path
 
 
-def run(theme: str = "silver") -> int:
+def _capture_menu(app: QApplication, menu, name: str) -> Path:
+    menu.popup(menu.parentWidget().mapToGlobal(QPoint(80, 80)) if menu.parentWidget() else QPoint(80, 80))
+    app.processEvents()
+    app.processEvents()
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    path = OUTPUT_DIR / name
+    pixmap = menu.grab()
+    if pixmap.isNull() or not pixmap.save(str(path), "PNG"):
+        raise RuntimeError(f"impossibile salvare {path}")
+    menu.close()
+    app.processEvents()
+    return path
+
+
+def run(theme: str = "aurora") -> int:
     app = QApplication.instance() or create_application(["dbx-capture"], theme)
     resolved = apply_theme(app, theme)
     root = Path(tempfile.mkdtemp(prefix="dbx-capture-"))
@@ -79,6 +95,11 @@ def run(theme: str = "silver") -> int:
         window.editors.cascade()
         app.processEvents()
         captured.append(_capture(app, window, "10-desktop-mdi.png", (1280, 800)))
+
+        window.show()
+        app.processEvents()
+        project_menu = window.menuBar().actions()[0].menu()
+        captured.append(_capture_menu(app, project_menu, "14-menu-progetto.png"))
 
         navigator = Navigator()
         navigator.set_project(project)
@@ -153,7 +174,7 @@ def run(theme: str = "silver") -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Cattura headless delle finestre dBX")
-    parser.add_argument("--theme", default="silver", choices=["silver", "light", "dark"])
+    parser.add_argument("--theme", default="aurora", choices=["aurora", "bright", "light", "silver", "dark"])
     args = parser.parse_args(argv)
     try:
         return run(args.theme)

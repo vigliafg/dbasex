@@ -125,6 +125,7 @@ class DataView(QWidget):
 
     def __init__(self, project, table_name: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("data_view")
         self.project = project
         self.table = project.require_table(table_name)
         self.rowset = Rowset(project.db, self.table)

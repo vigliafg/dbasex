@@ -49,6 +49,7 @@ class MenuBuilderWidget(QWidget):
 
     def __init__(self, project: Project, artifact: dict[str, Any], parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("menu_designer")
         self.project = project
         self.name = str(artifact.get("name", "principale"))
         self.items: list[dict[str, Any]] = [copy.deepcopy(item) for item in artifact.get("items", [])]

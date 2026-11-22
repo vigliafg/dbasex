@@ -16,7 +16,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--demo", action="store_true", help="crea e apre un progetto dimostrativo")
     parser.add_argument("--smoke", action="store_true", help="verifica headless di app, report e build")
     parser.add_argument(
-        "--theme", choices=["silver", "light", "dark"], help="tema dell'interfaccia (silver è il default)"
+        "--theme", choices=["aurora", "bright", "light", "silver", "dark"], help="tema dell'interfaccia (aurora è il default)"
     )
     parser.add_argument("--version", action="version", version=f"dBX {__version__}")
     args = parser.parse_args(argv)
@@ -35,7 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     from .ui.main_window import MainWindow
 
     config = load_config()
-    theme = args.theme or str(config.get("theme", "silver"))
+    theme = args.theme or str(config.get("theme", "aurora"))
     app = create_application(sys.argv, theme)
     splash_screen = splash(theme)
     splash_screen.show()

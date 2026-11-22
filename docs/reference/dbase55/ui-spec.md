@@ -129,7 +129,8 @@ La tabella di dettaglio, con stato e gap residui, è in `../../ui-parity.md`; la
 | Interactive Tutor / About | `dbx/ui/main_window.py` | parziale | About presente; Tutor non previsto nella 0.2 |
 
 Le palette dei designer sono pannelli ridimensionabili, non finestre tool flottanti; il target resta
-clone strutturale e chrome, non pixel-perfect Win16.
+clone strutturale e chrome, non pixel-perfect Win16. Dalla 0.2.1 il tema predefinito è **Aurora**
+(zone colorate e menu icona + descrizione); il tema Silver conserva il chrome storico dBASE.
 
 ## 8. Ordine di lavoro seguito nella 0.2
 

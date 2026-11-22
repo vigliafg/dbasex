@@ -1,8 +1,10 @@
 # dBX — personal database in stile dBASE 5.5
 
-**Versione 0.2.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
+**Versione 0.2.1** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
 con motore **SQLite**, ispirato a *dBASE 5.5 for Windows* (Borland). Riunisce in un'unica applicazione
 i costruttori visivi che resero celebre dBASE: tabelle, form, report, script, menu e progetto.
+L'interfaccia usa il tema **Aurora**: zone colorate con gradienti, menu con icona e descrizione,
+focus visibile e superfici chiare al posto del grigio Win16.
 
 La 0.2 realizza il **clone strutturale + chrome dBASE** concordato nel piano: desktop MDI, Navigator a
 categorie, Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande impilate,
@@ -48,7 +50,8 @@ Richiede Python 3.10+ e PyQt6 6.10.2 (versione fissata per riproducibilità dell
 python -m dbx                          # finestra vuota
 python -m dbx percorso/project.dbx.json
 python -m dbx --demo                   # crea e apre il progetto Rubrica + Fatture
-python -m dbx --theme dark
+python -m dbx --theme silver           # tema storico dBASE
+python -m dbx --theme dark             # tema scuro
 python -m dbx --smoke                  # verifica headless end-to-end
 ```
 
@@ -106,7 +109,8 @@ Ogni ambiente segue lo schema generale di dBASE 5.5 (senza imitarne i colori Win
 - **Menu Designer**: albero voci, proprietà tipizzate e anteprima del menu.
 - **Project Editor**: albero oggetti, impostazioni, validazione e build.
 
-Rendering aggiornati in [`docs/reference/dbx-ui/renders/`](docs/reference/dbx-ui/renders/).
+Rendering aggiornati in [`docs/reference/dbx-ui/renders/`](docs/reference/dbx-ui/renders/):
+la serie `01`–`13` copre le finestre, `14-menu-progetto.png` mostra il menu icona + descrizione.
 
 ## Scorciatoie da tastiera
 
@@ -136,8 +140,11 @@ le scorciatoie principali.
   campi → Inspector → canvas nei designer.
 - Icone multi-risoluzione (16–48 px) e politica di scala `PassThrough`; righelli e griglie restano
   coerenti a 125% e 150%.
-- Tema **Silver** predefinito e tema **Dark** opzionale, entrambi leggibili; i canvas leggono i token
-  del tema attivo.
+- Tema **Aurora** predefinito: menu bar, toolbar, Navigator, area MDI, schede, tabelle, status bar e
+  pannelli dei designer usano gradienti e accenti vivaci; niente sfondo grigio.
+- Menu con **icona + descrizione** su due righe, scorciatoia a destra e navigazione da tastiera.
+- Temi **Silver** (storico dBASE) e **Dark** selezionabili con `--theme`; i canvas leggono sempre i
+  token del tema attivo e lo sfondo MDI segue il tema anche dopo un cambio a runtime.
 
 ## Architettura
 
@@ -162,7 +169,8 @@ anche come testo, e il motore è testabile senza GUI.
 ```bash
 python -m pytest
 QT_QPA_PLATFORM=offscreen python -m dbx --smoke
-python tools/capture_ui.py                 # Silver
+python tools/capture_ui.py                 # Aurora
+python tools/capture_ui.py --theme silver  # Silver storico
 python tools/capture_ui.py --theme dark    # Dark
 ```
 

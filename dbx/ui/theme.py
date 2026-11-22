@@ -31,8 +31,8 @@ _PALETTE_ROLES = {
 def apply_theme(app: QApplication, name: str | None = None) -> str:
     """Applica il tema richiesto e restituisce il nome normalizzato."""
     resolved = design.normalize_theme(name)
-    app.setStyleSheet(design.qss(resolved))
     app.setProperty("dbx_theme", resolved)
+    app.setStyleSheet(design.qss(resolved))
     palette = design.palette(resolved)
     qt_palette = app.palette()
     for role, key in _PALETTE_ROLES.items():

@@ -14,7 +14,6 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
-    QMenu,
     QSizePolicy,
     QToolButton,
     QVBoxLayout,
@@ -23,6 +22,7 @@ from PyQt6.QtWidgets import (
 
 from ..core.project import CATEGORY_LABELS, Project
 from . import icons
+from .menu import DescriptiveMenu, add_entry
 
 # Categorie nello stesso ordine del Navigator originale. L'ultimo campo indica
 # se la categoria è utilizzabile in dBX 0.2; quelle non disponibili restano
@@ -77,6 +77,7 @@ class Navigator(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("navigator")
         self.project: Project | None = None
         self.category = "all"
         self._buttons: dict[str, QToolButton] = {}
@@ -167,12 +168,13 @@ class Navigator(QWidget):
         self.hint.setWordWrap(True)
         self.hint.setObjectName("nav_hint")
 
+        right_layout.addWidget(self.hint)
+        outer.addWidget(right, 1)
+
         if ordered:
             self.setTabOrder(ordered[-1], self.directory_edit)
         self.setTabOrder(self.directory_edit, self.filter_combo)
         self.setTabOrder(self.filter_combo, self.list)
-        right_layout.addWidget(self.hint)
-        outer.addWidget(right, 1)
 
         self.set_category("all")
 
@@ -267,31 +269,57 @@ class Navigator(QWidget):
 
     def _context_menu(self, position) -> None:
         item = self.list.itemAt(position)
-        menu = QMenu(self)
+        menu = DescriptiveMenu(self)
+
+        def add(category: str, description: str, slot) -> None:
+            glyph = CATEGORY_ICONS.get(category, "nuovo")
+            action = icons.make_action(
+                f"Nuovo in {NAV_LABELS.get(category, category)}", glyph, menu
+            )
+            action.triggered.connect(slot)
+            add_entry(menu, action, description)
+
         if item is None:
             for category in AVAILABLE_CATEGORIES:
-                label = NAV_LABELS.get(category, CATEGORY_LABELS.get(category, category))
-                menu.addAction(
-                    f"Nuovo in {label}",
-                    lambda c=category: self.new_object.emit(c),
+                add(
+                    category,
+                    f"Crea un nuovo oggetto nella categoria {NAV_LABELS.get(category, category)}",
+                    lambda _checked=False, c=category: self.new_object.emit(c),
                 )
         else:
             data = item.data(Qt.ItemDataRole.UserRole)
             if isinstance(data, str) and data.startswith("new:"):
                 category = data.split(":", 1)[1]
-                label = NAV_LABELS.get(category, CATEGORY_LABELS.get(category, category))
-                menu.addAction(
-                    f"Nuovo in {label}", lambda c=category: self.new_object.emit(c)
+                add(
+                    category,
+                    f"Crea un nuovo oggetto in {NAV_LABELS.get(category, category)}",
+                    lambda _checked=False, c=category: self.new_object.emit(c),
                 )
             elif isinstance(data, str) and ":" in data:
                 category, name = data.split(":", 1)
-                menu.addAction("Apri / modifica", lambda: self.open_object.emit(category, name))
+                open_action = icons.make_action("Apri / modifica", "apri", menu)
+                open_action.triggered.connect(
+                    lambda _checked=False, c=category, n=name: self.open_object.emit(c, n)
+                )
+                add_entry(menu, open_action, "Apri l'oggetto nel designer o nella vista dati")
                 if category == "tables":
-                    menu.addAction("Struttura…", lambda: self.structure_object.emit(name))
+                    structure = icons.make_action("Struttura…", "tabella", menu)
+                    structure.triggered.connect(lambda _checked=False, n=name: self.structure_object.emit(n))
+                    add_entry(menu, structure, "Modifica campi, indici e relazioni della tabella")
                 if category in ("tables", "forms", "reports", "scripts"):
-                    menu.addAction("Esegui", lambda: self.run_object.emit(category, name))
+                    run = icons.make_action("Esegui", "esegui", menu)
+                    run.triggered.connect(
+                        lambda _checked=False, c=category, n=name: self.run_object.emit(c, n)
+                    )
+                    add_entry(menu, run, "Esegui l'oggetto con i dati reali")
                 menu.addSeparator()
-                menu.addAction("Elimina", lambda: self.delete_object.emit(category, name))
+                delete = icons.make_action("Elimina", "elimina", menu)
+                delete.triggered.connect(
+                    lambda _checked=False, c=category, n=name: self.delete_object.emit(c, n)
+                )
+                add_entry(menu, delete, "Elimina l'oggetto dal progetto")
             menu.addSeparator()
-            menu.addAction("Aggiorna", self.refresh)
+            refresh = icons.make_action("Aggiorna", "aggiorna", menu)
+            refresh.triggered.connect(self.refresh)
+            add_entry(menu, refresh, "Ricarica l'elenco degli oggetti")
         menu.exec(self.list.viewport().mapToGlobal(position))

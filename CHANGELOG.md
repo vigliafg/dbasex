@@ -3,6 +3,38 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.2.1] — 2026-11-22
+
+Aggiornamento grafico completo: tema **Aurora** predefinito e menu a due righe con icona e descrizione.
+
+### Aggiunto
+
+- **Tema Aurora**: superfici chiare colorate con gradienti per menu bar, toolbar, Navigator, area MDI,
+  schede, tabelle, status bar, inspector e pannelli dei designer. Sostituisce il grigio come tema
+  predefinito.
+- **Menu icona + descrizione**: ogni voce dei menu principali mostra icona, titolo in grassetto,
+  descrizione e scorciatoia; navigazione da tastiera con frecce, Invio e Invio a capo.
+- **Navigator colorato**: categorie con pastiglie sfumate, bordo colorato e stato attivo in gradiente
+  viola/magenta.
+- **Capture menu**: nuovo rendering `14-menu-progetto.png` per il QA visivo delle voci descrittive.
+
+### Cambiato
+
+- Il tema predefinito passa da `silver` ad `aurora`; gli alias `light` e `bright` puntano ad Aurora.
+- `--theme` accetta `aurora`, `bright`, `light`, `silver`, `dark`; il tema storico Silver resta
+  selezionabile per confronto.
+- Il focus dei campi e delle viste usa un bordo pieno nel colore d'accento invece del tratteggio
+  ad alto contrasto.
+- Il tema Dark contiene i nuovi token delle zone colorate e resta leggibile; lo sfondo MDI ora segue
+  il tema attivo anche dopo un cambio a runtime.
+
+### Corretto
+
+- I menu dinamici (Finestra, Progetti recenti) non generano più errori quando vengono ricostruiti.
+- Le voci di menu con descrizione restano sincronizzate con stato abilitato, selezionato e icona
+  dell'azione originale.
+- La palette del Form Designer entra nelle subwindow MDI senza tagliare i pulsanti dBASE.
+
 ## [0.2.0] — 2026-11-22
 
 Release della parità strutturale con dBASE 5.5 for Windows: desktop MDI, designer a tre zone,
@@ -71,4 +103,5 @@ report a bande impilate, program editor e project editor.
 - Query Designer e Label Designer non fanno parte della 0.2 e restano previsti per la 0.3.
 - Gli screenshot di riferimento sono in `docs/reference/dbx-ui/renders/`.
 
+[0.2.1]: https://github.com/vigliafg/dbasex/releases/tag/v0.2.1
 [0.2.0]: https://github.com/vigliafg/dbasex/releases/tag/v0.2.0

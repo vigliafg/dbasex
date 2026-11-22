@@ -709,6 +709,7 @@ Regole:
 | O5 — Report Designer/Preview | `[x]` completata (2026-11-22) | — |
 | O6 — Script/Menu/Project | `[x]` completata (2026-11-22) | **B** |
 | O7 — QA e release 0.2 | `[x]` completata (2026-11-22) — versione 0.2.0 | **C** |
+| UI 0.2.1 — Tema Aurora e menu icona + descrizione | `[x]` completata (2026-11-22) | — |
 
 ---
 

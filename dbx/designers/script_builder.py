@@ -355,6 +355,7 @@ class ScriptBuilderWidget(QWidget):
 
     def __init__(self, project: Project, artifact: dict[str, Any], parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("script_editor")
         self.project = project
         self.name = str(artifact.get("name", "script"))
         self.steps: list[dict[str, Any]] = copy.deepcopy(list(artifact.get("steps", [])))

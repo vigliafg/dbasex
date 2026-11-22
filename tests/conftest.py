@@ -17,7 +17,7 @@ def qapp():
 
     from dbx.ui.app import create_application
 
-    app = QApplication.instance() or create_application(["dbx-tests"], "silver")
+    app = QApplication.instance() or create_application(["dbx-tests"])
     return app
 
 

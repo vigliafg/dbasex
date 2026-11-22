@@ -56,6 +56,7 @@ from ..core.form_model import (
 from ..core.metadata import new_id
 from ..core.project import Project, ProjectError
 from ..ui import design, icons
+from ..ui.menu import DescriptiveMenu, add_entry
 from ..ui.widgets import PropertyInspector
 
 SNAP = design.METRICS.grid_step
@@ -643,6 +644,7 @@ class PalettePanel(QWidget):
 
     def __init__(self, project: Project, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("palette_panel")
         self.project = project
         self.tool_buttons: dict[str, QToolButton] = {}
         self.group = QButtonGroup(self)
@@ -662,7 +664,7 @@ class PalettePanel(QWidget):
         standard_layout = QGridLayout(standard)
         standard_layout.setContentsMargins(2, 2, 2, 2)
         standard_layout.setHorizontalSpacing(2)
-        standard_layout.setVerticalSpacing(2)
+        standard_layout.setVerticalSpacing(1)
         pointer = self._tool_button("Pointer", "pointer", "puntatore", standard)
         pointer.setCheckable(True)
         pointer.setChecked(True)
@@ -695,7 +697,7 @@ class PalettePanel(QWidget):
         button_layout = QGridLayout(buttons)
         button_layout.setContentsMargins(0, 0, 0, 0)
         button_layout.setHorizontalSpacing(2)
-        button_layout.setVerticalSpacing(2)
+        button_layout.setVerticalSpacing(1)
         for index, (name, glyph, _action, _text) in enumerate(BUTTON_OBJECTS):
             button = QToolButton()
             button.setText(name)
@@ -703,7 +705,7 @@ class PalettePanel(QWidget):
             button.setIconSize(icons.ICON_SIZE)
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
             button.setCheckable(True)
-            button.setFixedHeight(22)
+            button.setFixedHeight(18)
             button.setStyleSheet("font-size: 8px;")
             button.setToolTip(f"Inserisci {name}")
             button.clicked.connect(
@@ -747,7 +749,7 @@ class PalettePanel(QWidget):
         splitter = QSplitter(Qt.Orientation.Vertical)
         splitter.addWidget(upper_scroll)
         splitter.addWidget(field_box)
-        splitter.setSizes([420, 260])
+        splitter.setSizes([400, 200])
         layout.addWidget(splitter, 1)
         self.setMinimumWidth(240)
 
@@ -760,7 +762,7 @@ class PalettePanel(QWidget):
         button.setIconSize(icons.ICON_SIZE)
         button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         button.setCheckable(True)
-        button.setFixedHeight(22)
+        button.setFixedHeight(18)
         button.setStyleSheet("font-size: 8px;")
         button.setToolTip(f"Inserisci {text}")
         button.clicked.connect(lambda _checked=False, k=key: self.tool_selected.emit(k))
@@ -844,6 +846,7 @@ class FormDesignerWidget(QWidget):
 
     def __init__(self, project: Project, spec: FormSpec, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("form_designer")
         self.project = project
         self.spec = spec
         self.table = project.table(spec.table)
@@ -1112,10 +1115,15 @@ class FormDesignerWidget(QWidget):
         self._mark_dirty()
 
     def _page_context_menu(self, position) -> None:
-        menu = QMenu(self)
-        menu.addAction("Nuova pagina", self.add_page)
-        menu.addAction("Rinomina pagina", self.rename_page)
-        menu.addAction("Elimina pagina", self.remove_page)
+        menu = DescriptiveMenu(self)
+        for text, glyph, slot, description in (
+            ("Nuova pagina", "nuovo", self.add_page, "Aggiungi una scheda al form"),
+            ("Rinomina pagina", "modifica", self.rename_page, "Cambia il titolo della pagina attiva"),
+            ("Elimina pagina", "elimina", self.remove_page, "Rimuovi la pagina e i suoi controlli"),
+        ):
+            action = icons.make_action(text, glyph, menu)
+            action.triggered.connect(slot)
+            add_entry(menu, action, description)
         menu.exec(self.page_bar.mapToGlobal(position))
 
     def toggle_grid(self, checked: bool) -> None:

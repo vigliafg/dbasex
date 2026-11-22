@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PyQt6.QtCore import QEvent, QSize, Qt
-from PyQt6.QtGui import QAction, QKeyEvent, QKeySequence
+from PyQt6.QtGui import QAction, QBrush, QColor, QKeyEvent, QKeySequence, QLinearGradient
 from PyQt6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -43,6 +43,7 @@ from . import design, icons
 from .command_window import CommandWindow
 from .data_view import DataView
 from .editor_host import EditorHost, editor_title, editor_widget
+from .menu import DescriptiveMenu, add_entry, add_submenu_entry
 from .navigator import Navigator
 from .report_preview import ReportPreviewDialog
 from .theme import apply_theme
@@ -141,9 +142,19 @@ class MainWindow(QMainWindow):
         self.mdi.setOption(QMdiArea.AreaOption.DontMaximizeSubWindowOnActivation, True)
         self.setCentralWidget(self.mdi)
         self.editors = EditorHost(self.mdi, self)
+        self._sync_mdi_background()
         self.editors.activated.connect(self._on_editor_activated)
         self.editors.closed.connect(self._on_editor_closed)
         self.editors.opened.connect(self._on_editor_opened)
+
+    def _sync_mdi_background(self) -> None:
+        app = QApplication.instance()
+        name = app.property("dbx_theme") if app is not None else None
+        palette = design.palette(name if isinstance(name, str) else None)
+        gradient = QLinearGradient(0, 0, 1600, 1000)
+        gradient.setColorAt(0.0, QColor(palette["mdi_bg"]))
+        gradient.setColorAt(1.0, QColor(palette["mdi_bg_alt"]))
+        self.mdi.setBackground(QBrush(gradient))
 
     def _build_navigator(self) -> None:
         self.navigator = Navigator()
@@ -227,7 +238,7 @@ class MainWindow(QMainWindow):
         self.act_print = icons.make_action("Stampa…", "stampa", self)
         self.act_close = icons.make_action("Chiudi progetto", "chiudi", self)
         self.act_quit = icons.make_action(
-            "Esci", "annulla", self, QKeySequence.StandardKey.Quit
+            "Esci", "chiudi", self, QKeySequence.StandardKey.Quit
         )
         self.act_new.triggered.connect(self.new_project)
         self.act_open.triggered.connect(self.open_project)
@@ -266,9 +277,9 @@ class MainWindow(QMainWindow):
         self.act_delete.triggered.connect(self._dispatch_delete)
 
     def _build_view_actions(self) -> None:
-        self.act_speedbar = icons.make_action("SpeedBar", None, self, checkable=True)
+        self.act_speedbar = icons.make_action("SpeedBar", "finestra", self, checkable=True)
         self.act_speedbar.setChecked(True)
-        self.act_statusbar = icons.make_action("Barra di stato", None, self, checkable=True)
+        self.act_statusbar = icons.make_action("Barra di stato", "elenco", self, checkable=True)
         self.act_statusbar.setChecked(True)
         self.act_zoom_in = icons.make_action(
             "Aumenta zoom", "zoom_in", self, QKeySequence("Ctrl++")
@@ -277,7 +288,7 @@ class MainWindow(QMainWindow):
             "Riduci zoom", "zoom_out", self, QKeySequence("Ctrl+-")
         )
         self.act_zoom_reset = icons.make_action(
-            "Zoom 100%", None, self, QKeySequence("Ctrl+0")
+            "Zoom 100%", "aggiorna", self, QKeySequence("Ctrl+0")
         )
         self.act_align = icons.make_action("Allinea", "allinea", self)
         self.act_align.setToolTip("Allinea i controlli selezionati (Form Designer, O4)")
@@ -347,62 +358,80 @@ class MainWindow(QMainWindow):
 
     def _build_menus(self) -> None:
         menu = self.menuBar()
+        menu.setNativeMenuBar(False)
 
-        file_menu = menu.addMenu("&Progetto")
-        for action in (self.act_new, self.act_open, self.act_save):
-            file_menu.addAction(action)
-        self._recent_menu = file_menu.addMenu("Progetti recenti")
+        def add(target, action, description: str) -> None:
+            add_entry(target, action, description)
+
+        file_menu = DescriptiveMenu("&Progetto", menu)
+        menu.addMenu(file_menu)
+        add(file_menu, self.act_new, "Crea un nuovo progetto dBX in una cartella")
+        add(file_menu, self.act_open, "Apri un progetto dBX esistente")
+        add(file_menu, self.act_save, "Salva il progetto e i suoi oggetti")
+        self._recent_menu = DescriptiveMenu("Progetti recenti", file_menu)
+        self._recent_menu.setIcon(icons.icon("elenco"))
+        add_submenu_entry(
+            file_menu, self._recent_menu, "Apri uno dei progetti usati di recente"
+        )
         file_menu.addSeparator()
-        file_menu.addAction(self.act_project)
+        add(file_menu, self.act_project, "Apri il Project Editor del progetto corrente")
         file_menu.addSeparator()
-        file_menu.addAction(self.act_close)
-        file_menu.addAction(self.act_quit)
+        add(file_menu, self.act_close, "Chiudi il progetto e tutte le sue finestre")
+        add(file_menu, self.act_quit, "Esci da dBX")
 
-        edit_menu = menu.addMenu("&Modifica")
-        for action in (self.act_undo, self.act_redo):
-            edit_menu.addAction(action)
+        edit_menu = DescriptiveMenu("&Modifica", menu)
+        menu.addMenu(edit_menu)
+        add(edit_menu, self.act_undo, "Annulla l'ultima modifica nell'editor attivo")
+        add(edit_menu, self.act_redo, "Ripeti la modifica annullata")
         edit_menu.addSeparator()
-        for action in (self.act_cut, self.act_copy, self.act_paste):
-            edit_menu.addAction(action)
+        add(edit_menu, self.act_cut, "Taglia la selezione negli appunti")
+        add(edit_menu, self.act_copy, "Copia la selezione negli appunti")
+        add(edit_menu, self.act_paste, "Incolla il contenuto degli appunti")
         edit_menu.addSeparator()
-        edit_menu.addAction(self.act_delete)
+        add(edit_menu, self.act_delete, "Elimina la selezione o il record corrente")
 
-        view_menu = menu.addMenu("&Visualizza")
-        view_menu.addAction(self.act_speedbar)
-        view_menu.addAction(self.act_statusbar)
+        view_menu = DescriptiveMenu("&Visualizza", menu)
+        menu.addMenu(view_menu)
+        add(view_menu, self.act_speedbar, "Mostra o nascondi la barra degli strumenti")
+        add(view_menu, self.act_statusbar, "Mostra o nascondi la barra di stato")
         view_menu.addSeparator()
-        for action in (self.act_zoom_in, self.act_zoom_out, self.act_zoom_reset):
-            view_menu.addAction(action)
+        add(view_menu, self.act_zoom_in, "Ingrandisci il documento attivo")
+        add(view_menu, self.act_zoom_out, "Riduci il documento attivo")
+        add(view_menu, self.act_zoom_reset, "Riporta il documento al 100%")
         view_menu.addSeparator()
-        view_menu.addAction(self.act_refresh)
+        add(view_menu, self.act_refresh, "Ricarica l'elenco degli oggetti del Navigator")
 
-        objects_menu = menu.addMenu("&Oggetto")
-        for action in (
-            self.act_table,
-            self.act_form,
-            self.act_report,
-            self.act_script,
-            self.act_menu,
-        ):
-            objects_menu.addAction(action)
+        objects_menu = DescriptiveMenu("&Oggetto", menu)
+        menu.addMenu(objects_menu)
+        add(objects_menu, self.act_table, "Crea una nuova tabella con campi e relazioni")
+        add(objects_menu, self.act_form, "Crea un form con il Form Expert o da zero")
+        add(objects_menu, self.act_report, "Crea un report a bande con gruppi e totali")
+        add(objects_menu, self.act_script, "Crea un programma MiniScript")
+        add(objects_menu, self.act_menu, "Crea il menu dell'applicazione")
 
-        run_menu = menu.addMenu("&Procedure")
-        for action in (self.act_run, self.act_validate, self.act_build):
-            run_menu.addAction(action)
+        run_menu = DescriptiveMenu("&Procedure", menu)
+        menu.addMenu(run_menu)
+        add(run_menu, self.act_run, "Esegui il progetto con menu e form principale")
+        add(run_menu, self.act_validate, "Controlla tabelle, riferimenti e oggetti")
+        add(run_menu, self.act_build, "Crea cartella e zip pronti da distribuire")
         run_menu.addSeparator()
-        run_menu.addAction(self.act_command)
+        add(run_menu, self.act_command, "Apri la Command Window per comandi ed espressioni")
         run_menu.addSeparator()
-        run_menu.addAction(self.act_demo)
+        add(run_menu, self.act_demo, "Genera un progetto dimostrativo completo")
 
-        properties_menu = menu.addMenu("&Proprietà")
-        properties_menu.addAction(self.act_settings)
+        properties_menu = DescriptiveMenu("&Proprietà", menu)
+        menu.addMenu(properties_menu)
+        add(properties_menu, self.act_settings, "Imposta titolo, form e menu principale")
+        add(properties_menu, self.act_project, "Apri il Project Editor con validazione e build")
 
-        self._window_menu = menu.addMenu("&Finestra")
+        self._window_menu = DescriptiveMenu("&Finestra", menu)
+        menu.addMenu(self._window_menu)
         self._window_actions: list[tuple[object, QAction]] = []
 
-        help_menu = menu.addMenu("&?")
-        help_menu.addAction(self.act_guide)
-        help_menu.addAction(self.act_about)
+        help_menu = DescriptiveMenu("&?", menu)
+        menu.addMenu(help_menu)
+        add(help_menu, self.act_guide, "Scorciatoie, flusso di lavoro e comandi rapidi")
+        add(help_menu, self.act_about, "Versione, motore e informazioni su dBX")
 
     def _build_toolbar(self) -> None:
         toolbar = QToolBar("SpeedBar", self)
@@ -991,26 +1020,28 @@ class MainWindow(QMainWindow):
     # --------------------------------------------------------------- finestre
     def _refresh_window_menu(self) -> None:
         self._window_menu.clear()
-        self._window_menu.addAction(self.act_cascade)
-        self._window_menu.addAction(self.act_tile)
+        add_entry(self._window_menu, self.act_cascade, "Sovrapponi le finestre documento")
+        add_entry(self._window_menu, self.act_tile, "Affianca le finestre documento")
         self._window_menu.addSeparator()
-        self._window_menu.addAction(self.act_close_window)
-        self._window_menu.addAction(self.act_close_all)
+        add_entry(self._window_menu, self.act_close_window, "Chiudi la finestra documento attiva")
+        add_entry(self._window_menu, self.act_close_all, "Chiudi tutte le finestre documento")
         self._window_menu.addSeparator()
         self._window_actions = []
         windows = self.editors.windows()
         if not windows:
-            empty = self._window_menu.addAction("(nessuna finestra aperta)")
+            empty = icons.make_action("(nessuna finestra aperta)", "finestra", self)
             empty.setEnabled(False)
+            add_entry(self._window_menu, empty, "Apri un oggetto dal Navigator per creare una finestra")
             return
         current = self.editors.current()
         for sub in windows:
-            action = self._window_menu.addAction(sub.windowTitle())
+            action = icons.make_action(sub.windowTitle(), "finestra", self)
             action.setCheckable(True)
             action.setChecked(sub is current)
             action.triggered.connect(
                 lambda _checked=False, target=sub: self.mdi.setActiveSubWindow(target)
             )
+            add_entry(self._window_menu, action, "Passa a questa finestra documento")
             self._window_actions.append((sub, action))
 
     def _sync_window_menu(self) -> None:
@@ -1216,6 +1247,7 @@ class MainWindow(QMainWindow):
         app = QApplication.instance()
         if app is not None:
             apply_theme(app, theme)
+        self._sync_mdi_background()
         self._update_actions()
 
     def show_help(self) -> None:
@@ -1246,9 +1278,9 @@ class MainWindow(QMainWindow):
             self._recent_menu.addAction("(nessun progetto recente)").setEnabled(False)
             return
         for path in entries:
-            action = QAction(path, self)
+            action = icons.make_action(path, "apri", self, tooltip=f"Apri {path}")
             action.triggered.connect(lambda _checked=False, p=path: self.open_recent(p))
-            self._recent_menu.addAction(action)
+            add_entry(self._recent_menu, action, "Apri questo progetto recente")
 
     def _update_actions(self) -> None:
         enabled = self.project is not None

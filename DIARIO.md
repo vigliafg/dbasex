@@ -15,6 +15,7 @@
 | O5 — Report Designer/Preview | completata (2026-11-22) | — |
 | O6 — Script/Menu/Project | completata (2026-11-22) | B |
 | O7 — QA e release 0.2 | completata (2026-11-22) | C |
+| UI 0.2.1 — Tema Aurora e menu descrittivi | completata (2026-11-22) | — |
 
 ## Registro
 
@@ -299,3 +300,49 @@
   - Confermare la pubblicazione GitHub della release `v0.2.0` se il tag locale non basta.
   - Decidere se la 0.3 debba partire da Query Designer o da Label Designer.
 - **RIPRESA:** piano 0.2 concluso. Per una nuova sessione leggere `PLAN.md` e questo diario; la prima attività non completata è la **0.3 — Query Designer, Query Results e Label Designer**. Non ripartire da O0–O7.
+
+
+### 2026-11-22 — UI 0.2.1 — Tema Aurora e menu icona + descrizione
+- **Stato:** completata
+- **Branch/commit:** `main` — commit dell'aggiornamento grafico; tag `v0.2.1`
+- **Obiettivo:** sostituire lo sfondo grigio con un tema colorato e brillante, colorare ogni zona
+  dell'interfaccia e rifare i menu con icona + descrizione.
+- **File toccati:** `dbx/ui/design.py` (tema Aurora e QSS a gradienti), `dbx/ui/menu.py` (nuovo:
+  `MenuEntry`, `DescriptiveMenu`, `add_entry`), `dbx/ui/main_window.py` (menu descrittivi, sfondo
+  MDI, icone), `dbx/ui/theme.py`, `dbx/ui/navigator.py`, `dbx/ui/widgets.py`, `dbx/ui/data_view.py`,
+  `dbx/ui/command_window.py`, `dbx/designers/form_builder.py`, `dbx/designers/report_builder.py`,
+  `dbx/designers/script_builder.py`, `dbx/designers/menu_builder.py`, `dbx/designers/project_builder.py`,
+  `dbx/runtime/form_runtime.py`, `dbx/config.py`, `dbx/__main__.py`, `dbx/__init__.py`, `pyproject.toml`,
+  `tools/capture_ui.py`, test, README, CHANGELOG, docs, rendering.
+- **Scelte/deviazioni:**
+  - Nuovo tema **Aurora** come predefinito: superfici chiare, menu bar indaco/viola, toolbar azzurro/lavanda,
+    Navigator con pastiglie colorate, area MDI azzurro/ciano, status bar indaco/teal, tabelle con
+    intestazioni teal, pannelli e inspector con gradienti pastello.
+  - `light` e `bright` puntano ad Aurora; `silver` resta selezionabile per il confronto storico e
+    `dark` conserva il tema scuro. La configurazione esistente con tema `light` passa automaticamente
+    al nuovo aspetto.
+  - Menu principali ricostruiti con un widget per voce: icona, titolo in grassetto, descrizione,
+    scorciatoia e checkmark; `MenuEntry` mantiene sincronizzati abilitazione, testo, icona e stato
+    con gli `QAction` originali. Gli alias dei menu restano compatibili con test e API esistenti.
+  - Aggiunta `DescriptiveMenu` per il focus sulla prima voce all'apertura, navigazione con frecce,
+    Invio e Invio a capo; menu contestuali di Navigator, pagine del Form Designer e bande del Report
+    Designer usano lo stesso sistema.
+  - Lo sfondo `QMdiArea` viene impostato con un `QLinearGradient` e segue il tema attivo anche dopo
+    un cambio a runtime; prima il grigio predefinito ignorava il QSS.
+  - Focus dei campi e delle viste cambiato da tratteggio rosa a bordo pieno nel colore d'accento, più
+    leggibile; restano focus visibili su pulsanti e schede.
+  - Icone multi-risoluzione e tema Dark aggiornati con i nuovi token; verificati a 150%.
+- **Test:** `207 passed`; smoke headless OK; cattura Aurora e Dark OK.
+- **Screenshot:** serie `01`–`13` rigenerata in Aurora; nuovo `14-menu-progetto.png`; cattura Dark
+  verificata.
+- **Problemi aperti:**
+  - Le submenu standard (es. Progetti recenti) hanno icona + titolo ma non la descrizione su due righe.
+  - Il tema Aurora è più ricco del tema Silver: i testi lunghi nelle palette restano elisi.
+  - La CI Windows/macOS va confermata al primo run dopo il push.
+- **Prossimo passo:** 0.3 — Query Designer, Query Results e Label Designer.
+
+## Checkpoint UI 0.2.1
+- **Versione:** `0.2.1`; tag `v0.2.1`.
+- **Test:** `207 passed`, smoke OK, cattura Aurora/Dark OK.
+- **RIPRESA:** piano 0.2 concluso con aggiornamento grafico 0.2.1. La prima attività non completata
+  resta la **0.3 — Query Designer, Query Results e Label Designer**.

@@ -4,16 +4,22 @@ from __future__ import annotations
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QGuiApplication
-from PyQt6.QtWidgets import QToolBar
+from PyQt6.QtTest import QTest
+from PyQt6.QtWidgets import QToolBar, QWidgetAction
 
 from dbx import __version__
 from dbx.ui import design, icons
 from dbx.ui.main_window import MainWindow
+from dbx.ui.menu import MenuEntry
 
 
-def test_design_tokens_silver() -> None:
+def test_design_tokens_aurora_and_silver() -> None:
+    aurora = design.palette("aurora")
     silver = design.palette("silver")
-    assert design.DEFAULT_THEME == "silver"
+    assert design.DEFAULT_THEME == "aurora"
+    assert aurora["window_bg"] == "#f5f7ff"
+    assert aurora["menu_bar_bg"] == "#312e81"
+    assert aurora["accent"] == "#7c3aed"
     assert silver["window_bg"] == "#c0c0c0"
     assert silver["selection_bg"] == "#000080"
     assert design.METRICS.grid_step == 8
@@ -23,11 +29,15 @@ def test_design_tokens_silver() -> None:
 
 def test_theme_aliases_and_qss() -> None:
     assert design.normalize_theme("light") == "light"
-    assert design.palette("light") is design.SILVER
+    assert design.palette("light") is design.AURORA
+    assert design.palette("bright") is design.AURORA
     assert design.palette("dark") is design.SILVER_DARK
     assert design.normalize_theme("inesistente") == design.DEFAULT_THEME
-    assert "$" not in design.qss("silver")
-    assert "font-size" in design.qss("dark")
+    for theme in ("aurora", "silver", "dark"):
+        sheet = design.qss(theme)
+        assert "$" not in sheet
+        assert "font-size" in sheet
+        assert "qlineargradient" in sheet
 
 
 def test_main_window_basics(qapp, demo_project) -> None:
@@ -131,7 +141,10 @@ def test_command_window_opens_in_mdi_once(qapp, demo_project) -> None:
 
 
 def test_release_version_and_pinned_pyqt() -> None:
-    assert __version__ == "0.2.0"
+    from dbx.config import DEFAULT_CONFIG
+
+    assert __version__ == "0.2.1"
+    assert DEFAULT_CONFIG["theme"] == "aurora"
 
 
 def test_high_dpi_policy_and_icon_sizes(qapp) -> None:
@@ -164,3 +177,45 @@ def test_accessible_names_on_shell_and_navigator(qapp, demo_project) -> None:
         assert command.output.accessibleName() == "Risultati dei comandi"
     finally:
         window.close()
+
+
+def test_main_menu_entries_have_icons_and_descriptions(qapp, demo_project) -> None:
+    window = MainWindow(demo_project)
+    try:
+        menu = window.menuBar().actions()[0].menu()
+        entries = [
+            action.defaultWidget()
+            for action in menu.actions()
+            if isinstance(action, QWidgetAction)
+        ]
+        assert len(entries) >= 6
+        assert all(isinstance(entry, MenuEntry) for entry in entries)
+        assert all(entry.description for entry in entries)
+        assert all(not entry.action.icon().isNull() for entry in entries)
+        assert menu.actions()[0].text() == "Nuovo progetto…"
+
+        edit_entries = [
+            action.defaultWidget()
+            for action in window.menuBar().actions()[1].menu().actions()
+            if isinstance(action, QWidgetAction)
+        ]
+        assert edit_entries and all(entry.description for entry in edit_entries)
+    finally:
+        window.close()
+
+
+def test_menu_entry_click_triggers_action(qapp) -> None:
+    from PyQt6.QtGui import QAction
+
+    triggered: list[str] = []
+    action = QAction("Voce di prova", None)
+    action.triggered.connect(lambda: triggered.append("ok"))
+    entry = MenuEntry(action, "Descrizione della voce")
+    entry.show()
+    try:
+        qapp.processEvents()
+        QTest.mouseClick(entry, Qt.MouseButton.LeftButton)
+        qapp.processEvents()
+        assert triggered == ["ok"]
+    finally:
+        entry.close()

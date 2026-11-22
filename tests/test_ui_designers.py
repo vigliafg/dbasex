@@ -18,7 +18,7 @@ def test_apply_theme(qapp) -> None:
         assert apply_theme(qapp, "dark") == "dark"
         assert apply_theme(qapp, "silver") == "silver"
     finally:
-        apply_theme(qapp, "silver")
+        apply_theme(qapp, "aurora")
 
 
 def test_table_builder(qapp, demo_project) -> None:

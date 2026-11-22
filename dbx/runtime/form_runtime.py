@@ -109,6 +109,7 @@ class FormRuntime(QWidget):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+        self.setObjectName("form_runtime")
         self.project = project
         self.spec = spec
         self.table = project.require_table(spec.table)

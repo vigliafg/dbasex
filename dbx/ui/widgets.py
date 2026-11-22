@@ -94,6 +94,7 @@ class PropertyInspector(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("property_inspector")
         self.setAccessibleName("Object Inspector")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(6, 6, 6, 6)

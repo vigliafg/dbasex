@@ -33,6 +33,7 @@ class CommandWindow(QWidget):
 
     def __init__(self, project, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("command_window")
         self.project = project
         self.rowset: Rowset | None = None
         self._history: list[str] = []
