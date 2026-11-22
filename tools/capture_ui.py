@@ -28,7 +28,9 @@ if str(ROOT) not in sys.path:
 from PyQt6.QtCore import QPoint  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QWidget  # noqa: E402
 
+from dbx.core import types as T  # noqa: E402
 from dbx.core.form_model import FormSpec  # noqa: E402
+from dbx.core.metadata import Field, Table  # noqa: E402
 from dbx.core.query_model import QuerySpec  # noqa: E402
 from dbx.core.search import SearchCriterion, SearchRequest  # noqa: E402
 from dbx.designers.database_designer import DatabaseDesignerWidget  # noqa: E402
@@ -257,6 +259,35 @@ def run(theme: str = "aurora") -> int:
         import_dialog.reload_preview()
         widgets.append(import_dialog)
         captured.append(_capture(app, import_dialog, "26-import-csv.png", (900, 720)))
+
+        calcoli = Table(
+            name="calcoli",
+            caption="Calcoli automatici",
+            fields=[
+                Field("quantita", T.INTEGER, required=True, caption="Quantità"),
+                Field("prezzo", T.DECIMAL, required=True, caption="Prezzo"),
+                Field("totale", T.DECIMAL, calculated="[quantita] * [prezzo]", caption="Totale"),
+                Field("codice", T.INTEGER, auto_serial=True, caption="Codice"),
+                Field("creato", T.DATE, auto_date="insert", caption="Creato"),
+            ],
+        )
+        project.apply_table(calcoli)
+        from dbx.runtime.rowset import Rowset  # noqa: E402
+
+        righe = Rowset(project.db, calcoli)
+        righe.insert({"quantita": 2, "prezzo": 4.5})
+        righe.insert({"quantita": 3, "prezzo": 10})
+        calcoli_dialog = TableBuilderDialog(project, calcoli)
+        calcoli_dialog.fields_grid.setCurrentCell(2, 1)
+        calcoli_dialog.tabs.setCurrentIndex(2)
+        widgets.append(calcoli_dialog)
+        captured.append(
+            _capture(app, calcoli_dialog, "27-table-calculated.png", (1040, 720))
+        )
+
+        calcoli_view = DataView(project, "calcoli")
+        widgets.append(calcoli_view)
+        captured.append(_capture(app, calcoli_view, "28-browse-calculated.png", (900, 480)))
     finally:
         for widget in reversed(widgets):
             widget.close()

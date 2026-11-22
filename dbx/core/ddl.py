@@ -63,7 +63,7 @@ def column_sql(field: Field) -> str:
 def create_table_sql(table: Table, name: str | None = None) -> str:
     target = name or table.name
     lines = [f"  {quote(INTERNAL_ID)} INTEGER PRIMARY KEY AUTOINCREMENT"]
-    for f in table.fields:
+    for f in table.stored_fields:
         lines.append("  " + column_sql(f))
     for fk in table.foreign_keys:
         cols = ", ".join(quote(c) for c in fk.columns)
@@ -159,23 +159,21 @@ def plan_migration(old: Table | None, new: Table) -> MigrationPlan:
         statements = [create_table_sql(new)] + create_indexes_sql(new)
         return MigrationPlan("create", statements, [f"Crea la tabella {new.name}"])
 
-    old_ids = {f.id for f in old.fields}
-    old_names = {f.name.lower() for f in old.fields}
-    new_ids = {f.id for f in new.fields}
-    new_names = {f.name.lower() for f in new.fields}
+    old_ids = {f.id for f in old.stored_fields}
+    new_ids = {f.id for f in new.stored_fields}
 
-    added = [f for f in new.fields if f.id not in old_ids]
-    removed = [f for f in old.fields if f.id not in new_ids]
+    added = [f for f in new.stored_fields if f.id not in old_ids]
+    removed = [f for f in old.stored_fields if f.id not in new_ids]
     renamed = [
         (old_f, new_f)
-        for new_f in new.fields
-        for old_f in old.fields
+        for new_f in new.stored_fields
+        for old_f in old.stored_fields
         if new_f.id == old_f.id and new_f.name.lower() != old_f.name.lower()
     ]
     modified = [
         (old_f, new_f)
-        for old_f in old.fields
-        for new_f in new.fields
+        for old_f in old.stored_fields
+        for new_f in new.stored_fields
         if old_f.id == new_f.id and _field_signature(old_f) != _field_signature(new_f)
     ]
 
@@ -231,7 +229,7 @@ def plan_migration(old: Table | None, new: Table) -> MigrationPlan:
     statements = [f"DROP TABLE IF EXISTS {quote(temp_name)}", create_table_sql(new, temp_name)]
     sources = [quote(INTERNAL_ID)]
     targets = [quote(INTERNAL_ID)]
-    for f in new.fields:
+    for f in new.stored_fields:
         targets.append(quote(f.name))
         sources.append(_copy_expression(f, old))
     statements.append(

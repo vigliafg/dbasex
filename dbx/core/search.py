@@ -127,6 +127,10 @@ def _condition(table: Table, criterion: SearchCriterion) -> tuple[str, tuple[Any
     field = table.field(criterion.field)
     if field is None:
         raise SearchError(f"Campo inesistente: {criterion.field or '(nessuno)'}")
+    if not field.stored:
+        raise SearchError(
+            f"Il campo calcolato {field.display_name()} non è ricercabile"
+        )
     op = criterion.op if criterion.op in SEARCH_OPERATORS else "contains"
     column = _quote(field.name)
     if op in NULL_OPERATORS:
@@ -238,10 +242,16 @@ def replaceable_fields(table: Table, field: str = "") -> list:
         candidate = table.field(field)
         if candidate is None:
             raise SearchError(f"Campo inesistente: {field}")
+        if not candidate.stored:
+            raise SearchError(f"Il campo {candidate.display_name()} è calcolato e non modificabile")
         if candidate.type not in (T.TEXT, T.MEMO):
             raise SearchError(f"Il campo {candidate.display_name()} non è testuale")
         return [candidate]
-    return [item for item in table.fields if item.type in (T.TEXT, T.MEMO)]
+    return [
+        item
+        for item in table.fields
+        if item.stored and item.type in (T.TEXT, T.MEMO)
+    ]
 
 
 def replace_in_rowset(

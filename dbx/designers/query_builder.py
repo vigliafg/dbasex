@@ -172,7 +172,7 @@ class JoinDialog(QDialog):
         self.left_combo.blockSignals(True)
         self.left_combo.clear()
         for table in self._tables_in_query():
-            for field in table.fields:
+            for field in table.stored_fields:
                 self.left_combo.addItem(
                     f"{table.name}.{field.name} — {field.display_name()}",
                     f"{table.name}.{field.name}",
@@ -187,7 +187,7 @@ class JoinDialog(QDialog):
         self.right_combo.blockSignals(True)
         self.right_combo.clear()
         if table is not None:
-            for field in table.fields:
+            for field in table.stored_fields:
                 self.right_combo.addItem(
                     f"{field.name} — {field.display_name()}", field.name
                 )
@@ -596,7 +596,7 @@ class QueryDesignerWidget(QWidget):
             node.setData(0, Qt.ItemDataRole.UserRole, ("table", table.name))
             node.setToolTip(0, f"Tabella {table.name}")
             self.tree.addTopLevelItem(node)
-            for field in table.fields:
+            for field in table.stored_fields:
                 child = QTreeWidgetItem([field.name, field.type.upper()])
                 child.setData(0, Qt.ItemDataRole.UserRole, ("field", table.name, field.name))
                 child.setData(1, Qt.ItemDataRole.UserRole, field.display_name())
@@ -629,7 +629,7 @@ class QueryDesignerWidget(QWidget):
             table = self.project.table(table_name)
             if table is None:
                 continue
-            for field in table.fields:
+            for field in table.stored_fields:
                 ref = f"{table.name}.{field.name}"
                 result.append((ref, f"{ref} — {field.display_name()}"))
         return result

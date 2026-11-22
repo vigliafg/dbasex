@@ -689,8 +689,11 @@ class ScriptEngine:
                 raise ScriptError(
                     f"SET FIELD lavora sulla tabella corrente {rowset.table.name}, non su {table_name}"
                 )
-        if rowset.table.field(field_name) is None:
+        field_obj = rowset.table.field(field_name)
+        if field_obj is None:
             raise ScriptError(f"Campo sconosciuto in SET FIELD: {field_name}")
+        if not field_obj.stored:
+            raise ScriptError(f"Il campo calcolato {field_name} non è modificabile")
         expression = str(params.get("expr") or "").strip()
         if not expression:
             raise ScriptError("Espressione mancante in SET FIELD")

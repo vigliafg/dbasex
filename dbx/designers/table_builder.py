@@ -398,6 +398,19 @@ class TableBuilderDialog(QDialog):
         self.rule_edit = QLineEdit()
         self.lookup_edit = QLineEdit()
         self.lookup_edit.setPlaceholderText("tabella.campo")
+        self.calculated_edit = QLineEdit()
+        self.calculated_edit.setPlaceholderText("es. [prezzo] * [quantita]")
+        self.calculated_edit.setToolTip("Espressione calcolata a ogni lettura; il campo non è salvato")
+        self.auto_enter_edit = QLineEdit()
+        self.auto_enter_edit.setPlaceholderText("es. TODAY() oppure [nome]")
+        self.auto_enter_edit.setToolTip("Espressione valutata alla creazione se il campo è vuoto")
+        self.auto_serial_check = QCheckBox("Serie automatica")
+        self.auto_serial_check.setToolTip("Assegna il numero successivo alla creazione")
+        self.auto_date_combo = QComboBox()
+        self.auto_date_combo.addItem("(nessuna)", "")
+        self.auto_date_combo.addItem("Data di creazione", "insert")
+        self.auto_date_combo.addItem("Data di modifica", "update")
+        self.auto_date_combo.setToolTip("Imposta la data alla creazione o a ogni modifica")
         for widget in (
             self.required_check,
             self.default_edit,
@@ -405,6 +418,10 @@ class TableBuilderDialog(QDialog):
             self.fmt_edit,
             self.rule_edit,
             self.lookup_edit,
+            self.calculated_edit,
+            self.auto_enter_edit,
+            self.auto_serial_check,
+            self.auto_date_combo,
         ):
             widget.setEnabled(False)
         form.addRow("", self.required_check)
@@ -413,16 +430,24 @@ class TableBuilderDialog(QDialog):
         form.addRow("Formato", self.fmt_edit)
         form.addRow("Regola", self.rule_edit)
         form.addRow("Lookup", self.lookup_edit)
+        form.addRow("Calcolato", self.calculated_edit)
+        form.addRow("Auto-enter", self.auto_enter_edit)
+        form.addRow("", self.auto_serial_check)
+        form.addRow("Data automatica", self.auto_date_combo)
         layout.addLayout(form)
         layout.addStretch(1)
 
         self.required_check.toggled.connect(self._store_field_meta)
+        self.auto_serial_check.toggled.connect(self._store_field_meta)
+        self.auto_date_combo.currentIndexChanged.connect(self._store_field_meta)
         for edit in (
             self.default_edit,
             self.field_caption_edit,
             self.fmt_edit,
             self.rule_edit,
             self.lookup_edit,
+            self.calculated_edit,
+            self.auto_enter_edit,
         ):
             edit.textChanged.connect(self._store_field_meta)
         return page
@@ -454,6 +479,10 @@ class TableBuilderDialog(QDialog):
             "fmt": field.fmt,
             "rule": field.rule,
             "lookup": field.lookup,
+            "calculated": field.calculated,
+            "auto_enter": field.auto_enter,
+            "auto_serial": field.auto_serial,
+            "auto_date": field.auto_date,
             "pk": field.pk,
         }
 
@@ -646,6 +675,10 @@ class TableBuilderDialog(QDialog):
                     fmt=fmt,
                     rule=str(meta.get("rule", "")),
                     lookup=str(meta.get("lookup", "")),
+                    calculated=str(meta.get("calculated", "")),
+                    auto_enter=str(meta.get("auto_enter", "")),
+                    auto_serial=bool(meta.get("auto_serial", False)),
+                    auto_date=str(meta.get("auto_date", "")),
                     pk=bool(meta.get("pk", False)),
                     id=field_id,
                 )
@@ -829,6 +862,11 @@ class TableBuilderDialog(QDialog):
         self.fmt_edit.setText(str(meta.get("fmt", "")))
         self.rule_edit.setText(str(meta.get("rule", "")))
         self.lookup_edit.setText(str(meta.get("lookup", "")))
+        self.calculated_edit.setText(str(meta.get("calculated", "")))
+        self.auto_enter_edit.setText(str(meta.get("auto_enter", "")))
+        self.auto_serial_check.setChecked(bool(meta.get("auto_serial", False)))
+        position = self.auto_date_combo.findData(str(meta.get("auto_date", "")))
+        self.auto_date_combo.setCurrentIndex(max(0, position))
         enabled = bool(meta)
         for widget in (
             self.required_check,
@@ -837,6 +875,10 @@ class TableBuilderDialog(QDialog):
             self.fmt_edit,
             self.rule_edit,
             self.lookup_edit,
+            self.calculated_edit,
+            self.auto_enter_edit,
+            self.auto_serial_check,
+            self.auto_date_combo,
         ):
             widget.setEnabled(enabled and self.exclusive_button.isChecked())
         self._meta_loading = False
@@ -851,8 +893,12 @@ class TableBuilderDialog(QDialog):
             self.fmt_edit,
             self.rule_edit,
             self.lookup_edit,
+            self.calculated_edit,
+            self.auto_enter_edit,
         ):
             edit.clear()
+        self.auto_serial_check.setChecked(False)
+        self.auto_date_combo.setCurrentIndex(0)
         self._meta_loading = False
 
     def _store_field_meta(self, *_args) -> None:
@@ -870,6 +916,10 @@ class TableBuilderDialog(QDialog):
             "fmt": self.fmt_edit.text(),
             "rule": self.rule_edit.text(),
             "lookup": self.lookup_edit.text(),
+            "calculated": self.calculated_edit.text(),
+            "auto_enter": self.auto_enter_edit.text(),
+            "auto_serial": self.auto_serial_check.isChecked(),
+            "auto_date": str(self.auto_date_combo.currentData() or ""),
             "pk": bool(self._meta.get(field_id, {}).get("pk", False)),
         }
         self._update_preview()
@@ -1029,7 +1079,7 @@ class TableBuilderDialog(QDialog):
             table = self.project.require_table(name)
             expressions = [
                 f"COALESCE(LENGTH(CAST({ddl.quote(field.name)} AS TEXT)), 0)"
-                for field in table.fields
+                for field in table.stored_fields
             ]
             row = self.project.db.query(
                 f"SELECT COUNT(*) AS n, SUM({'+'.join(expressions)}) AS bytes "

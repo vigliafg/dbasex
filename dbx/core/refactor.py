@@ -41,8 +41,14 @@ def _brackets(value: Any, old: str, new: str) -> Any:
 
 def _rewrite_table(table_artifact: dict[str, Any], old: str, new: str) -> None:
     for field in table_artifact.get("fields", []):
-        if isinstance(field, dict) and field.get("lookup"):
+        if not isinstance(field, dict):
+            continue
+        if field.get("lookup"):
             field["lookup"] = _dotted(field["lookup"], old, new)
+        if field.get("calculated"):
+            field["calculated"] = _brackets(field["calculated"], old, new)
+        if field.get("auto_enter"):
+            field["auto_enter"] = _brackets(field["auto_enter"], old, new)
     for fk in table_artifact.get("foreign_keys", []):
         if isinstance(fk, dict) and fk.get("ref_table") == old:
             fk["ref_table"] = new
@@ -172,7 +178,7 @@ def rename_table(project: Project, old: str, new: str) -> None:
     tables[new] = artifact
     for category in ("tables", "queries", "forms", "reports", "scripts", "diagrams"):
         for name, item in project.objects.get(category, {}).items():
-            if not isinstance(item, dict) or (category == "tables" and name == new):
+            if not isinstance(item, dict):
                 continue
             _rewrite_artifact(category, item, actual_old, new)
 

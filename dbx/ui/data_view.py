@@ -53,7 +53,7 @@ class RecordDialog(QDialog):
         layout = QVBoxLayout(self)
         form = QFormLayout()
         self.editors: dict[str, QWidget] = {}
-        for field in table.fields:
+        for field in table.stored_fields:
             if field.type == T.MEMO:
                 editor: QWidget = QPlainTextEdit()
                 editor.setFixedHeight(70)
@@ -74,11 +74,11 @@ class RecordDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
-        self.resize(460, min(680, 80 * max(1, len(table.fields)) + 80))
+        self.resize(460, min(680, 80 * max(1, len(table.stored_fields)) + 80))
 
     def values(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
-        for field in self.table.fields:
+        for field in self.table.stored_fields:
             editor = self.editors[field.name]
             if isinstance(editor, QPlainTextEdit):
                 text = editor.toPlainText()
@@ -201,7 +201,7 @@ class DataView(QWidget):
         filter_row.addWidget(QLabel("Ordina:"))
         self.order_combo = QComboBox()
         self.order_combo.addItem("(naturale)", "")
-        for field in self.table.fields:
+        for field in self.table.stored_fields:
             self.order_combo.addItem(field.display_name(), field.name)
         self.order_combo.currentIndexChanged.connect(self.apply_filter)
         filter_row.addWidget(self.order_combo)
@@ -249,7 +249,7 @@ class DataView(QWidget):
         params: list[Any] = []
         if self._filter:
             quick = []
-            for field in self.table.fields:
+            for field in self.table.stored_fields:
                 quick.append(f'CAST("{field.name}" AS TEXT) LIKE ?')
                 params.append(f"%{self._filter}%")
             clauses.append("(" + " OR ".join(quick) + ")")
@@ -278,7 +278,7 @@ class DataView(QWidget):
         self.order_combo.blockSignals(True)
         self.order_combo.clear()
         self.order_combo.addItem("(naturale)", "")
-        for field in self.table.fields:
+        for field in self.table.stored_fields:
             self.order_combo.addItem(field.display_name(), field.name)
         position = self.order_combo.findData(previous_order)
         self.order_combo.setCurrentIndex(max(0, position))
@@ -321,6 +321,9 @@ class DataView(QWidget):
                 item.setData(Qt.ItemDataRole.UserRole, record.get(INTERNAL_ID))
                 if field.type == T.BLOB:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                if not field.stored:
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                    item.setToolTip(f"Campo calcolato: {field.calculated}")
                 self.grid.setItem(row_index, col, item)
         self._loading = False
         self._restoring = True
@@ -445,6 +448,8 @@ class DataView(QWidget):
         if record is None:
             return
         field = self.table.fields[item.column()]
+        if not field.stored:
+            return
         try:
             value = T.parse_input(item.text(), field.type)
             record[field.name] = value

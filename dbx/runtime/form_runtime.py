@@ -321,6 +321,14 @@ class FormRuntime(QWidget):
             widget = label
         if widget is None:
             return
+        if control.kind in FIELD_KINDS:
+            bound = self.table.field(control.field)
+            if bound is not None and not bound.stored:
+                if hasattr(widget, "setReadOnly"):
+                    widget.setReadOnly(True)
+                else:
+                    widget.setEnabled(False)
+                widget.setToolTip("Campo calcolato: valore non modificabile")
         widget.setParent(surface)
         widget.setGeometry(control.x, control.y, max(8, control.w), max(8, control.h))
         if control.backcolor or control.forecolor:

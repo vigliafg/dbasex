@@ -170,7 +170,7 @@ def import_rows(
             if not name:
                 continue
             field = table.field(name)
-            if field is None:
+            if field is None or not field.stored:
                 continue
             record[name] = _convert_cell(cell.strip(), field, len(result) + 2, headers[index])
         result.append(record)
@@ -198,7 +198,7 @@ def records_from_table(
             if not name:
                 continue
             field = table.field(name)
-            if field is None:
+            if field is None or not field.stored:
                 continue
             record[name] = _convert_cell(
                 str(cell).strip(), field, first_data_line + offset, name

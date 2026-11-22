@@ -197,7 +197,7 @@ class ImportCsvDialog(QDialog):
             self.mapping_table.setItem(column, 0, label)
             combo = QComboBox()
             combo.addItem("(ignora)", "")
-            for field in self.table.fields:
+            for field in self.table.stored_fields:
                 combo.addItem(field.display_name(), field.name)
             choice = None
             if column < len(previous) and previous[column]:

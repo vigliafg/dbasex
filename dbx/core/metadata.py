@@ -43,6 +43,15 @@ def check_identifier(name: str, what: str = "nome") -> None:
         raise MetadataError(f"{what.capitalize()} riservato: {name}")
 
 
+def _check_expression(source: str, what: str) -> None:
+    from .expressions import Expression, ExpressionError
+
+    try:
+        Expression(source)
+    except ExpressionError as exc:
+        raise MetadataError(f"Espressione non valida per {what}: {exc}") from exc
+
+
 @dataclass
 class Field:
     name: str
@@ -55,6 +64,10 @@ class Field:
     pk: bool = False
     lookup: str = ""
     rule: str = ""
+    calculated: str = ""
+    auto_enter: str = ""
+    auto_serial: bool = False
+    auto_date: str = ""
     id: str = dc_field(default_factory=new_id)
 
     def validate(self) -> None:
@@ -68,6 +81,48 @@ class Field:
                 raise MetadataError(
                     f"Lookup del campo {self.name} non valido: usa 'tabella.campo'"
                 )
+        if self.auto_date not in ("", "insert", "update"):
+            raise MetadataError(
+                f"Momento automatico non valido per {self.name}: {self.auto_date!r}"
+            )
+        mechanisms = [
+            bool(self.calculated.strip()),
+            bool(self.auto_enter.strip()),
+            bool(self.auto_serial),
+            bool(self.auto_date),
+        ]
+        if sum(mechanisms) > 1:
+            raise MetadataError(
+                f"Il campo {self.name} può avere un solo meccanismo automatico "
+                "(calcolato, auto-enter, serie o data)"
+            )
+        if self.calculated:
+            if self.pk or self.required:
+                raise MetadataError(
+                    f"Il campo calcolato {self.name} non può essere chiave o obbligatorio"
+                )
+            if self.lookup:
+                raise MetadataError(f"Il campo calcolato {self.name} non può avere un lookup")
+            _check_expression(self.calculated, f"calcolo di {self.name}")
+        if self.auto_enter:
+            _check_expression(self.auto_enter, f"auto-enter di {self.name}")
+        if self.auto_serial and self.type != T.INTEGER:
+            raise MetadataError(
+                f"La serie automatica di {self.name} richiede il tipo Intero"
+            )
+        if self.auto_date and self.type not in (T.DATE, T.DATETIME):
+            raise MetadataError(
+                f"La data automatica di {self.name} richiede il tipo Data o Data/ora"
+            )
+        if self.rule and self.calculated:
+            raise MetadataError(
+                f"Il campo calcolato {self.name} non può avere una regola di validazione"
+            )
+
+    @property
+    def stored(self) -> bool:
+        """Il campo ha una colonna fisica; i calcolati sono solo virtuali."""
+        return not bool(self.calculated)
 
     def display_name(self) -> str:
         return self.caption or self.name.replace("_", " ").capitalize()
@@ -85,6 +140,10 @@ class Field:
             "pk": self.pk,
             "lookup": self.lookup,
             "rule": self.rule,
+            "calculated": self.calculated,
+            "auto_enter": self.auto_enter,
+            "auto_serial": self.auto_serial,
+            "auto_date": self.auto_date,
         }
 
     @classmethod
@@ -100,6 +159,10 @@ class Field:
             pk=bool(data.get("pk", False)),
             lookup=str(data.get("lookup", "")),
             rule=str(data.get("rule", "")),
+            calculated=str(data.get("calculated", "")),
+            auto_enter=str(data.get("auto_enter", "")),
+            auto_serial=bool(data.get("auto_serial", False)),
+            auto_date=str(data.get("auto_date", "")),
             id=str(data.get("id") or new_id()),
         )
 
@@ -202,6 +265,19 @@ class Table:
     def field_names(self) -> list[str]:
         return [f.name for f in self.fields]
 
+    @property
+    def stored_fields(self) -> list[Field]:
+        """Campi con una colonna fisica: esclude i calcolati."""
+        return [f for f in self.fields if f.stored]
+
+    @property
+    def calculated_fields(self) -> list[Field]:
+        return [f for f in self.fields if not f.stored]
+
+    @property
+    def stored_field_names(self) -> list[str]:
+        return [f.name for f in self.stored_fields]
+
     def display_name(self) -> str:
         return self.caption or self.name
 
@@ -218,6 +294,11 @@ class Table:
         index_names: set[str] = set()
         for index in self.indexes:
             index.validate(self)
+            if any(
+                (field := self.field(name)) is not None and not field.stored
+                for name in index.fields
+            ):
+                raise MetadataError(f"Indice su campo calcolato: {index.resolved_name(self.name)}")
             resolved = index.resolved_name(self.name)
             if resolved.lower() in index_names:
                 raise MetadataError(f"Indice duplicato: {resolved}")
@@ -225,6 +306,11 @@ class Table:
         fk_names: set[str] = set()
         for fk in self.foreign_keys:
             fk.validate(self)
+            if any(
+                (field := self.field(name)) is not None and not field.stored
+                for name in fk.columns
+            ):
+                raise MetadataError(f"Relazione su campo calcolato: {fk.resolved_name(self.name)}")
             resolved = fk.resolved_name(self.name)
             if resolved.lower() in fk_names:
                 raise MetadataError(f"Relazione duplicata: {resolved}")
@@ -233,6 +319,10 @@ class Table:
     def new_record(self) -> dict[str, Any]:
         record: dict[str, Any] = {}
         for f in self.fields:
+            if not f.stored or f.auto_serial or f.auto_date:
+                # I calcolati e i campi automatici partono vuoti: li risolve il Rowset.
+                record[f.name] = None if f.stored else T.default_value(f.type)
+                continue
             if f.default != "":
                 try:
                     record[f.name] = T.to_storage(f.default, f.type)

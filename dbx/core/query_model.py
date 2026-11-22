@@ -222,7 +222,7 @@ class QuerySpec:
             name=name or f"query_{slugify(table.name)}",
             caption=caption or f"Query {table.display_name()}",
             base=table.name,
-            fields=[QueryField(table.name, field.name) for field in table.fields],
+            fields=[QueryField(table.name, field.name) for field in table.stored_fields],
         )
 
     @classmethod
@@ -293,12 +293,16 @@ class QuerySpec:
                 errors.append(f"Join {join.table}: tabella sinistra non disponibile: {left_table}")
             elif by_name[left_table.lower()].field(left_field) is None:
                 errors.append(f"Join {join.table}: campo sinistro inesistente: {join.left}")
+            elif not by_name[left_table.lower()].field(left_field).stored:
+                errors.append(f"Join {join.table}: campo calcolato non disponibile: {join.left}")
             if right_table.lower() != join.table.lower():
                 errors.append(
                     f"Join {join.table}: la condizione destra deve appartenere a {join.table}"
                 )
             elif join_table.field(right_field) is None:
                 errors.append(f"Join {join.table}: campo destro inesistente: {join.right}")
+            elif not join_table.field(right_field).stored:
+                errors.append(f"Join {join.table}: campo calcolato non disponibile: {join.right}")
             available.add(join.table.lower())
 
         for item in self.fields:
@@ -310,6 +314,8 @@ class QuerySpec:
                 errors.append(f"Campo {item.ref}: la tabella non è nella query")
             if table.field(item.field) is None:
                 errors.append(f"Campo inesistente: {item.ref}")
+            elif not table.field(item.field).stored:
+                errors.append(f"Campo calcolato non disponibile nelle query: {item.ref}")
             if item.alias and not IDENT_RE.match(item.alias):
                 errors.append(f"Alias non valido: {item.alias}")
 
@@ -329,6 +335,10 @@ class QuerySpec:
                 errors.append(f"Filtro su campo inesistente: {item.field}")
             else:
                 source_field = table.field(field_name)
+                if not source_field.stored:
+                    errors.append(
+                        f"Filtro su campo calcolato non disponibile: {item.field}"
+                    )
             if item.op not in ALL_OPERATORS:
                 errors.append(f"Operatore di filtro non valido: {item.op}")
                 continue
@@ -381,6 +391,8 @@ class QuerySpec:
                 errors.append(f"Ordinamento su tabella non presente nella query: {table_name}")
             elif table.field(field_name) is None:
                 errors.append(f"Ordinamento su campo inesistente: {item.field}")
+            elif not table.field(field_name).stored:
+                errors.append(f"Ordinamento su campo calcolato non disponibile: {item.field}")
             if item.direction not in SORT_DIRECTIONS:
                 errors.append(f"Direzione di ordinamento non valida: {item.direction}")
 

@@ -417,7 +417,7 @@ class QueryExpert(ExpertWizard):
             table = self.project.table(name)
             if table is None:
                 continue
-            for field in table.fields:
+            for field in table.stored_fields:
                 ref = f"{table.name}.{field.name}"
                 result.append((ref, f"{table.display_name()} · {field.display_name()} ({field.type})"))
         return result

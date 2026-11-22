@@ -203,7 +203,12 @@ def run_smoke() -> int:
 
     imported_table = Table(
         name="import_smoke",
-        fields=[Field("codice", T.TEXT, required=True), Field("nome", T.TEXT)],
+        fields=[
+            Field("codice", T.TEXT, required=True),
+            Field("nome", T.TEXT),
+            Field("nome_maiuscolo", T.TEXT, calculated="UPPER([nome])"),
+            Field("progressivo", T.INTEGER, auto_serial=True),
+        ],
     )
     project.apply_table(imported_table)
     csv_path = root / "import_smoke.csv"
@@ -224,7 +229,12 @@ def run_smoke() -> int:
         False,
     )
     assert imported == 2
-    checks.append(f"import csv: {imported} record")
+    from .runtime.rowset import Rowset as SmokeRowset
+
+    computed = SmokeRowset(project.db, project.require_table("import_smoke")).open().rows()
+    assert [row["nome_maiuscolo"] for row in computed] == ["ALFA", "BETA"]
+    assert [row["progressivo"] for row in computed] == [1, 2]
+    checks.append(f"import csv: {imported} record + calcolati")
 
     duplicate = duplicate_object(project, "queries", "clienti_attivi")
     assert project.artifact("queries", duplicate) is not None

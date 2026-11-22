@@ -27,11 +27,19 @@ class Rowset:
         self._params: tuple[Any, ...] = ()
         self._order = ""
         self._limit: int | None = None
+        self._calculated: list[tuple[str, Expression]] = []
+        for field in table.calculated_fields:
+            try:
+                self._calculated.append((field.name, Expression(field.calculated)))
+            except ExpressionError as exc:
+                raise RowsetError(
+                    f"Calcolo non valido per {field.name}: {exc}"
+                ) from exc
 
     # ------------------------------------------------------------------ query
     @property
     def columns(self) -> list[str]:
-        return [INTERNAL_ID] + self.table.field_names
+        return [INTERNAL_ID] + self.table.stored_field_names
 
     def _select_sql(self) -> str:
         cols = ", ".join(f'"{c}"' for c in self.columns)
@@ -60,7 +68,9 @@ class Rowset:
         except Exception as exc:
             raise RowsetError(f"Lettura di {self.table.name} non riuscita: {exc}") from exc
         self._rows = [
-            {key: T.from_storage(row[key], self._type_of(key)) for key in row.keys()}
+            self._with_calculated(
+                {key: T.from_storage(row[key], self._type_of(key)) for key in row.keys()}
+            )
             for row in rows
         ]
         self._position = 0 if self._rows else -1
@@ -80,6 +90,68 @@ class Rowset:
             return T.INTEGER
         field = self.table.field(column)
         return field.type if field else T.TEXT
+
+    # ---------------------------------------------------------- campi calcolati
+    def _with_calculated(self, record: dict[str, Any]) -> dict[str, Any]:
+        """Aggiunge i valori dei campi calcolati, nell'ordine dei campi."""
+        if not self._calculated:
+            return record
+        result = dict(record)
+        for name, expression in self._calculated:
+            try:
+                result[name] = expression.evaluate(result, table=self.table.name)
+            except ExpressionError as exc:
+                raise RowsetError(f"Calcolo di {name} non riuscito: {exc}") from exc
+        return result
+
+    @staticmethod
+    def _empty(value: Any) -> bool:
+        return value is None or (isinstance(value, str) and value.strip() == "")
+
+    def _next_serial(self, field) -> int:
+        current = self.db.scalar(
+            f'SELECT COALESCE(MAX("{field.name}"), 0) FROM "{self.table.name}"'
+        )
+        return int(current or 0) + 1
+
+    def _apply_auto_enter(self, values: dict[str, Any], creating: bool) -> dict[str, Any]:
+        """Risolve serie, date automatiche ed espressioni auto-enter."""
+        result = dict(values)
+        base = self.table.new_record()
+        base.update(result)
+        # Prima serie e date, così le espressioni auto-enter possono leggerle.
+        for field in self.table.stored_fields:
+            if field.auto_serial and creating and self._empty(result.get(field.name)):
+                result[field.name] = self._next_serial(field)
+                base[field.name] = result[field.name]
+            if field.auto_date:
+                if creating and field.auto_date == "insert":
+                    result[field.name] = self._auto_date(field)
+                    base[field.name] = result[field.name]
+                elif not creating and field.auto_date == "update":
+                    result[field.name] = self._auto_date(field)
+                    base[field.name] = result[field.name]
+        if creating:
+            for field in self.table.stored_fields:
+                if not field.auto_enter or not self._empty(result.get(field.name)):
+                    continue
+                try:
+                    value = Expression(field.auto_enter).evaluate(
+                        base, table=self.table.name
+                    )
+                except ExpressionError as exc:
+                    raise RowsetError(
+                        f"Auto-enter di {field.name} non riuscito: {exc}"
+                    ) from exc
+                result[field.name] = value
+                base[field.name] = value
+        return result
+
+    @staticmethod
+    def _auto_date(field) -> Any:
+        from datetime import date, datetime
+
+        return datetime.now() if field.type == T.DATETIME else date.today()
 
     # -------------------------------------------------------------- navigazione
     def __len__(self) -> int:
@@ -149,19 +221,23 @@ class Rowset:
         return record
 
     def load(self, record_id: int) -> dict[str, Any] | None:
+        columns = ", ".join(f'"{c}"' for c in self.columns)
         row = self.db.con.execute(
-            f'SELECT * FROM "{self.table.name}" WHERE "{INTERNAL_ID}" = ?', (record_id,)
+            f'SELECT {columns} FROM "{self.table.name}" WHERE "{INTERNAL_ID}" = ?',
+            (record_id,),
         ).fetchone()
         if row is None:
             return None
-        return {key: T.from_storage(row[key], self._type_of(key)) for key in row.keys()}
+        return self._with_calculated(
+            {key: T.from_storage(row[key], self._type_of(key)) for key in row.keys()}
+        )
 
     def validate(self, values: dict[str, Any]) -> dict[str, Any]:
         """Converte e valida i valori, restituendo i dati pronti per lo storage."""
         prepared: dict[str, Any] = {}
         errors: list[str] = []
         expression_record = dict(values)
-        for field in self.table.fields:
+        for field in self.table.stored_fields:
             raw = values.get(field.name)
             try:
                 stored = T.to_storage(raw, field.type)
@@ -173,6 +249,14 @@ class Rowset:
                 errors.append(f"{field.display_name()} è obbligatorio")
             prepared[field.name] = stored
             expression_record[field.name] = T.from_storage(stored, field.type)
+        if not errors:
+            for name, expression in self._calculated:
+                try:
+                    expression_record[name] = expression.evaluate(
+                        expression_record, table=self.table.name
+                    )
+                except ExpressionError as exc:
+                    errors.append(f"Calcolo di {name} non valido: {exc}")
         if not errors:
             for field in self.table.fields:
                 if not field.rule:
@@ -213,9 +297,10 @@ class Rowset:
                 )
 
     def insert(self, values: dict[str, Any]) -> int:
+        values = self._apply_auto_enter(values, creating=True)
         prepared = self.validate(values)
         self._check_unique(prepared, None)
-        names = [f.name for f in self.table.fields]
+        names = self.table.stored_field_names
         placeholders = ", ".join("?" for _ in names)
         sql = (
             f'INSERT INTO "{self.table.name}" ({", ".join(f"{chr(34)}{n}{chr(34)}" for n in names)}) '
@@ -227,16 +312,31 @@ class Rowset:
             raise RowsetError(f"Inserimento non riuscito: {exc}") from exc
         record_id = int(cursor.lastrowid)
         record = {INTERNAL_ID: record_id}
-        for field in self.table.fields:
+        for field in self.table.stored_fields:
             record[field.name] = T.from_storage(prepared[field.name], field.type)
+        record = self._with_calculated(record)
         self._rows.append(record)
         self._position = len(self._rows) - 1
         return record_id
 
     def update(self, record_id: int, values: dict[str, Any]) -> int:
+        # Le modifiche parziali non azzerano i campi non indicati.
+        columns = ", ".join(f'"{c}"' for c in self.columns)
+        existing = self.db.con.execute(
+            f'SELECT {columns} FROM "{self.table.name}" WHERE "{INTERNAL_ID}" = ?',
+            (record_id,),
+        ).fetchone()
+        if existing is not None:
+            merged = {
+                key: T.from_storage(existing[key], self._type_of(key))
+                for key in existing.keys()
+            }
+            merged.update(values)
+            values = merged
+        values = self._apply_auto_enter(values, creating=False)
         prepared = self.validate(values)
         self._check_unique(prepared, record_id)
-        names = [f.name for f in self.table.fields]
+        names = self.table.stored_field_names
         assignments = ", ".join(f'"{name}" = ?' for name in names)
         sql = f'UPDATE "{self.table.name}" SET {assignments} WHERE "{INTERNAL_ID}" = ?'
         try:
@@ -244,8 +344,9 @@ class Rowset:
         except Exception as exc:
             raise RowsetError(f"Aggiornamento non riuscito: {exc}") from exc
         record = {INTERNAL_ID: record_id}
-        for field in self.table.fields:
+        for field in self.table.stored_fields:
             record[field.name] = T.from_storage(prepared[field.name], field.type)
+        record = self._with_calculated(record)
         for index, row in enumerate(self._rows):
             if row.get(INTERNAL_ID) == record_id:
                 self._rows[index] = record

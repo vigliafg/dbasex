@@ -907,3 +907,41 @@
 - **RIPRESA:** nessuna ondata aperta. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
   `git status`/`git log` e iniziare l’**Ondata 4 — Campi calcolati e auto-enter**; non ripartire da
   O1–O3.
+
+### 2026-11-22 — Ondata 0.7.0 — O4 Campi calcolati e auto-enter
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O4.
+- **Obiettivo:** introdurre campi calcolati virtuali e compilazioni automatiche (serie, date,
+  espressioni) senza rompere i progetti 0.6.
+- **File toccati:** `dbx/core/metadata.py`, `dbx/core/ddl.py`, `dbx/runtime/rowset.py`,
+  `dbx/core/query_model.py`, `dbx/core/search.py`, `dbx/core/refactor.py`,
+  `dbx/designers/table_builder.py`, `dbx/designers/query_builder.py`,
+  `dbx/designers/query_expert.py`, `dbx/ui/data_view.py`, `dbx/ui/find_dialog.py`,
+  `dbx/ui/import_wizard.py`, `dbx/runtime/form_runtime.py`, `dbx/runtime/script_engine.py`,
+  `dbx/io/csv_io.py`, `tests/test_calculated_fields.py` (nuovo),
+  `tests/test_ui_calculated.py` (nuovo), `dbx/smoke.py`, `tools/capture_ui.py`.
+- **Scelte:**
+  - `Field` esteso in modo additivo con `calculated`, `auto_enter`, `auto_serial` e `auto_date`
+    (`insert`/`update`). I progetti 0.6 restano validi perché tutti i nuovi campi hanno default.
+  - I campi calcolati restano in `fields` per designer, form, report e import, ma non hanno colonna
+    fisica: DDL, migrazioni e Rowset usano `Table.stored_fields`.
+  - Il calcolo avviene nel `Rowset` a ogni lettura, dopo la conversione dei tipi, in ordine di campo:
+    un calcolato può quindi riferirsi a un altro calcolato. Le regole di validazione possono usare
+    il risultato.
+  - `auto_serial` richiede Intero e assegna `MAX + 1`; `auto_date` richiede Data/Data-ora; le
+    espressioni auto-enter vengono valutate solo alla creazione, se il campo è vuoto, dopo serie e
+    date.
+  - I campi calcolati sono esclusi da indici, relazioni, query, ricerca, sostituzione, import e
+    SET FIELD; la Browse li mostra in sola lettura con il suggerimento dell'espressione.
+  - La Browse e il Table Builder espongono le nuove proprietà nella scheda Proprietà; la rinomina
+    tabella riscrive i riferimenti qualificati anche in calcoli e auto-enter.
+  - Le modifiche parziali del `Rowset` ora conservano i campi non indicati, evitando di azzerare
+    serie, date e auto-enter durante un aggiornamento mirato.
+- **Test:** `389 passed`; smoke OK con `import csv: 2 record + calcolati`; test dedicati su
+  migrazioni additive, catene di calcolo, serie, date, auto-enter, query/search rifiutate,
+  Table Builder, Browse e RecordDialog.
+- **Screenshot:** `27-table-calculated.png` (proprietà del campo calcolato) e
+  `28-browse-calculated.png` (totale e serie calcolati nella Browse).
+- **Problemi aperti:** le query SQL non leggono campi calcolati (saranno disponibili negli
+  aggregati di O5 come campi di output); i calcolati non sono ordinabili né filtrabili via SQL.
+- **Prossimo passo:** O5 — aggregati `GROUP BY` nella query.

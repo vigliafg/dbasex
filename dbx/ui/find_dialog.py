@@ -133,7 +133,7 @@ class FindDialog(QDialog):
     # ---------------------------------------------------------------- criteri
     def _field_combo(self, selected: str = "") -> QComboBox:
         combo = QComboBox()
-        for field in self.table.fields:
+        for field in self.table.stored_fields:
             combo.addItem(field.display_name(), field.name)
         position = combo.findData(selected)
         combo.setCurrentIndex(max(0, position))
@@ -149,7 +149,7 @@ class FindDialog(QDialog):
 
     def add_criterion(self, criterion: SearchCriterion | None = None) -> None:
         criterion = criterion or SearchCriterion(
-            field=self.table.fields[0].name if self.table.fields else "",
+            field=self.table.stored_fields[0].name if self.table.stored_fields else "",
             op="contains",
             value="",
         )
