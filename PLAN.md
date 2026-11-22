@@ -763,7 +763,7 @@ query, modifica del motore per la rinomina tabella, Interactive Tutor.
 | O1 — Schema graph e layout ER | `[x]` completata (2026-11-22) | — |
 | O2 — Canvas Database Designer | `[x]` completata (2026-11-22) | — |
 | O3 — Editing schema | `[x]` completata (2026-11-22) | **A** |
-| O4 — Motore Query | `[ ]` da iniziare | — |
+| O4 — Motore Query | `[x]` completata (2026-11-22) | — |
 | O5 — Query Designer | `[ ]` da iniziare | — |
 | O6 — Query Results e sorgente dati | `[ ]` da iniziare | **B** |
 | O7 — Release 0.3.0 | `[ ]` da iniziare | **C** |

@@ -98,7 +98,7 @@ def run_smoke() -> int:
     checks.append("menu designer")
 
     project_editor = ProjectEditorWidget(project)
-    assert project_editor.tree.topLevelItemCount() == 6
+    assert project_editor.tree.topLevelItemCount() == 7
     checks.append("project editor")
 
     spec = ReportSpec.from_dict(report_artifact)

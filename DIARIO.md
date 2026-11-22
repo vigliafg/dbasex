@@ -20,7 +20,7 @@
 | 0.3.0 — O1 Schema graph | completata (2026-11-22) | — |
 | 0.3.0 — O2 Canvas ER | completata (2026-11-22) | — |
 | 0.3.0 — O3 Editing schema | completata (2026-11-22) | A |
-| 0.3.0 — O4 Motore Query | da iniziare | — |
+| 0.3.0 — O4 Motore Query | completata (2026-11-22) | — |
 | 0.3.0 — O5 Query Designer | da iniziare | — |
 | 0.3.0 — O6 Query Results/sorgente | da iniziare | B |
 | 0.3.0 — O7 Release | da iniziare | C |
@@ -433,3 +433,21 @@
 - **RIPRESA:** checkpoint A attivo. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
   `git status`/`git log` e iniziare l'**Ondata 4 — motore Query**. Non ripartire da O0–O3; fermarsi
   al **Checkpoint B** dopo O6.
+
+### 2026-11-22 — Ondata 0.3.0 — O4 motore Query
+- **Stato:** in corso
+- **Obiettivo:** modello delle query statiche e motore di esecuzione riutilizzabile da Query Designer,
+  Query Results, form e report.
+- **Scope:** SELECT in sola lettura, campi, INNER/LEFT JOIN, filtri con valori letterali, ordinamento,
+  risultato tipizzato. Nessun parametro interattivo.
+- **File:** `dbx/core/query_model.py`, `dbx/core/query_engine.py`, `dbx/core/project.py`,
+  `dbx/designers/project_builder.py`, `tests/test_query_model.py`, `tests/test_query_engine.py`.
+- **Scelte:** query = tabella base + campi + join INNER/LEFT + filtri letterali + ordinamento;
+  operatori `eq/ne/gt/ge/lt/le/contains/starts/ends/null/notnull`; SQL sempre parametrizzato con
+  `?`, valori convertiti secondo il tipo del campo; `QueryResult` con colonne tipizzate
+  (`key`, `table`, `field`, `caption`, `type`, `size`, `fmt`) e righe come dizionari; alias espliciti
+  e nomi output qualificati in caso di campi omonimi; `preview_sql` per l'anteprima; nuova categoria
+  progetto `queries` con suffisso `.query.json`.
+- **Test:** 18 nuovi test su modello, validazione, SQL, join, filtri, booleani, LIKE con escape,
+  DISTINCT, NULL, parametri, risultato tipizzato e persistenza. Suite completa verde.
+- **Prossimo passo:** O5 — Query Designer.

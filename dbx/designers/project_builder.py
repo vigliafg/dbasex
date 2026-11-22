@@ -189,6 +189,7 @@ def package_with_pyinstaller(project: Project, target: Path) -> Path:
 CATEGORY_LABELS = {
     "tables": "Tabelle",
     "diagrams": "Schema",
+    "queries": "Query",
     "forms": "Form",
     "reports": "Report",
     "scripts": "Programmi",
