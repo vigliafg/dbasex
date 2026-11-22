@@ -332,7 +332,7 @@
   - Focus dei campi e delle viste cambiato da tratteggio rosa a bordo pieno nel colore d'accento, più
     leggibile; restano focus visibili su pulsanti e schede.
   - Icone multi-risoluzione e tema Dark aggiornati con i nuovi token; verificati a 150%.
-- **Test:** `207 passed`; smoke headless OK; cattura Aurora e Dark OK.
+- **Test:** `209 passed`; smoke headless OK; cattura Aurora e Dark OK.
 - **Screenshot:** serie `01`–`13` rigenerata in Aurora; nuovo `14-menu-progetto.png`; cattura Dark
   verificata.
 - **Problemi aperti:**
@@ -343,6 +343,21 @@
 
 ## Checkpoint UI 0.2.1
 - **Versione:** `0.2.1`; tag `v0.2.1`.
-- **Test:** `207 passed`, smoke OK, cattura Aurora/Dark OK.
+- **Test:** `209 passed`, smoke OK, cattura Aurora/Dark OK.
 - **RIPRESA:** piano 0.2 concluso con aggiornamento grafico 0.2.1. La prima attività non completata
   resta la **0.3 — Query Designer, Query Results e Label Designer**.
+
+### 2026-11-22 — UI 0.2.2 — correzione voci menu non responsive
+- **Stato:** completata
+- **Obiettivo:** rendere reattive le voci dei menu a discesa della barra principale.
+- **File toccati:** `dbx/ui/menu.py`, `tests/test_ui_shell.py`, `CHANGELOG.md`, `docs/qa-0.2.md`.
+- **Correzioni:**
+  - Il passaggio del mouse su una voce sposta il focus sulla voce, evitando due righe evidenziate
+    contemporaneamente (prima la prima voce restava selezionata mentre il mouse ne evidenziava un'altra).
+  - Il menu viene chiuso **prima** di eseguire l'azione, così non resta aperto sopra dialoghi o finestre
+    e le voci non sembrano bloccate.
+  - I sottomenu hanno descrizione, freccia, apertura con clic, freccia destra o hover breve.
+  - Aggiunti test di regressione: clic su una voce reale della barra principale e spostamento del
+    focus con il mouse.
+- **Test:** `209 passed`; smoke OK; cattura Aurora/Dark OK.
+- **Prossimo passo:** 0.3 — Query Designer, Query Results e Label Designer.

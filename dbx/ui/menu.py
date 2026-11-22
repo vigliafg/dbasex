@@ -91,6 +91,8 @@ class MenuEntry(QWidget):
 
     def enterEvent(self, _event) -> None:  # noqa: D102 - API Qt
         self._hover = True
+        if self.isEnabled():
+            self.setFocus(Qt.FocusReason.MouseFocusReason)
         self.update()
         if self.submenu is not None and self.isEnabled():
             self._open_timer.start(300)
@@ -109,8 +111,8 @@ class MenuEntry(QWidget):
         if self.submenu is not None:
             self._open_submenu()
             return
-        self.action.trigger()
         self._close_menu()
+        self.action.trigger()
 
     def _open_submenu(self) -> None:
         if self.submenu is None or not self.isEnabled():
@@ -144,8 +146,8 @@ class MenuEntry(QWidget):
                 if self.submenu is not None:
                     self._open_submenu()
                 else:
-                    self.action.trigger()
                     self._close_menu()
+                    self.action.trigger()
             return
         if key in (Qt.Key.Key_Escape, Qt.Key.Key_Left):
             self._close_current()

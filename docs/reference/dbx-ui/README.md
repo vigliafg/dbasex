@@ -1,6 +1,6 @@
 # Rendering dell'interfaccia dBX
 
-Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.2.1), generati con:
+Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.2.2), generati con:
 
 ```bash
 python tools/capture_ui.py

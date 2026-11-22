@@ -1,4 +1,4 @@
-# Collaudo della release 0.2.1
+# Collaudo della release 0.2.2
 
 Data: 2026-11-22. Riferimento visivo: 43 schermate in `docs/reference/dbase55/images/`.
 Rendering dBX: `docs/reference/dbx-ui/renders/`.
@@ -12,7 +12,7 @@ python tools/capture_ui.py
 python tools/capture_ui.py --theme dark
 ```
 
-Esito: suite `207 passed`, smoke OK, cattura Aurora e Dark OK.
+Esito: suite `209 passed`, smoke OK, cattura Aurora e Dark OK.
 
 ## Checklist finestra per finestra
 

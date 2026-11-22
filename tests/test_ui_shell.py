@@ -143,7 +143,7 @@ def test_command_window_opens_in_mdi_once(qapp, demo_project) -> None:
 def test_release_version_and_pinned_pyqt() -> None:
     from dbx.config import DEFAULT_CONFIG
 
-    assert __version__ == "0.2.1"
+    assert __version__ == "0.2.2"
     assert DEFAULT_CONFIG["theme"] == "aurora"
 
 
@@ -219,3 +219,54 @@ def test_menu_entry_click_triggers_action(qapp) -> None:
         assert triggered == ["ok"]
     finally:
         entry.close()
+
+
+def test_main_menu_entry_click_triggers_action_and_closes(qapp, demo_project) -> None:
+    from PyQt6.QtCore import QPoint
+
+    window = MainWindow(demo_project)
+    try:
+        window.show()
+        qapp.processEvents()
+        triggered: list[str] = []
+        window.act_save.triggered.connect(lambda: triggered.append("save"))
+        menu = window.menuBar().actions()[0].menu()
+        menu.popup(window.mapToGlobal(QPoint(40, 40)))
+        qapp.processEvents()
+        qapp.processEvents()
+        entry = next(
+            action.defaultWidget()
+            for action in menu.actions()
+            if isinstance(action, QWidgetAction) and action.text() == "Salva progetto"
+        )
+        QTest.mouseClick(entry, Qt.MouseButton.LeftButton)
+        qapp.processEvents()
+        assert triggered == ["save"]
+        assert not menu.isVisible()
+    finally:
+        window.close()
+
+
+def test_menu_hover_moves_focus_to_single_entry(qapp, demo_project) -> None:
+    from PyQt6.QtCore import QPoint
+
+    window = MainWindow(demo_project)
+    try:
+        window.show()
+        qapp.processEvents()
+        menu = window.menuBar().actions()[0].menu()
+        menu.popup(window.mapToGlobal(QPoint(40, 40)))
+        qapp.processEvents()
+        qapp.processEvents()
+        entries = [
+            action.defaultWidget()
+            for action in menu.actions()
+            if isinstance(action, QWidgetAction)
+        ]
+        QTest.mouseMove(entries[1], entries[1].rect().center())
+        qapp.processEvents()
+        assert [entry.hasFocus() for entry in entries] == [
+            index == 1 for index in range(len(entries))
+        ]
+    finally:
+        window.close()

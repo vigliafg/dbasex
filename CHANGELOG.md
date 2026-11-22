@@ -3,6 +3,20 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.2.2] — 2026-11-22
+
+Correzione della reattività delle voci dei menu a discesa della barra principale.
+
+### Corretto
+
+- Il passaggio del mouse su una voce sposta focus e selezione su una sola riga, evitando due voci
+  evidenziate contemporaneamente.
+- Il menu viene chiuso prima di eseguire l'azione: non resta aperto sopra dialoghi o finestre e le
+  voci non vengono percepite come bloccate.
+- I sottomenu hanno descrizione, freccia, apertura con clic, freccia destra o hover breve.
+- Aggiunti test di regressione per clic su una voce reale della barra principale e per il focus
+  con il mouse.
+
 ## [0.2.1] — 2026-11-22
 
 Aggiornamento grafico completo: tema **Aurora** predefinito e menu a due righe con icona e descrizione.
@@ -103,5 +117,6 @@ report a bande impilate, program editor e project editor.
 - Query Designer e Label Designer non fanno parte della 0.2 e restano previsti per la 0.3.
 - Gli screenshot di riferimento sono in `docs/reference/dbx-ui/renders/`.
 
+[0.2.2]: https://github.com/vigliafg/dbasex/releases/tag/v0.2.2
 [0.2.1]: https://github.com/vigliafg/dbasex/releases/tag/v0.2.1
 [0.2.0]: https://github.com/vigliafg/dbasex/releases/tag/v0.2.0

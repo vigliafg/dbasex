@@ -1,6 +1,6 @@
 # dBX — personal database in stile dBASE 5.5
 
-**Versione 0.2.1** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
+**Versione 0.2.2** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
 con motore **SQLite**, ispirato a *dBASE 5.5 for Windows* (Borland). Riunisce in un'unica applicazione
 i costruttori visivi che resero celebre dBASE: tabelle, form, report, script, menu e progetto.
 L'interfaccia usa il tema **Aurora**: zone colorate con gradienti, menu con icona e descrizione,
