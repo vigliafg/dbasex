@@ -15,8 +15,9 @@ def run_smoke() -> int:
     from .core import types as T
     from .core.form_model import FormSpec
     from .core.metadata import Field, Table
+    from .core.crosstab import build_crosstab
     from .core.query_engine import run_query
-    from .core.query_model import QueryAggregate, QuerySpec
+    from .core.query_model import QueryAggregate, QueryField, QueryJoin, QuerySpec
     from .core.refactor import check_database, duplicate_object
     from .core.search import SearchCriterion, SearchRequest
     from .designers.database_designer import DatabaseDesignerWidget
@@ -156,6 +157,31 @@ def run_smoke() -> int:
     assert aggregate_result.rows[0]["numero"] == 5
     assert aggregate_result.rows[0]["totale"] == 5900.5
     checks.append("aggregati query")
+
+    pivot_spec = QuerySpec(
+        name="smoke_pivot",
+        base="fatture",
+        fields=[
+            QueryField("clienti", "nome", alias="cliente"),
+            QueryField("fatture", "pagata"),
+        ],
+        joins=[
+            QueryJoin(
+                kind="inner",
+                table="clienti",
+                left="fatture.cliente",
+                right="clienti.codice",
+            )
+        ],
+        group_by=["clienti.nome", "fatture.pagata"],
+        aggregates=[QueryAggregate("sum", "fatture", "importo", "totale")],
+    )
+    crosstab = build_crosstab(
+        run_query(project, pivot_spec), "cliente", "pagata", "totale"
+    )
+    assert crosstab.grand_total == 5900.5
+    assert len(crosstab.row_values) == 3
+    checks.append("crosstab read-only")
 
     query_form = FormRuntime(project, FormSpec.from_dict(project.artifact("forms", "form_clienti_attivi")))
     assert query_form.read_only is True

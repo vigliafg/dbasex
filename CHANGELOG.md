@@ -3,6 +3,39 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.7.0] — 2026-11-22
+
+Release del **calcolo sui dati**: campi calcolati e automatici, aggregati nelle query e tabella
+incrociata. I progetti 0.6 si aprono senza migrazione; le nuove proprietà hanno default vuoti.
+
+### Aggiunto
+
+- **Campi calcolati**: formula in sintassi dBX (`[prezzo] * [quantita]`) valutata a ogni lettura,
+  senza colonna fisica; compaiono in Browse, form e report in sola lettura e possono alimentare le
+  regole di validazione.
+- **Auto-enter**: espressione valutata alla creazione se il campo è vuoto, **serie automatica** su
+  campi interi e **data automatica** di creazione o di modifica su campi Data/Data-ora.
+- **Table Structure**: scheda Proprietà estesa con Calcolato, Auto-enter, Serie automatica e Data
+  automatica; migrazioni additive e DDL che ignorano i campi virtuali.
+- **Aggregati nelle query**: `GROUP BY` e colonne SUM/COUNT/AVG/MIN/MAX con alias, anche su join;
+  COUNT senza campo conta i record; ordinamento per alias dell'aggregato.
+- **Query Designer**: nuova scheda **Raggruppa** con campi di raggruppamento e aggregati; SQL e
+  anteprima si aggiornano subito.
+- **Crosstab read-only**: matrice righe × colonne con somma dei valori, totali di riga, colonna e
+  generale, esportazione CSV; si apre da Query Results e dal Query Designer.
+- **QA visiva**: rendering `27-table-calculated.png`, `28-browse-calculated.png`,
+  `29-query-aggregates.png` e `30-crosstab.png`.
+
+### Note di aggiornamento
+
+- Nessun campo obbligatorio nuovo nei JSON: i progetti 0.6 restano validi.
+- I campi calcolati non occupano spazio nel database e non sono indicizzabili, relazionabili,
+  ricercabili via SQL o aggregabili nelle query.
+- La serie automatica richiede un campo Intero; la data automatica un campo Data o Data/ora.
+- Gli aggregati non supportano HAVING, sottoquery o espressioni arbitrarie; i filtri sono applicati
+  prima del raggruppamento.
+- Il Crosstab non è un oggetto salvato nel progetto: legge il risultato corrente di una query.
+
 ## [0.6.0] — 2026-11-22
 
 Release delle **operazioni quotidiane**: ricerca guidata, sostituzione, importazione CSV e

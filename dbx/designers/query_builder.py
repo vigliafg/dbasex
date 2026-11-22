@@ -319,6 +319,10 @@ class QueryDesignerWidget(QWidget):
             "Query Results", "cerca", self.open_results, self,
             "Apre il risultato in una finestra dedicata",
         )
+        self.crosstab_button = icons.make_button(
+            "Crosstab…", "tabella", self.open_crosstab, self,
+            "Dispone il risultato corrente in una tabella incrociata read-only",
+        )
         self.add_field_button = icons.make_button(
             "Aggiungi campo", "campo", self.add_selected_field, self, "Aggiunge il campo selezionato"
         )
@@ -344,6 +348,7 @@ class QueryDesignerWidget(QWidget):
             self.save_button,
             self.run_button,
             self.results_button,
+            self.crosstab_button,
             self.add_field_button,
             self.add_table_button,
             self.remove_table_button,
@@ -1182,6 +1187,27 @@ class QueryDesignerWidget(QWidget):
         self._mark_dirty()
 
     # ------------------------------------------------------------- anteprima
+    def open_crosstab(self) -> None:
+        self._refresh_sql()
+        try:
+            result = engine_for(self.project).run(self.spec)
+        except QueryError as exc:
+            QMessageBox.warning(self, "Crosstab", f"Query non valida: {exc}")
+            return
+        if len(result.columns) < 2:
+            QMessageBox.information(
+                self,
+                "Crosstab",
+                "Servono almeno due colonne: una per le righe e una per le colonne.",
+            )
+            return
+        from ..ui.crosstab_dialog import CrosstabDialog
+
+        dialog = CrosstabDialog(
+            result, self.spec.caption or self.spec.name, self
+        )
+        dialog.exec()
+
     def run_preview(self) -> Any:
         self._refresh_sql()
         try:

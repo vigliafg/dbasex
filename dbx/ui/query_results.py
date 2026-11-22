@@ -70,8 +70,13 @@ class QueryResultsWidget(QWidget):
         self.export_button = icons.make_button(
             "Esporta CSV", "esporta", self.export_csv, self, "Esporta il risultato in CSV"
         )
+        self.crosstab_button = icons.make_button(
+            "Crosstab…", "tabella", self.open_crosstab, self,
+            "Dispone il risultato in una tabella incrociata in sola lettura",
+        )
         toolbar.addWidget(self.refresh_button)
         toolbar.addWidget(self.export_button)
+        toolbar.addWidget(self.crosstab_button)
         toolbar.addStretch(1)
         self.info_label = QLabel("")
         self.info_label.setObjectName("nav_hint")
@@ -132,6 +137,24 @@ class QueryResultsWidget(QWidget):
         self.info_label.setText(
             f"{len(result.rows)} righe · {len(result.columns)} colonne · sola lettura"
         )
+
+    def open_crosstab(self) -> None:
+        if self.result is None and not self.refresh():
+            return
+        assert self.result is not None
+        if len(self.result.columns) < 2:
+            QMessageBox.information(
+                self,
+                "Crosstab",
+                "Servono almeno due colonne: una per le righe e una per le colonne.",
+            )
+            return
+        from .crosstab_dialog import CrosstabDialog
+
+        dialog = CrosstabDialog(
+            self.result, self.spec.caption or self.spec.name, self
+        )
+        dialog.exec()
 
     def export_csv(self) -> Path | None:
         if self.result is None and not self.refresh():

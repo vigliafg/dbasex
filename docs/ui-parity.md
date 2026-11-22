@@ -1,6 +1,6 @@
-# Stato di parità UI — dBX 0.6 vs dBASE 5.5
+# Stato di parità UI — dBX 0.7 vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (release 0.6.0)
+Aggiornato: 2026-11-22 (release 0.7.0)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
 `fuori scope` = escluso dalla 0.3 per decisione di piano; `mancante` = non implementato.
@@ -17,7 +17,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Report Expert | — | `dbx/designers/report_expert.py` | fatto (0.4/O2) | Layout tabellare/colonnare/riepilogo, gruppi, stile |
 | Database Designer ER | — | `dbx/designers/database_designer.py` | fatto (0.3/O3) | Diagramma, relazioni e modifiche schema; export PNG/SVG |
 | Query Designer | `15`, `19`, `20`, `21`, `23`, `29` | `dbx/designers/query_builder.py` | fatto (0.3/O5, QBE 0.4/O4, aggregati 0.7/O5) | Query statiche, INNER/LEFT JOIN, filtri, gruppi OR, QBE read-only e GROUP BY con aggregati |
-| Query Results | `16`, `17` | `dbx/ui/query_results.py` | fatto (0.3/O6) | Griglia read-only, aggiornamento ed export CSV |
+| Query Results | `16`, `17`, `30` | `dbx/ui/query_results.py` | fatto (0.3/O6, crosstab 0.7/O6) | Griglia read-only, aggiornamento, export CSV e Crosstab con totali |
 | Form Expert | `22`–`26` | `dbx/designers/form_expert.py` | fatto | Sorgente tabella o query (read-only); miniatura layout strutturale |
 | Form Designer | `27`–`31`, `40` | `dbx/designers/form_builder.py` | fatto | Palette in pannello ridimensionabile, non flottante; form query in sola lettura |
 | Properties Inspector | `30`, `31`, `40` | `dbx/ui/widgets.py` | fatto | Albero condiviso con il Report Designer |
@@ -49,9 +49,10 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - `26-import-csv.png` mostra l'importazione CSV con anteprima e mappatura delle colonne.
 - `27-table-calculated.png` mostra la proprietà Calcolato del Table Structure;
   `28-browse-calculated.png` mostra totale e serie calcolati nella Browse.
-- La 0.7.0 (in corso) introduce campi calcolati virtuali, auto-enter e aggregati `GROUP BY` nelle
-  query.
+- La 0.7.0 introduce campi calcolati virtuali, auto-enter, aggregati `GROUP BY` e Crosstab
+  read-only.
 - `29-query-aggregates.png` mostra la scheda Raggruppa con aggregati e anteprima.
+- `30-crosstab.png` mostra la matrice incrociata con totali di riga, colonna e generale.
 - La 0.6.0 aggiunge ricerca guidata, sostituzione, import CSV, rinomina/duplicazione oggetti e
   manutenzione del database.
 - La 0.5.0 completa il Program Editor con 17 passi core, cursore dati e Step Picker; rende visibili

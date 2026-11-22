@@ -143,7 +143,7 @@ def test_command_window_opens_in_mdi_once(qapp, demo_project) -> None:
 def test_release_version_and_pinned_pyqt() -> None:
     from dbx.config import DEFAULT_CONFIG
 
-    assert __version__ == "0.6.0"
+    assert __version__ == "0.7.0"
     assert DEFAULT_CONFIG["theme"] == "aurora"
 
 

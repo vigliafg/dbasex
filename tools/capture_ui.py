@@ -29,8 +29,10 @@ from PyQt6.QtCore import QPoint  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QWidget  # noqa: E402
 
 from dbx.core import types as T  # noqa: E402
+from dbx.core.crosstab import build_crosstab  # noqa: E402
 from dbx.core.form_model import FormSpec  # noqa: E402
 from dbx.core.metadata import Field, Table  # noqa: E402
+from dbx.core.query_engine import engine_for  # noqa: E402
 from dbx.core.query_model import QueryAggregate, QueryField, QuerySort, QuerySpec  # noqa: E402
 from dbx.core.search import SearchCriterion, SearchRequest  # noqa: E402
 from dbx.designers.database_designer import DatabaseDesignerWidget  # noqa: E402
@@ -50,6 +52,7 @@ from dbx.runtime.report_engine import ReportSpec  # noqa: E402
 from dbx.samples import create_demo_project  # noqa: E402
 from dbx.ui.app import create_application  # noqa: E402
 from dbx.ui.command_window import CommandWindow  # noqa: E402
+from dbx.ui.crosstab_dialog import CrosstabDialog  # noqa: E402
 from dbx.ui.data_view import DataView  # noqa: E402
 from dbx.ui.find_dialog import FindDialog  # noqa: E402
 from dbx.ui.import_wizard import ImportCsvDialog  # noqa: E402
@@ -309,6 +312,24 @@ def run(theme: str = "aurora") -> int:
         aggregate_designer.tabs.setCurrentIndex(2)
         captured.append(
             _capture(app, aggregate_designer, "29-query-aggregates.png", (1120, 830))
+        )
+
+        pivot_spec = QuerySpec(
+            name="pivot_smoke",
+            base="fatture",
+            fields=[
+                QueryField("clienti", "nome", alias="cliente"),
+                QueryField("fatture", "pagata"),
+            ],
+            joins=list(query_spec.joins),
+            group_by=["clienti.nome", "fatture.pagata"],
+            aggregates=[QueryAggregate("sum", "fatture", "importo", "totale")],
+        )
+        pivot_result = engine_for(project).run(pivot_spec)
+        crosstab_dialog = CrosstabDialog(pivot_result, "Fatture per cliente")
+        widgets.append(crosstab_dialog)
+        captured.append(
+            _capture(app, crosstab_dialog, "30-crosstab.png", (940, 620))
         )
     finally:
         for widget in reversed(widgets):

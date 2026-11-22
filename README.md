@@ -1,18 +1,18 @@
 # dBX — personal database in stile dBASE 5.5
 
-**Versione 0.6.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
+**Versione 0.7.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
 con motore **SQLite**, ispirato a *dBASE 5.5 for Windows* (Borland). Riunisce in un'unica applicazione
 i costruttori visivi che resero celebre dBASE: tabelle, form, report, script, menu e progetto.
 L'interfaccia usa il tema **Aurora**: zone colorate con gradienti, menu con icona e descrizione,
 focus visibile e superfici chiare al posto del grigio Win16.
 
-La 0.6 porta le **operazioni quotidiane**: Find mode con più criteri, “Ometti” e ricerche salvate,
-sostituzione testuale, importazione CSV guidata con anteprima e mappatura, rinomina e duplicazione
-degli oggetti, compattazione e verifica del database. Restano gli **Esperti**, la modalità **QBE** e
-il catalogo delle **azioni script** della 0.4–0.5. Il target resta il **clone strutturale + chrome
-dBASE** concordato nel piano: desktop MDI, Navigator a categorie, Table Structure a griglia unica,
-Form Designer a tre zone, Report Designer a bande impilate, Program Editor, Menu Designer e Project
-Editor. Non è un clone pixel-perfect di Win16.
+La 0.7 aggiunge il **calcolo** ai dati: campi calcolati virtuali, auto-enter con serie e date
+automatiche, aggregati `GROUP BY` nelle query e tabella incrociata read-only. Restano le
+**operazioni quotidiane** della 0.6 (Find mode, sostituzione, import CSV, manutenzione), gli
+**Esperti**, la modalità **QBE** e il catalogo delle **azioni script** della 0.4–0.5. Il target
+resta il **clone strutturale + chrome dBASE** concordato nel piano: desktop MDI, Navigator a
+categorie, Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande
+impilate, Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
 
 ## Funzioni
 
@@ -21,16 +21,17 @@ Editor. Non è un clone pixel-perfect di Win16.
 | **Desktop MDI** | Finestre documento dentro `QMdiArea`, menu `Progetto · Modifica · Visualizza · Oggetto · Procedure · Proprietà · Finestra · ?`, SpeedBar a icone raggruppate, barra di stato con coordinate, oggetto, record e modalità |
 | **Navigator** | Categorie con icona, `[Untitled]` in cima, filtro file, directory corrente, azioni contestuali, categorie **Schema** e **Query** con Database Designer, Query Designer e Query Results; Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
 | **Command Window** | Riquadri `Command` / `Command Results` nell'MDI, cronologia con ↑/↓, comandi `HELP`, `TABELLE`, `USE`, `RECORD`, `CLEAR` ed espressioni |
-| **Browse / Vista Dati** | Griglia editabile, selettore di record, barra di navigazione, filtro, ordinamento, nuovo/elimina, export CSV, opzioni di editing e larghezze colonna persistenti |
+| **Browse / Vista Dati** | Griglia editabile, selettore di record, barra di navigazione, filtro, ordinamento, nuovo/elimina, export/import CSV, Find mode, campi calcolati in sola lettura, opzioni di editing e larghezze colonna persistenti |
 | **Database Designer ER** | Diagramma entità-relazione delle tabelle reali, card con campi e PK/FK, archi con cardinalità e `ON DELETE`, pan/zoom, auto-layout, export PNG/SVG, creazione relazioni e modifica schema con backup |
-| **Query Designer** | Tabelle e campi con spunta, INNER/LEFT JOIN suggeriti dalle foreign key, filtri AND, ordinamento multiplo, anteprima SQL parametrizzata e risultato tipizzato in sola lettura; modalità **QBE** con query image, example elements, intervalli, pattern e righe OR |
+| **Query Designer** | Tabelle e campi con spunta, INNER/LEFT JOIN suggeriti dalle foreign key, filtri AND, ordinamento multiplo, `GROUP BY` con SUM/COUNT/AVG/MIN/MAX, anteprima SQL parametrizzata e risultato tipizzato in sola lettura; modalità **QBE** con query image, example elements, intervalli, pattern e righe OR |
 | **Esperti** | Procedure guidate per tabella (template, campi, indici, DDL), query (join dalle FK, campi, criteri, ordinamento), report (layout tabellare/colonnare/riepilogo, gruppi) e form; producono artefatti normali, poi modificabili nei designer |
-| **Query Results** | Griglia read-only con tipi e formati dBX, aggiornamento, conteggio righe/colonne ed export CSV |
+| **Query Results** | Griglia read-only con tipi e formati dBX, aggiornamento, conteggio righe/colonne, export CSV e **Crosstab** con totali di riga, colonna e generale |
 | **Trova / Sostituisci** | Find mode per tabella con criteri AND/OR, “Ometti”, operatori su testo, numeri e date, ricerche salvate; sostituzione sui record visibili con ambito e distinzione maiuscole |
 | **Importa CSV** | Wizard con rilevamento di codifica e delimitatore, anteprima, mappatura colonne → campi, conversione tipi e opzione di svuotamento con backup |
 | **Manutenzione** | Rinomina tabella con aggiornamento dei riferimenti, duplicazione di oggetti (tabelle con dati), compattazione con backup e verifica integrità SQLite |
 | **Query come sorgente** | Form generati da query in sola lettura (campi calcolati, niente inserimento/modifica) e report a bande su colonne di query con gruppi, totali, filtro e ordinamento |
 | **Table Builder** | Struttura a griglia unica (`Field · Name · Type · Width · Decimal · Index`), tipi, obbligatorietà, default, didascalie, formati, regole, lookup, indici, relazioni, anteprima DDL, `Save As`, stampa, migrazioni con backup |
+| **Campi calcolati** | Formula valutata a ogni lettura, senza colonna fisica; auto-enter con espressione, serie automatica e data di creazione/modifica; valori visibili in sola lettura in Browse, form e report |
 | **Form Expert** | Wizard a cinque passi: assistito o vuoto, tabella, scelta campi, layout, font/colori/stile |
 | **Form Designer** | Palette `Controls` / `Field`, canvas con righelli e griglia 8 px, otto maniglie reali, selezione multipla, clipboard, undo/redo, allineamento, distribuzione, z-order, pagine a schede, Object Inspector ad albero, eventi e metodi |
 | **Form Runtime** | Navigazione, CRUD, stato del record, sottomaschere uno-a-molti, script, report e messaggi; form su query in sola lettura |
@@ -229,19 +230,22 @@ Le immagini Borland sono incluse con finalità di studio e confronto; i relativi
 titolari originali. dBX non ridistribuisce asset grafici Borland nell'applicazione.
 
 Lo stato finestra-per-finestra è in [`docs/ui-parity.md`](docs/ui-parity.md); le checklist di
-collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md` e `docs/qa-0.6.md`.
+collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md`, `docs/qa-0.6.md` e
+`docs/qa-0.7.md`.
 
-## Limiti noti della 0.6
+## Limiti noti della 0.7
 
 - La ricerca guidata lavora su una tabella alla volta; non esiste ancora una ricerca globale tra oggetti.
 - L'import CSV scrive in una tabella esistente: non crea una tabella nuova dalla struttura del file.
 - La rinomina di una tabella non aggiorna le finestre già aperte: vanno riaperte.
-- Le query sono statiche: niente parametri interattivi, RIGHT/FULL JOIN o aggregazioni nel designer.
+- Le query sono statiche: niente parametri interattivi, RIGHT/FULL JOIN, HAVING o sottoquery.
+- I campi calcolati virtuali non sono selezionabili né aggregabili nelle query SQL; compaiono in Browse, form e report.
 - Il QBE è una vista di sola ricerca: niente Insert/Delete/Set/ChangeTo, crosstab o CALC; gli
   example elements richiedono che la tabella collegata sia già nella query.
 - Un OR su campi di tabelle in LEFT JOIN è permesso ma segnalato: può escludere righe senza
   corrispondenza.
-- I form su query sono in sola lettura nella 0.5; per modificare i dati usare un form su tabella.
+- I form su query sono in sola lettura; per modificare i dati usare un form su tabella.
+- Il Crosstab legge un risultato di query già aggregato: non ha un designer persistente né grafici.
 - Query Results non offre modifica inline: è una vista di controllo, non un Browse.
 - I report su query usano le colonne della query; i sottoreport e le query annidate non sono previsti.
 - Il Label Designer è stato rimosso e sostituito dal Database Designer ER.

@@ -979,7 +979,7 @@ dieci mancanze più frequenti per un personal database desktop.
 | 0.6.0 — O3 Manutenzione e release | `[x]` completata (2026-11-22) — versione 0.6.0 | **D** |
 | 0.7.0 — O4 Campi calcolati | `[x]` completata (2026-11-22) | — |
 | 0.7.0 — O5 Aggregati query | `[x]` completata (2026-11-22) | — |
-| 0.7.0 — O6 Crosstab e release | `[ ]` da iniziare | **E** |
+| 0.7.0 — O6 Crosstab e release | `[x]` completata (2026-11-22) — versione 0.7.0 | **E** |
 | 0.8.0 — O7 Etichette e mail merge | `[ ]` da iniziare | — |
 | 0.8.0 — O8 Grafici report | `[ ]` da iniziare | — |
 | 0.8.0 — O9 Vista Lista e release | `[ ]` da iniziare | **F** |

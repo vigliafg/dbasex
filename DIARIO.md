@@ -971,3 +971,45 @@
 - **Problemi aperti:** niente HAVING, niente aggregati sulle espressioni e niente sottoquery; i
   filtri restano applicati prima del raggruppamento.
 - **Prossimo passo:** O6 — crosstab read-only e release 0.7.0.
+
+### 2026-11-22 — Ondata 0.7.0 — O6 Crosstab e release 0.7.0
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O6 e tag `v0.7.0`.
+- **Obiettivo:** tabella incrociata read-only dai risultati di query, QA e release 0.7.0.
+- **File toccati:** `dbx/core/crosstab.py` (nuovo), `dbx/ui/crosstab_dialog.py` (nuovo),
+  `dbx/ui/query_results.py`, `dbx/designers/query_builder.py`, `dbx/smoke.py`,
+  `tests/test_crosstab.py` (nuovo), `tests/test_ui_crosstab.py` (nuovo), `tools/capture_ui.py`,
+  versione, CHANGELOG, README, PLAN, parity, `docs/qa-0.7.md` (nuovo).
+- **Scelte:**
+  - Il Crosstab non è un nuovo oggetto di progetto: legge un `QueryResult` già aggregato, quindi
+    non duplica SQL né richiede migrazioni.
+  - Righe e colonne sono i valori distinti di due colonne del risultato, il valore è una colonna
+    numerica; i duplicati vengono sommati, i totali sono calcolati in Python con `float` e
+    formattati secondo il tipo dBX della colonna valore.
+  - Finestra con combo Righe/Colonne/Valore, matrice read-only, totali di riga, colonna e generale,
+    esportazione CSV con delimitatore `;`.
+  - Si apre da Query Results e dal Query Designer; il designer usa il risultato corrente, anche se
+    la query non è ancora salvata.
+  - Release `0.7.0`: versione, CHANGELOG, README, parity, indice render, QA 0.7 e tag.
+- **Test:** `407 passed`; smoke OK con `calcolati`, `aggregati query` e `crosstab read-only`;
+  `dbx --version` = `0.7.0`; catture Aurora e Dark OK.
+- **Screenshot:** `30-crosstab.png`; serie `01`–`30` rigenerata, con `27`, `28`, `29` della 0.7.
+- **Problemi aperti:** niente HAVING, sottoquery o grafici; il Crosstab non è persistito come
+  oggetto e non applica funzioni diverse dalla somma.
+- **Prossimo passo:** Checkpoint E; dopo `continua`, O7 — etichette e mail merge.
+
+## Checkpoint E — fine O6 e release 0.7.0 (2026-11-22)
+
+- **Stato ondate:** 0.7.0 O4–O6 completata e rilasciata come `0.7.0` (tag `v0.7.0`). Campi
+  calcolati, auto-enter, aggregati `GROUP BY` e Crosstab read-only sono pronti.
+- **Test eseguiti:** `407 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK;
+  `python -m dbx --version` = `0.7.0`; `python tools/capture_ui.py` OK; `--theme dark` OK.
+- **Screenshot:** serie `01`–`30`; nuovi `27-table-calculated.png`, `28-browse-calculated.png`,
+  `29-query-aggregates.png`, `30-crosstab.png`.
+- **Decisioni:** calcolati virtuali nel Rowset; auto-enter solo alla creazione; aggregati con
+  `GROUP BY` e alias; Crosstab come vista non persistita.
+- **Decisioni rimandate all’utente:** HAVING, aggregati su espressioni, Crosstab persistito,
+  grafici interattivi, etichette e mail merge (0.8).
+- **RIPRESA:** nessuna ondata aperta. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
+  `git status`/`git log` e iniziare l’**Ondata 7 — Etichette e mail merge**; non ripartire da
+  O1–O6.
