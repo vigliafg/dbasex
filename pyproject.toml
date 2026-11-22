@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dbx"
+version = "0.1.0"
+description = "dBX — personal database desktop ispirato a dBASE 5.5 for Windows, motore SQLite, interfaccia PyQt6"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "dBX contributors" }]
+keywords = ["database", "sqlite", "pyqt6", "dbase", "report", "form designer"]
+dependencies = ["PyQt6>=6.5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.2", "ruff>=0.4"]
+dbf = ["dbfread>=2.0"]
+
+[project.scripts]
+dbx = "dbx.__main__:main"
+
+[project.gui-scripts]
+dbx-gui = "dbx.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["dbx*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
