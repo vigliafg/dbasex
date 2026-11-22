@@ -28,6 +28,7 @@ from PyQt6.QtWidgets import (
 from .. import APP_NAME, __version__
 from ..config import add_recent, load_config, recent_projects, save_config
 from ..core.form_model import FormSpec
+from ..core.metadata import MetadataError
 from ..core.query_model import QuerySpec
 from ..core.project import CATEGORY_LABELS, Project, ProjectError
 from ..designers.database_designer import DatabaseDesignerWidget
@@ -39,6 +40,7 @@ from ..designers.project_builder import BuildError, ProjectEditorWidget, build_p
 from ..designers.report_builder import NewReportDialog, ReportDesignerWidget
 from ..designers.script_builder import QtScriptUI, ScriptBuilderWidget
 from ..designers.table_builder import TableBuilderDialog
+from ..designers.table_expert import TableExpert
 from ..runtime.form_runtime import FormRuntime
 from ..runtime.report_engine import ReportSpec
 from ..runtime.script_engine import ScriptEngine
@@ -170,6 +172,7 @@ class MainWindow(QMainWindow):
         self.navigator.open_object.connect(self.open_object)
         self.navigator.run_object.connect(self.run_object)
         self.navigator.new_object.connect(self.new_object)
+        self.navigator.new_expert.connect(self.new_expert_object)
         self.navigator.delete_object.connect(self.delete_object)
         self.navigator.structure_object.connect(self.open_table_structure)
         dock = QWidget()
@@ -320,6 +323,7 @@ class MainWindow(QMainWindow):
     def _build_object_actions(self) -> None:
         self.act_diagram = icons.make_action("Database Designer…", "tabella", self)
         self.act_table = icons.make_action("Nuova tabella…", "tabella", self)
+        self.act_table_expert = icons.make_action("Tabella con esperto…", "esperto", self)
         self.act_query = icons.make_action("Nuova query…", "cerca", self)
         self.act_form = icons.make_action("Nuovo form…", "form", self)
         self.act_report = icons.make_action("Nuovo report…", "report", self)
@@ -327,6 +331,7 @@ class MainWindow(QMainWindow):
         self.act_menu = icons.make_action("Nuovo menu…", "menu", self)
         self.act_diagram.triggered.connect(self.open_database_designer)
         self.act_table.triggered.connect(lambda: self.new_object("tables"))
+        self.act_table_expert.triggered.connect(self.new_table_expert)
         self.act_query.triggered.connect(lambda: self.new_object("queries"))
         self.act_form.triggered.connect(lambda: self.new_object("forms"))
         self.act_report.triggered.connect(lambda: self.new_object("reports"))
@@ -418,6 +423,9 @@ class MainWindow(QMainWindow):
         menu.addMenu(objects_menu)
         add(objects_menu, self.act_diagram, "Apri il diagramma ER e modifica lo schema del database")
         add(objects_menu, self.act_table, "Crea una nuova tabella con campi e relazioni")
+        expert_menu = DescriptiveMenu("Nuovo con esperto", objects_menu)
+        objects_menu.addMenu(expert_menu)
+        add(expert_menu, self.act_table_expert, "Crea una tabella da un template guidato")
         add(objects_menu, self.act_query, "Crea una query con campi, join, filtri e ordinamento")
         add(objects_menu, self.act_form, "Crea un form con il Form Expert o da zero")
         add(objects_menu, self.act_report, "Crea un report a bande con gruppi e totali")
@@ -596,6 +604,12 @@ class MainWindow(QMainWindow):
             index += 1
         return f"{base}_{index}"
 
+    def new_expert_object(self, category: str) -> None:
+        if category == "tables":
+            self.new_table_expert()
+            return
+        self.new_object(category)
+
     def new_object(self, category: str) -> None:
         if not self._require_project():
             return
@@ -663,6 +677,37 @@ class MainWindow(QMainWindow):
         name = dialog.current_table().name
         if name:
             self.open_object("tables", name)
+
+    def new_table_expert(self) -> None:
+        """Crea una tabella con il Table Expert e la apre in Browse."""
+        if not self._require_project():
+            return
+        assert self.project is not None
+        suggested = self._unique_name("tables", "nuova_tabella")
+        wizard = TableExpert(self.project, self, suggested_name=suggested)
+        if wizard.exec() != QDialog.DialogCode.Accepted:
+            return
+        try:
+            table = wizard.build_table()
+        except (MetadataError, ValueError) as exc:
+            QMessageBox.warning(self, "Tabella non valida", str(exc))
+            return
+        if self.project.table(table.name) is not None:
+            answer = QMessageBox.question(
+                self,
+                "Tabella esistente",
+                f"La tabella «{table.name}» esiste già. Sostituirla o modificarne la struttura?",
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+        try:
+            self.project.apply_table(table)
+        except ProjectError as exc:
+            QMessageBox.warning(self, "Creazione non riuscita", str(exc))
+            return
+        self._refresh_navigator()
+        self.open_object("tables", table.name)
+        self.statusBar().showMessage(f"Tabella {table.name} creata", 4000)
 
     def _open_designer(self, key: str, widget: QWidget, category: str):
         icon = icons.icon(OBJECT_ICONS.get(category, "finestra"))
@@ -1436,6 +1481,7 @@ class MainWindow(QMainWindow):
             getattr(self, "act_project", None),
             getattr(self, "act_diagram", None),
             getattr(self, "act_table", None),
+            getattr(self, "act_table_expert", None),
             getattr(self, "act_query", None),
             getattr(self, "act_form", None),
             getattr(self, "act_report", None),

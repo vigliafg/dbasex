@@ -38,6 +38,7 @@ from dbx.designers.query_builder import QueryDesignerWidget  # noqa: E402
 from dbx.designers.report_builder import ReportBuilderDialog  # noqa: E402
 from dbx.designers.script_builder import ScriptBuilderWidget  # noqa: E402
 from dbx.designers.table_builder import TableBuilderDialog  # noqa: E402
+from dbx.designers.table_expert import TableExpert  # noqa: E402
 from dbx.runtime.form_runtime import FormRuntime  # noqa: E402
 from dbx.runtime.report_engine import ReportSpec  # noqa: E402
 from dbx.samples import create_demo_project  # noqa: E402
@@ -198,6 +199,10 @@ def run(theme: str = "aurora") -> int:
         captured.append(
             _capture(app, query_report_preview, "19-report-query.png", (940, 800))
         )
+
+        table_expert = TableExpert(project, suggested_name="clienti")
+        widgets.append(table_expert)
+        captured.append(_capture(app, table_expert, "20-table-expert.png", (780, 580)))
     finally:
         for widget in reversed(widgets):
             widget.close()

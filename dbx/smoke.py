@@ -25,6 +25,7 @@ def run_smoke() -> int:
     from .ui.query_results import QueryResultsWidget
     from .designers.script_builder import ScriptBuilderWidget
     from .designers.table_builder import TableBuilderDialog
+    from .designers.table_expert import TableExpert
     from .io.pdf_export import export_pdf, page_pixmap
     from .runtime.form_runtime import FormRuntime
     from .runtime.report_engine import ReportSpec
@@ -63,6 +64,15 @@ def run_smoke() -> int:
     table_dialog = TableBuilderDialog(project, project.require_table("clienti"))
     assert "clienti" in table_dialog.current_table().name
     checks.append("table builder")
+
+    table_expert = TableExpert(project, suggested_name="table_smoke")
+    table_expert.template_combo.setCurrentIndex(
+        max(0, table_expert.template_combo.findData("contatti"))
+    )
+    table_spec = table_expert.build_table()
+    table_spec.validate()
+    assert table_spec.fields and table_spec.field("email") is not None
+    checks.append("table expert")
 
     form_artifact = project.artifact("forms", "form_clienti")
     form_designer = FormDesignerWidget(project, FormSpec.from_dict(form_artifact))

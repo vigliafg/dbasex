@@ -76,6 +76,7 @@ class Navigator(QWidget):
     open_object = pyqtSignal(str, str)
     run_object = pyqtSignal(str, str)
     new_object = pyqtSignal(str)
+    new_expert = pyqtSignal(str)
     delete_object = pyqtSignal(str, str)
     structure_object = pyqtSignal(str)
 
@@ -283,6 +284,11 @@ class Navigator(QWidget):
             action.triggered.connect(slot)
             add_entry(menu, action, description)
 
+        def add_table_expert() -> None:
+            action = icons.make_action("Tabella con esperto…", "esperto", menu)
+            action.triggered.connect(lambda _checked=False: self.new_expert.emit("tables"))
+            add_entry(menu, action, "Crea una tabella da un template guidato")
+
         if item is None:
             for category in AVAILABLE_CATEGORIES:
                 add(
@@ -290,6 +296,8 @@ class Navigator(QWidget):
                     f"Crea un nuovo oggetto nella categoria {NAV_LABELS.get(category, category)}",
                     lambda _checked=False, c=category: self.new_object.emit(c),
                 )
+            menu.addSeparator()
+            add_table_expert()
         else:
             data = item.data(Qt.ItemDataRole.UserRole)
             if isinstance(data, str) and data.startswith("new:"):
@@ -299,6 +307,8 @@ class Navigator(QWidget):
                     f"Crea un nuovo oggetto in {NAV_LABELS.get(category, category)}",
                     lambda _checked=False, c=category: self.new_object.emit(c),
                 )
+                if category == "tables":
+                    add_table_expert()
             elif isinstance(data, str) and ":" in data:
                 category, name = data.split(":", 1)
                 open_action = icons.make_action("Apri / modifica", "apri", menu)

@@ -575,3 +575,27 @@
 - **Screenshot:** nessuno; O0 è documentale.
 - **Problemi aperti:** nessuno.
 - **Prossimo passo:** O1 — shell esperti e Table Expert.
+
+### 2026-11-22 — Ondata 0.4.0 — O1 Shell esperti e Table Expert
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O1.
+- **Obiettivo:** introdurre lo shell comune degli esperti e il primo wizard completo
+  (tabella), con ingresso da menu e Navigator.
+- **File toccati:** `dbx/designers/expert_common.py` (nuovo), `dbx/designers/table_expert.py`
+  (nuovo), `dbx/ui/main_window.py`, `dbx/ui/navigator.py`, `dbx/ui/icons.py`,
+  `dbx/smoke.py`, `tools/capture_ui.py`, `tests/test_table_expert.py` (nuovo),
+  `docs/ui-parity.md`, `docs/reference/dbx-ui/README.md`, `PLAN.md`, `DIARIO.md`.
+- **Scelte:**
+  - `ExpertWizard` minimale (pulsanti, aiuto, stile) e `FieldEditor` riusabile; nessun framework
+    di wizard.
+  - Table Expert in 4 passi: nome/template, campi, indici, riepilogo con DDL.
+  - Template: Vuota, Contatti, Fatture, Inventario, Attività; campi con id nuovi a ogni apertura.
+  - Indici semplici per campo (con flag unico); la modifica avanzata resta nel Table Builder.
+  - La creazione usa `Project.apply_table`, quindi backup e migrazioni restano nel motore.
+  - Nome tabella normalizzato con `slugify`; didascalia libera.
+  - Icona `esperto` (bacchetta) disegnata a runtime; nessun asset nuovo.
+  - Ingresso: `Oggetto → Nuovo con esperto → Tabella…` e menu contestuale del Navigator.
+- **Test:** `275 passed`; smoke headless OK con voce `table expert`; cattura Aurora OK.
+- **Screenshot:** `20-table-expert.png`.
+- **Problemi aperti:** nessuno; Query/Report Expert e QBE restano nelle ondate successive.
+- **Prossimo passo:** O2 — Query Expert e Report Expert.

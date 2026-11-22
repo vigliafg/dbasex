@@ -218,6 +218,15 @@ def _modifica(painter: QPainter) -> None:
     painter.drawLine(QPointF(4, 20), QPointF(9, 20))
 
 
+def _esperto(painter: QPainter) -> None:
+    painter.drawLine(QPointF(7, 18), QPointF(17, 8))
+    _poly(painter, (17, 8), (19, 4), (20, 7), (17, 8))
+    painter.drawLine(QPointF(6, 6), QPointF(6, 10))
+    painter.drawLine(QPointF(4, 8), QPointF(8, 8))
+    painter.drawLine(QPointF(19, 15), QPointF(19, 18))
+    painter.drawLine(QPointF(17.5, 16.5), QPointF(20.5, 16.5))
+
+
 def _testo(painter: QPainter) -> None:
     painter.drawLine(QPointF(5, 7), QPointF(19, 7))
     painter.drawLine(QPointF(5, 12), QPointF(16, 12))
@@ -361,6 +370,7 @@ _GLYPHS: dict[str, Callable[[QPainter], None]] = {
     "cerca": _cerca,
     "immagine": _immagine,
     "modifica": _modifica,
+    "esperto": _esperto,
     "testo": _testo,
     "somma": _somma,
     "linea": _linea,
