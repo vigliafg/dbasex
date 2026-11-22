@@ -13,7 +13,7 @@ def test_project_editor_tree_and_settings(qapp, demo_project) -> None:
     opened: list[tuple[str, str]] = []
     editor.open_object.connect(lambda category, name: opened.append((category, name)))
     try:
-        assert editor.tree.topLevelItemCount() == 7
+        assert editor.tree.topLevelItemCount() == 8
         root = editor.tree.topLevelItem(0)
         child = root.child(0)
         editor._activate(child, 0)

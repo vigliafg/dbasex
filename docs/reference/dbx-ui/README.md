@@ -1,6 +1,6 @@
 # Rendering dell'interfaccia dBX
 
-Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.7.0), generati con:
+Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.8.0 in corso), generati con:
 
 ```bash
 python tools/capture_ui.py
@@ -42,6 +42,8 @@ l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `do
 | `28-browse-calculated.png` | Browse con totale e serie calcolati |
 | `29-query-aggregates.png` | Query Designer con GROUP BY e aggregati |
 | `30-crosstab.png` | Tabella incrociata read-only con totali |
+| `31-label-designer.png` | Label Designer con preset, griglia e modello |
+| `32-label-preview.png` | Mail merge su foglio di etichette A4 |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.

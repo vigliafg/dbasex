@@ -26,6 +26,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ..core.form_model import FormSpec, form_references
+from ..core.label_model import LabelSpec
 from ..core.metadata import validate_project_tables
 from ..core.project import Project
 from ..core.query_model import QuerySpec
@@ -74,6 +75,16 @@ def validate_project(project: Project) -> list[str]:
                 errors.append(f"Report {name}: query inesistente {spec.query}")
         elif spec.table and spec.table.lower() not in table_names:
             errors.append(f"Report {name}: tabella inesistente {spec.table}")
+
+    for name, artifact in project.objects["labels"].items():
+        spec = LabelSpec.from_dict(artifact)
+        for error in spec.validate():
+            errors.append(f"Etichetta {name}: {error}")
+        if spec.source_type == "query":
+            if spec.query.lower() not in query_names:
+                errors.append(f"Etichetta {name}: query inesistente {spec.query}")
+        elif spec.table and spec.table.lower() not in table_names:
+            errors.append(f"Etichetta {name}: tabella inesistente {spec.table}")
 
     for name, artifact in project.objects["scripts"].items():
         for error in _validate_steps(
@@ -254,6 +265,7 @@ CATEGORY_LABELS = {
     "queries": "Query",
     "forms": "Form",
     "reports": "Report",
+    "labels": "Etichette",
     "scripts": "Programmi",
     "menus": "Menu",
 }

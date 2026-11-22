@@ -59,16 +59,18 @@ def build_pages(project, spec: ReportSpec):
 class ReportPreviewDialog(QDialog):
     """Finestra Preview: pagina bianca, barra inferiore con navigazione, zoom e stampa."""
 
+    DOC_LABEL = "Report"
+
     def __init__(self, project, report, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.project = project
-        if isinstance(report, ReportSpec):
-            self.spec = report
-        else:
-            artifact = project.artifact("reports", str(report))
+        if isinstance(report, str):
+            artifact = project.artifact("reports", report)
             if artifact is None:
                 raise ValueError(f"Report sconosciuto: {report}")
             self.spec = ReportSpec.from_dict(artifact)
+        else:
+            self.spec = report
         self.setWindowTitle(f"Preview — {self.spec.title or self.spec.name}")
         self.resize(940, 800)
         self.pages = []
@@ -140,6 +142,9 @@ class ReportPreviewDialog(QDialog):
         self._render_pages()
 
     # ----------------------------------------------------------------- pagine
+    def build_pages(self):
+        return build_pages(self.project, self.spec)
+
     def reload(self) -> None:
         while self.pages_layout.count():
             item = self.pages_layout.takeAt(0)
@@ -148,9 +153,9 @@ class ReportPreviewDialog(QDialog):
                 widget.deleteLater()
         self.page_labels = []
         try:
-            self.pages = build_pages(self.project, self.spec)
+            self.pages = self.build_pages()
         except ValueError as exc:
-            QMessageBox.warning(self, "Report non disponibile", str(exc))
+            QMessageBox.warning(self, f"{self.DOC_LABEL} non disponibile", str(exc))
             self.info.setText(str(exc))
             return
         for _page in self.pages:

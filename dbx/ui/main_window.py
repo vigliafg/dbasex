@@ -28,11 +28,13 @@ from PyQt6.QtWidgets import (
 from .. import APP_NAME, __version__
 from ..config import add_recent, load_config, recent_projects, save_config
 from ..core.form_model import FormSpec
+from ..core.label_model import LabelSpec
 from ..core.metadata import MetadataError
 from ..core.query_model import QueryError, QuerySpec
 from ..core.project import CATEGORY_LABELS, Project, ProjectError
 from ..designers.database_designer import DatabaseDesignerWidget
 from ..designers.form_builder import FormDesignerWidget
+from ..designers.label_builder import LabelDesignerWidget, NewLabelDialog
 from ..designers.query_builder import NewQueryDialog, QueryDesignerWidget
 from ..designers.form_expert import FormExpert
 from ..designers.menu_builder import MenuBuilderWidget
@@ -50,6 +52,7 @@ from . import design, icons
 from .command_window import CommandWindow
 from .data_view import DataView
 from .editor_host import EditorHost, editor_title, editor_widget
+from .label_preview import LabelPreviewDialog
 from .menu import DescriptiveMenu, add_entry, add_submenu_entry
 from .navigator import Navigator
 from .query_results import QueryResultsWidget
@@ -62,6 +65,7 @@ OBJECT_ICONS = {
     "queries": "cerca",
     "forms": "form",
     "reports": "report",
+    "labels": "etichetta",
     "scripts": "script",
     "menus": "menu",
 }
@@ -76,6 +80,7 @@ MODES = {
     "FormBuilderDialog": "Design",
     "ReportBuilderDialog": "Design",
     "ReportDesignerWidget": "Design",
+    "LabelDesignerWidget": "Etichette",
     "ScriptBuilderDialog": "Modifica",
     "ScriptBuilderWidget": "Modifica",
     "MenuBuilderDialog": "Design",
@@ -84,6 +89,7 @@ MODES = {
     "FormRuntime": "Esecuzione",
     "FormPreviewDialog": "Esecuzione",
     "ReportPreviewDialog": "Anteprima",
+    "LabelPreviewDialog": "Anteprima",
     "CommandWindow": "Comandi",
 }
 
@@ -337,6 +343,7 @@ class MainWindow(QMainWindow):
         self.act_form_expert = icons.make_action("Form con esperto…", "esperto", self)
         self.act_report = icons.make_action("Nuovo report…", "report", self)
         self.act_report_expert = icons.make_action("Report con esperto…", "esperto", self)
+        self.act_label = icons.make_action("Nuova etichetta…", "etichetta", self)
         self.act_script = icons.make_action("Nuovo script…", "script", self)
         self.act_menu = icons.make_action("Nuovo menu…", "menu", self)
         self.act_diagram.triggered.connect(self.open_database_designer)
@@ -348,6 +355,7 @@ class MainWindow(QMainWindow):
         self.act_form_expert.triggered.connect(self.new_form_wizard)
         self.act_report.triggered.connect(lambda: self.new_object("reports"))
         self.act_report_expert.triggered.connect(self.new_report_expert)
+        self.act_label.triggered.connect(lambda: self.new_object("labels"))
         self.act_script.triggered.connect(lambda: self.new_object("scripts"))
         self.act_menu.triggered.connect(lambda: self.new_object("menus"))
 
@@ -451,6 +459,7 @@ class MainWindow(QMainWindow):
         add(objects_menu, self.act_query, "Crea una query con campi, join, filtri e ordinamento")
         add(objects_menu, self.act_form, "Crea un form con il Form Expert o da zero")
         add(objects_menu, self.act_report, "Crea un report a bande con gruppi e totali")
+        add(objects_menu, self.act_label, "Crea un foglio di etichette o un mail merge")
         add(objects_menu, self.act_script, "Crea un programma MiniScript")
         add(objects_menu, self.act_menu, "Crea il menu dell'applicazione")
 
@@ -655,6 +664,37 @@ class MainWindow(QMainWindow):
             dialog = TableBuilderDialog(self.project, None, self)
             dialog.accepted.connect(lambda: self._after_new_table(dialog))
             self._open_designer(f"tables:new:{id(dialog)}", dialog, "tables")
+            return
+        if category == "labels":
+            sources = self.project.names("tables") + self.project.names("queries")
+            if not sources:
+                QMessageBox.information(
+                    self, "dBX", "Crea prima una tabella o una query."
+                )
+                return
+            base = self.project.names("tables")
+            suggested = self._unique_name(
+                "labels", f"etichette_{base[0] if base else sources[0]}"
+            )
+            dialog = NewLabelDialog(self.project, self, suggested)
+            if dialog.exec() != QDialog.DialogCode.Accepted:
+                return
+            spec = dialog.spec()
+            errors = spec.validate()
+            if errors:
+                QMessageBox.warning(self, "Etichetta non valida", "\n".join(errors))
+                return
+            if self.project.artifact("labels", spec.name) is not None:
+                answer = QMessageBox.question(
+                    self,
+                    "Etichetta esistente",
+                    f"L'etichetta «{spec.name}» esiste già. Sostituirla?",
+                )
+                if answer != QMessageBox.StandardButton.Yes:
+                    return
+            designer = LabelDesignerWidget(self.project, spec, self)
+            self._wire_label_designer(designer)
+            self._open_designer(f"labels:new:{id(designer)}", designer, category)
             return
         if category in ("forms", "reports"):
             tables = self.project.names("tables")
@@ -1054,6 +1094,75 @@ class MainWindow(QMainWindow):
             return
         self._show_report_preview(dialog)
 
+    def _show_label_preview(self, dialog: LabelPreviewDialog) -> None:
+        name = getattr(getattr(dialog, "spec", None), "name", "")
+        key = f"preview:labels:{name}" if name else "preview:labels"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        self.editors.open_dialog(
+            key, dialog, icon=icons.icon("etichetta"), size=QSize(940, 800)
+        )
+
+    def _wire_label_designer(self, designer: LabelDesignerWidget) -> None:
+        designer.preview_handler = self.preview_label
+        designer.new_requested.connect(lambda: self.new_object("labels"))
+        designer.open_requested.connect(self.choose_label)
+        designer.saved.connect(self._refresh_navigator)
+        designer.status_message.connect(
+            lambda text: self.statusBar().showMessage(text, 4000)
+        )
+
+    def open_label_designer(self, name: str) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        artifact = self.project.artifact("labels", name)
+        if artifact is None:
+            QMessageBox.warning(self, "Etichetta", f"Etichetta inesistente: {name}")
+            return
+        key = f"labels:{name}"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        designer = LabelDesignerWidget(self.project, LabelSpec.from_dict(artifact), self)
+        self._wire_label_designer(designer)
+        sub = self.editors.open(
+            key,
+            f"Label Designer ({designer.spec.name})",
+            designer,
+            icon=icons.icon("etichetta"),
+            size=QSize(1060, 680),
+        )
+        designer.windowTitleChanged.connect(sub.setWindowTitle)
+
+    def choose_label(self) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        names = self.project.names("labels")
+        if not names:
+            QMessageBox.information(self, "dBX", "Il progetto non ha etichette.")
+            return
+        name, ok = QInputDialog.getItem(
+            self, "Apri etichetta", "Etichetta:", names, 0, False
+        )
+        if ok and name:
+            self.open_label_designer(name)
+
+    def preview_label(self, spec: LabelSpec) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        try:
+            dialog = LabelPreviewDialog(self.project, spec, self)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Etichetta", str(exc))
+            return
+        self._show_label_preview(dialog)
+
     def _wire_script_designer(self, designer: ScriptBuilderWidget) -> None:
         designer.saved.connect(self._refresh_navigator)
         designer.status_message.connect(
@@ -1237,6 +1346,9 @@ class MainWindow(QMainWindow):
             if category == "reports":
                 self.open_report_designer(name)
                 return
+            if category == "labels":
+                self.open_label_designer(name)
+                return
             if category == "scripts":
                 self.open_script_designer(name)
                 return
@@ -1268,6 +1380,10 @@ class MainWindow(QMainWindow):
                 icon=icons.icon("report"),
                 size=QSize(940, 800),
             )
+        elif category == "labels":
+            artifact = self.project.artifact("labels", name)
+            if artifact:
+                self.preview_label(LabelSpec.from_dict(artifact))
         elif category == "scripts":
             artifact = self.project.artifact("scripts", name)
             if artifact:
@@ -1649,6 +1765,7 @@ class MainWindow(QMainWindow):
             getattr(self, "act_form_expert", None),
             getattr(self, "act_report", None),
             getattr(self, "act_report_expert", None),
+            getattr(self, "act_label", None),
             getattr(self, "act_script", None),
             getattr(self, "act_menu", None),
             getattr(self, "act_run", None),

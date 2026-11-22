@@ -14,12 +14,15 @@ resta il **clone strutturale + chrome dBASE** concordato nel piano: desktop MDI,
 categorie, Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande
 impilate, Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
 
+La 0.8 (in corso) aggiunge **etichette e mail merge** con Label Designer leggero, preset A4/Avery,
+filtro/ordinamento e stampa o PDF su più fogli.
+
 ## Funzioni
 
 | Strumento | Cosa fa |
 |---|---|
 | **Desktop MDI** | Finestre documento dentro `QMdiArea`, menu `Progetto · Modifica · Visualizza · Oggetto · Procedure · Proprietà · Finestra · ?`, SpeedBar a icone raggruppate, barra di stato con coordinate, oggetto, record e modalità |
-| **Navigator** | Categorie con icona, `[Untitled]` in cima, filtro file, directory corrente, azioni contestuali, categorie **Schema** e **Query** con Database Designer, Query Designer e Query Results; Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
+| **Navigator** | Categorie con icona, `[Untitled]` in cima, filtro file, directory corrente, azioni contestuali, categorie **Schema**, **Query** ed **Etichette** con Database Designer, Query Designer, Query Results e Label Designer; Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
 | **Command Window** | Riquadri `Command` / `Command Results` nell'MDI, cronologia con ↑/↓, comandi `HELP`, `TABELLE`, `USE`, `RECORD`, `CLEAR` ed espressioni |
 | **Browse / Vista Dati** | Griglia editabile, selettore di record, barra di navigazione, filtro, ordinamento, nuovo/elimina, export/import CSV, Find mode, campi calcolati in sola lettura, opzioni di editing e larghezze colonna persistenti |
 | **Database Designer ER** | Diagramma entità-relazione delle tabelle reali, card con campi e PK/FK, archi con cardinalità e `ON DELETE`, pan/zoom, auto-layout, export PNG/SVG, creazione relazioni e modifica schema con backup |
@@ -37,6 +40,7 @@ impilate, Program Editor, Menu Designer e Project Editor. Non è un clone pixel-
 | **Form Runtime** | Navigazione, CRUD, stato del record, sottomaschere uno-a-molti, script, report e messaggi; form su query in sola lettura |
 | **Report Designer** | Foglio unico a bande impilate ed etichettate, delimitatori trascinabili, due toolbar, zoom 50–200%, dialoghi Insert Field / Edit Text / Record Sort Order / Insert Group / Total; sorgente tabella o query |
 | **Report Preview** | Pagina singola o continua, fit-width, zoom persistente, totale pagine, aggiornamento, stampa ed export PDF |
+| **Label Designer** | Etichette e mail merge con preset A4/Avery, griglia colonne/righe, margini, modello `[campo]`/`{{espressione}}`, filtro, ordine e salto etichette |
 | **Program Editor** | MiniScript con numeri di riga, evidenziazione di parole chiave/stringhe/commenti/numeri, vista azioni ↔ sorgente bidirezionale, catalogo categorizzato con Step Picker, inspector dei parametri e log di esecuzione; passi core per controllo, tabelle, record, campi, query, report e dialoghi |
 | **Menu Designer** | Albero di voci e separatori, azioni tipizzate, filtro delle destinazioni, anteprima del menu |
 | **Project Editor / Builder** | Albero oggetti, impostazioni (`title`, `main_form`, `main_menu`), validazione dei riferimenti, build in cartella + zip, helper PyInstaller |

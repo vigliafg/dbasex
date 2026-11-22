@@ -112,6 +112,13 @@ def _rewrite_report(artifact: dict[str, Any], old: str, new: str) -> None:
                 _rewrite_control(control, old, new)
 
 
+def _rewrite_label(artifact: dict[str, Any], old: str, new: str) -> None:
+    artifact["table"] = _exact(artifact.get("table", ""), old, new)
+    artifact["filter"] = _brackets(artifact.get("filter", ""), old, new)
+    artifact["order"] = _dotted(artifact.get("order", ""), old, new)
+    artifact["template"] = _brackets(artifact.get("template", ""), old, new)
+
+
 def _rewrite_step(step: dict[str, Any], old: str, new: str) -> None:
     params = step.get("params")
     if isinstance(params, dict):
@@ -145,6 +152,7 @@ def _rewrite_artifact(category: str, artifact: dict[str, Any], old: str, new: st
         "queries": _rewrite_query,
         "forms": _rewrite_form,
         "reports": _rewrite_report,
+        "labels": _rewrite_label,
         "scripts": _rewrite_scripts,
         "diagrams": _rewrite_diagram,
     }
@@ -176,7 +184,7 @@ def rename_table(project: Project, old: str, new: str) -> None:
     artifact = tables.pop(actual_old)
     artifact["name"] = new
     tables[new] = artifact
-    for category in ("tables", "queries", "forms", "reports", "scripts", "diagrams"):
+    for category in ("tables", "queries", "forms", "reports", "labels", "scripts", "diagrams"):
         for name, item in project.objects.get(category, {}).items():
             if not isinstance(item, dict):
                 continue

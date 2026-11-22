@@ -12,12 +12,12 @@ from dataclasses import dataclass, field as dc_field
 from typing import Any, Iterable
 
 from ..core.expressions import Expression, ExpressionError
+from ..core.page_sizes import PAGE_SIZES, page_dimensions
 
 _FIELD_TOKEN = re.compile(r"\[([^\[\]]+)\]")
 
 MM_PER_PT = 0.3527778
 LINE_FACTOR = 1.28
-PAGE_SIZES = {"A4": (210.0, 297.0), "Letter": (215.9, 279.4)}
 BAND_NAMES = (
     "title",
     "page_header",
@@ -209,10 +209,7 @@ class ReportSpec:
         return []
 
     def page_dimensions(self) -> tuple[float, float]:
-        width, height = PAGE_SIZES.get(self.page_size, PAGE_SIZES["A4"])
-        if self.orientation == "landscape":
-            width, height = height, width
-        return width, height
+        return page_dimensions(self.page_size, self.orientation)
 
     def validate(self) -> list[str]:
         errors: list[str] = []

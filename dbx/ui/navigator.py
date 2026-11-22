@@ -34,6 +34,7 @@ NAV_CATEGORIES = [
     ("queries", "Query", "cerca", True),
     ("forms", "Form", "form", True),
     ("reports", "Report", "report", True),
+    ("labels", "Etichette", "etichetta", True),
     ("menus", "Menu", "menu", True),
     ("scripts", "Programmi", "script", True),
     ("images", "Immagini", "immagine", False),
@@ -54,6 +55,7 @@ CATEGORY_ICONS = {
     "queries": "cerca",
     "forms": "form",
     "reports": "report",
+    "labels": "etichetta",
     "scripts": "script",
     "menus": "menu",
 }
@@ -65,6 +67,7 @@ FILTERS = [
     ("Query (*.query.json)", "queries"),
     ("Form (*.form.json)", "forms"),
     ("Report (*.report.json)", "reports"),
+    ("Etichette (*.label.json)", "labels"),
     ("Programmi (*.script.json)", "scripts"),
     ("Menu (*.menu.json)", "menus"),
 ]
@@ -330,7 +333,7 @@ class Navigator(QWidget):
                     structure = icons.make_action("Struttura…", "tabella", menu)
                     structure.triggered.connect(lambda _checked=False, n=name: self.structure_object.emit(n))
                     add_entry(menu, structure, "Modifica campi, indici e relazioni della tabella")
-                if category in ("tables", "queries", "forms", "reports", "scripts"):
+                if category in ("tables", "queries", "forms", "reports", "labels", "scripts"):
                     run = icons.make_action("Esegui", "esegui", menu)
                     run.triggered.connect(
                         lambda _checked=False, c=category, n=name: self.run_object.emit(c, n)

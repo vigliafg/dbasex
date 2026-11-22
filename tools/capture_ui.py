@@ -31,12 +31,14 @@ from PyQt6.QtWidgets import QApplication, QWidget  # noqa: E402
 from dbx.core import types as T  # noqa: E402
 from dbx.core.crosstab import build_crosstab  # noqa: E402
 from dbx.core.form_model import FormSpec  # noqa: E402
+from dbx.core.label_model import LabelSpec  # noqa: E402
 from dbx.core.metadata import Field, Table  # noqa: E402
 from dbx.core.query_engine import engine_for  # noqa: E402
 from dbx.core.query_model import QueryAggregate, QueryField, QuerySort, QuerySpec  # noqa: E402
 from dbx.core.search import SearchCriterion, SearchRequest  # noqa: E402
 from dbx.designers.database_designer import DatabaseDesignerWidget  # noqa: E402
 from dbx.designers.form_builder import FormDesignerWidget  # noqa: E402
+from dbx.designers.label_builder import LabelDesignerWidget  # noqa: E402
 from dbx.designers.menu_builder import MenuBuilderWidget  # noqa: E402
 from dbx.designers.project_builder import ProjectEditorWidget  # noqa: E402
 from dbx.designers.query_builder import QueryDesignerWidget  # noqa: E402
@@ -56,6 +58,7 @@ from dbx.ui.crosstab_dialog import CrosstabDialog  # noqa: E402
 from dbx.ui.data_view import DataView  # noqa: E402
 from dbx.ui.find_dialog import FindDialog  # noqa: E402
 from dbx.ui.import_wizard import ImportCsvDialog  # noqa: E402
+from dbx.ui.label_preview import LabelPreviewDialog  # noqa: E402
 from dbx.ui.main_window import MainWindow  # noqa: E402
 from dbx.ui.navigator import Navigator  # noqa: E402
 from dbx.ui.query_results import QueryResultsWidget  # noqa: E402
@@ -330,6 +333,32 @@ def run(theme: str = "aurora") -> int:
         widgets.append(crosstab_dialog)
         captured.append(
             _capture(app, crosstab_dialog, "30-crosstab.png", (940, 620))
+        )
+
+        label_table = project.require_table("clienti")
+        label_spec = LabelSpec.create(
+            "etichette_clienti",
+            label_table.name,
+            [field.name for field in label_table.fields],
+            title="Etichette clienti attivi",
+        )
+        label_spec.template = "[nome]\n[citta] · [email]"
+        label_spec.filter = "attivo = 1"
+        label_spec.order = "nome"
+        label_spec.border = True
+        label_spec.font_size = 11
+        project.put_object("labels", label_spec.to_dict())
+        project.save()
+        label_designer = LabelDesignerWidget(project, label_spec)
+        widgets.append(label_designer)
+        captured.append(
+            _capture(app, label_designer, "31-label-designer.png", (1060, 680))
+        )
+
+        label_preview = LabelPreviewDialog(project, label_spec)
+        widgets.append(label_preview)
+        captured.append(
+            _capture(app, label_preview, "32-label-preview.png", (940, 800))
         )
     finally:
         for widget in reversed(widgets):

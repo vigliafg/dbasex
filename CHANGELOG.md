@@ -3,6 +3,19 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
+## [Non rilasciato]
+
+### Aggiunto
+
+- **Label Designer leggero** (O7): nuovi oggetti `labels` con preset A4/Avery, griglia colonne/righe,
+  distanze, margini, corpo e allineamento; modello di testo con `[campo]` e `{{[campo] * 2}}`.
+- **Mail merge**: ogni record di una tabella o query produce un'etichetta, con filtro, ordinamento e
+  salto delle etichette già usate sul primo foglio.
+- **Anteprima, stampa e PDF** delle etichette riusando la finestra Preview dei report.
+- **Navigator e menu Oggetto** espongono la categoria Etichette; il Project Editor e la validazione
+  controllano sorgente e geometria dei fogli.
+- Rendering `31-label-designer.png` e `32-label-preview.png`.
+
 ## [0.7.0] — 2026-11-22
 
 Release del **calcolo sui dati**: campi calcolati e automatici, aggregati nelle query e tabella

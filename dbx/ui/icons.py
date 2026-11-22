@@ -169,6 +169,12 @@ def _report(painter: QPainter) -> None:
     painter.drawLine(QPointF(9, 16), QPointF(13, 16))
 
 
+def _etichetta(painter: QPainter) -> None:
+    painter.drawRect(QRectF(3, 6, 18, 12))
+    painter.drawLine(QPointF(6, 10), QPointF(13, 10))
+    painter.drawLine(QPointF(6, 14), QPointF(18, 14))
+
+
 def _script(painter: QPainter) -> None:
     painter.drawRect(QRectF(4, 3, 16, 18))
     _poly(painter, (9, 10), (12, 12.5), (9, 15))
@@ -369,6 +375,7 @@ _GLYPHS: dict[str, Callable[[QPainter], None]] = {
     "tabella": _tabella,
     "form": _form,
     "report": _report,
+    "etichetta": _etichetta,
     "script": _script,
     "menu": _menu,
     "elenco": _elenco,

@@ -1,6 +1,6 @@
-# Stato di parità UI — dBX 0.7 vs dBASE 5.5
+# Stato di parità UI — dBX 0.8 in corso vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (release 0.7.0)
+Aggiornato: 2026-11-22 (0.8.0 in corso, O7)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
 `fuori scope` = escluso dalla 0.3 per decisione di piano; `mancante` = non implementato.
@@ -27,7 +27,8 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Program Editor | `31`, `32` | `dbx/designers/script_builder.py`, `dbx/designers/step_picker.py` | fatto (catalogo e passi 0.5/O5–O6) | Nessuna esecuzione passo-passo |
 | Menu Designer | — | `dbx/designers/menu_builder.py` | fatto | Anteprima come menu bar, non popup sempre aperto |
 | Project Editor/Builder | — | `dbx/designers/project_builder.py` | fatto | Build sincrono, senza barra di avanzamento |
-| Label Designer | — | — | rimosso | Sostituito dal Database Designer ER |
+| Label Designer | `31` | `dbx/designers/label_builder.py` | fatto (0.8/O7) | Etichette e mail merge con preset, griglia e modello `[campo]` |
+| Label Preview | `32` | `dbx/ui/label_preview.py` | fatto (0.8/O7) | Riusa la Preview dei report per stampa e PDF |
 | Interactive Tutor | `03` | — | fuori scope 0.3 | Non previsto nella 0.3 |
 | About | `42`, `43` | `dbx/ui/main_window.py` | parziale | Testo e versione presenti; chrome Borland non replicato |
 
@@ -53,11 +54,14 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
   read-only.
 - `29-query-aggregates.png` mostra la scheda Raggruppa con aggregati e anteprima.
 - `30-crosstab.png` mostra la matrice incrociata con totali di riga, colonna e generale.
+- `31-label-designer.png` mostra il Label Designer con preset, griglia e modello; `32-label-preview.png`
+  mostra il mail merge su foglio A4.
 - La 0.6.0 aggiunge ricerca guidata, sostituzione, import CSV, rinomina/duplicazione oggetti e
   manutenzione del database.
 - La 0.5.0 completa il Program Editor con 17 passi core, cursore dati e Step Picker; rende visibili
   categoria e descrizione nell'Inspector e nel dialogo dei parametri.
 - Le checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md`,
-  `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md` e `docs/qa-0.6.md`.
-- Il Label Designer è stato rimosso: la categoria Etichette è stata sostituita da **Schema**.
+  `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md`, `docs/qa-0.6.md` e `docs/qa-0.7.md`.
+- Il Label Designer leggero è tornato nella 0.8: la categoria **Etichette** convive con **Schema** e
+  produce etichette/mail merge; non è il designer a controlli liberi di dBASE.
 - Query Designer, Query Results e le query come sorgente di form/report sono parte della release 0.3.0.

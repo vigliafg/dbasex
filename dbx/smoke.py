@@ -16,6 +16,7 @@ def run_smoke() -> int:
     from .core.form_model import FormSpec
     from .core.metadata import Field, Table
     from .core.crosstab import build_crosstab
+    from .core.label_model import LabelSpec
     from .core.query_engine import run_query
     from .core.query_model import QueryAggregate, QueryField, QueryJoin, QuerySpec
     from .core.refactor import check_database, duplicate_object
@@ -23,6 +24,7 @@ def run_smoke() -> int:
     from .designers.database_designer import DatabaseDesignerWidget
     from .designers.form_builder import FormDesignerWidget
     from .designers.form_expert import FormExpert
+    from .designers.label_builder import LabelDesignerWidget
     from .designers.project_builder import build_project, validate_project
     from .designers.query_builder import QueryDesignerWidget
     from .designers.query_expert import QueryExpert
@@ -36,6 +38,7 @@ def run_smoke() -> int:
     from .designers.table_expert import TableExpert
     from .io.pdf_export import export_pdf, page_pixmap
     from .runtime.form_runtime import FormRuntime
+    from .runtime.label_engine import render_labels_for_project
     from .runtime.report_engine import ReportSpec
     from .runtime.script_engine import ScriptEngine
     from .samples import create_demo_project
@@ -183,6 +186,27 @@ def run_smoke() -> int:
     assert len(crosstab.row_values) == 3
     checks.append("crosstab read-only")
 
+    label_table = project.require_table("clienti")
+    label_spec = LabelSpec.create(
+        "etichette_smoke",
+        label_table.name,
+        [field.name for field in label_table.fields],
+        title="Etichette clienti",
+    )
+    label_spec.template = "[nome]\n[citta]"
+    label_spec.filter = "attivo = 1"
+    label_spec.order = "nome"
+    label_pages = render_labels_for_project(project, label_spec)
+    label_text_value = " ".join(
+        op.text for page in label_pages for op in page.ops if op.kind == "text"
+    )
+    assert "Alfa Srl" in label_text_value
+    assert "Gamma snc" not in label_text_value
+    label_designer = LabelDesignerWidget(project, label_spec)
+    assert label_designer.fields_list.count() == len(label_table.fields)
+    assert "2 record" in label_designer.status_label.text()
+    checks.append("etichette e mail merge")
+
     query_form = FormRuntime(project, FormSpec.from_dict(project.artifact("forms", "form_clienti_attivi")))
     assert query_form.read_only is True
     assert query_form.rowset.count() == 2
@@ -202,7 +226,7 @@ def run_smoke() -> int:
     checks.append("menu designer")
 
     project_editor = ProjectEditorWidget(project)
-    assert project_editor.tree.topLevelItemCount() == 7
+    assert project_editor.tree.topLevelItemCount() == 8
     checks.append("project editor")
 
     spec = ReportSpec.from_dict(report_artifact)

@@ -29,13 +29,14 @@ from .metadata import MetadataError, Table, slugify
 MANIFEST_NAME = "project.dbx.json"
 LOCK_NAME = ".dbx.lock"
 
-CATEGORIES = ("tables", "diagrams", "queries", "forms", "reports", "scripts", "menus")
+CATEGORIES = ("tables", "diagrams", "queries", "forms", "reports", "labels", "scripts", "menus")
 CATEGORY_LABELS = {
     "tables": "Tabelle",
     "diagrams": "Schema",
     "queries": "Query",
     "forms": "Form",
     "reports": "Report",
+    "labels": "Etichette",
     "scripts": "Script",
     "menus": "Menu",
 }
@@ -45,6 +46,7 @@ OBJECT_SUFFIX = {
     "queries": "query",
     "forms": "form",
     "reports": "report",
+    "labels": "label",
     "scripts": "script",
     "menus": "menu",
 }

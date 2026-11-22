@@ -1013,3 +1013,46 @@
 - **RIPRESA:** nessuna ondata aperta. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
   `git status`/`git log` e iniziare l’**Ondata 7 — Etichette e mail merge**; non ripartire da
   O1–O6.
+
+### 2026-11-22 — Ondata 0.8.0 — O7 Etichette e mail merge
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O7.
+- **Obiettivo:** introdurre etichette e mail merge leggeri riusando record, query e anteprima esistenti,
+  senza un nuovo linguaggio e senza toccare il motore dati.
+- **File toccati:** `dbx/core/label_model.py` (nuovo), `dbx/core/page_sizes.py` (nuovo),
+  `dbx/runtime/label_engine.py` (nuovo), `dbx/designers/label_builder.py` (nuovo),
+  `dbx/ui/label_preview.py` (nuovo), `dbx/ui/report_preview.py`, `dbx/core/project.py`,
+  `dbx/core/refactor.py`, `dbx/designers/project_builder.py`, `dbx/ui/navigator.py`,
+  `dbx/ui/main_window.py`, `dbx/ui/icons.py`, `dbx/runtime/report_engine.py`, `dbx/smoke.py`,
+  `tools/capture_ui.py`, `tests/test_label_model.py` (nuovo), `tests/test_label_engine.py` (nuovo),
+  `tests/test_ui_label_designer.py` (nuovo), `tests/test_ui_navigator.py`,
+  `tests/test_ui_project_editor.py`, PLAN, CHANGELOG, README render, parity, DIARIO.
+- **Scelte:**
+  - Nuova categoria di progetto `labels` (suffisso `.label.json`) accanto a `diagrams`: Schema ed
+    Etichette convivono. I progetti 0.7 si aprono senza migrazione perché la categoria viene creata
+    vuota al primo salvataggio.
+  - `LabelSpec` descrive formato pagina, griglia, margini, distanze, corpo, allineamento, bordo,
+    sorgente (`table`/`query`), filtro, ordine, salto iniziale e modello di testo. I preset A4/Avery
+    sono dati puri, non oggetti salvati.
+  - Il modello usa `[campo]` per i valori e `{{[campo] * 2}}` per le espressioni, così non serve un
+    nuovo linguaggio: la valutazione passa dal motore `Expression` esistente.
+  - `label_engine` legge i record con `Rowset` (tabella, anche campi calcolati) o `run_query` (query,
+    anche aggregati), applica filtro/ordine e dispone una etichetta per record su una griglia
+    regolare; i fogli sono `Page`/`Op` del motore report.
+  - L'anteprima riusa `ReportPreviewDialog` con un hook `build_pages`: stampa, zoom, pagina singola,
+    PDF e navigazione restano identici. `LabelPreviewDialog` sostituisce solo il costruttore delle
+    pagine e le etichette dei messaggi.
+  - Il Label Designer è volutamente leggero: form di geometria, elenco campi e modello testuale, con
+    salvataggio, nuova/apri, anteprima e stampa. Non è un editor a controlli liberi.
+  - La rinomina tabella riscrive `table`, filtro e riferimenti qualificati nel modello; la
+    validazione di progetto controlla tabella/query e geometria.
+  - Test esistenti aggiornati: il Navigator ora ha 9 filtri (aggiunta Etichette) e il Project Editor
+    8 categorie. Il cambiamento è voluto e coperto dai nuovi test.
+- **Test:** `431 passed`; smoke OK con `etichette e mail merge`; `python -m dbx --version` resta
+  `0.7.0` (la release 0.8 arriva in O9). Test dedicati su preset, validazione, filtri, query,
+  griglia, paginazione, salto etichette, formattazione, calcolati, rinomina, designer, anteprima e
+  integrazione MDI.
+- **Screenshot:** `31-label-designer.png` e `32-label-preview.png`; serie `01`–`32` rigenerata.
+- **Problemi aperti:** niente barcode/QR, niente etichette a più colonne di testo o immagini, niente
+  selezione manuale dei record oltre a filtro/ordine, nessun designer a controlli liberi.
+- **Prossimo passo:** O8 — grafici nel report (barre, linee, torta da gruppi e totali).
