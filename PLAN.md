@@ -966,9 +966,9 @@ dieci mancanze più frequenti per un personal database desktop.
 | O6 — Crosstab e release 0.7.0 | Pivot read-only, QA, screenshot, tag | **E** |
 | O7 — Etichette e mail merge | Label Designer leggero, selezione record, stampa multipla | — |
 | O8 — Grafici nel report | Barre, linee, torta da gruppi e totali; anteprima e PDF | — |
-| O9 — Vista Lista e portale | Form in lista, portale con ordinamento/filtro, release 0.8.0 | — |
+| O9 — Vista Lista e portale | Form in lista, portale con ordinamento/filtro, release 0.8.0 | **F** |
 | O10 — Automazione | Parametri script, variabili globali, transazioni esplicite | — |
-| O11 — QA e release 0.9.0 | Test, screenshot, documentazione, tag | **F** |
+| O11 — QA e release 0.9.0 | Test, screenshot, documentazione, tag | **G** |
 
 ### Stato di avanzamento 0.6.0–0.9.0
 
@@ -982,6 +982,6 @@ dieci mancanze più frequenti per un personal database desktop.
 | 0.7.0 — O6 Crosstab e release | `[ ]` da iniziare | **E** |
 | 0.8.0 — O7 Etichette e mail merge | `[ ]` da iniziare | — |
 | 0.8.0 — O8 Grafici report | `[ ]` da iniziare | — |
-| 0.8.0 — O9 Vista Lista e release | `[ ]` da iniziare | — |
+| 0.8.0 — O9 Vista Lista e release | `[ ]` da iniziare | **F** |
 | 0.9.0 — O10 Automazione | `[ ]` da iniziare | — |
-| 0.9.0 — O11 QA e release | `[ ]` da iniziare | **F** |
+| 0.9.0 — O11 QA e release | `[ ]` da iniziare | **G** |
