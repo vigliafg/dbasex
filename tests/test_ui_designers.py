@@ -57,8 +57,12 @@ def test_report_builder(qapp, demo_project) -> None:
     dialog = ReportBuilderDialog(demo_project, spec)
     try:
         assert dialog.canvas.spec is spec
-        assert dialog.band_combo.count() == len(BAND_NAMES)
+        bands = [name for name, _top, _height in dialog.canvas.band_tops()]
+        assert bands == [name for name in spec.effective_band_order() if spec.is_visible(name)]
+        assert set(bands) == set(BAND_NAMES)
         assert dialog.spec.table == "fatture"
+        assert dialog.zoom_combo.count() == 5
+        assert dialog.status_label.text().startswith("L:")
     finally:
         dialog.close()
 

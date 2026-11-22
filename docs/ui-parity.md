@@ -1,6 +1,6 @@
 # Stato di parità UI — dBX vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (Ondata 4)
+Aggiornato: 2026-11-22 (Ondata 5)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire; `mancante` = non implementato.
 
@@ -19,8 +19,8 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Program Editor | `31`, `32` | `dbx/designers/script_builder.py` | parziale | O6 | niente numeri di riga/syntax |
 | Menu Designer | — | `dbx/designers/menu_builder.py` | parziale | O6 | chrome e anteprima |
 | Project Editor/Builder | — | `dbx/designers/project_builder.py` | parziale | O6 | chrome e validazione visiva |
-| Report Designer | `32`–`38`, `41` | `dbx/designers/report_builder.py` | parziale | O5 | una banda per volta, no toolbar doppia, no dialoghi |
-| Report Preview | `39` | `dbx/ui/report_preview.py` | parziale | O5 | toolbar inferiore incompleta |
+| Report Designer | `32`–`38`, `41` | `dbx/designers/report_builder.py` | fatto (O5) | O5 | selezione singola; ordine bande di flusso fisso |
+| Report Preview | `39` | `dbx/ui/report_preview.py` | fatto (O5) | O5 | zoom persistente per sessione; pagina singola/continua |
 | Label Designer | — | — | mancante | 0.3 | non implementato |
 | Form Runtime | `40` | `dbx/runtime/form_runtime.py` | fatto (O4) | O4 | dispatcher di azioni, non linguaggio di scripting |
 
@@ -30,4 +30,5 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - Baseline O0 (tema Silver): `docs/reference/dbx-ui/renders/01-desktop.png` … `09-command-window.png`.
 - O1 aggiunge `10-desktop-mdi.png` con Browse e Form Designer aperti nell'area MDI.
 - O4 aggiorna `05-form-designer.png` (tre zone, righelli, Inspector ad albero) e `06-form-runtime.png` (runtime con barra di navigazione).
+- O5 aggiorna `07-report-designer.png` (foglio a bande impilate, due toolbar) e `08-report-preview.png` (toolbar inferiore completa).
 - Ogni ondata aggiorna questa tabella.

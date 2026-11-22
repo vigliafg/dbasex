@@ -1,7 +1,9 @@
 from dbx.runtime.report_engine import (
+    BAND_NAMES,
     Control,
     ReportSpec,
     ReportRenderer,
+    field_display_name,
     format_number,
     render_report,
     wrap_text,
@@ -108,3 +110,120 @@ def test_roundtrip_spec_json():
     clone = ReportSpec.from_dict(spec.to_dict())
     assert clone.to_dict() == spec.to_dict()
     assert clone.page_dimensions()[0] > clone.page_dimensions()[1]
+
+
+def test_band_order_heights_and_visibility_roundtrip():
+    spec = make_spec()
+    spec.band_order = ["summary", "title", "page_header", "detail"]
+    spec.band_heights = {"detail": 12.5, "summary": 9}
+    spec.band_visible = {"page_footer": False}
+    spec.sort_fields = [{"field": "cliente", "direction": "desc"}]
+    spec.groups = [{"field": "cliente", "label": "Cliente"}]
+    clone = ReportSpec.from_dict(spec.to_dict())
+    assert clone.to_dict() == spec.to_dict()
+    assert clone.effective_band_order()[0] == "summary"
+    assert set(clone.effective_band_order()) == set(
+        ["title", "page_header", "group_header", "detail", "group_footer", "page_footer", "summary"]
+    )
+    assert clone.band_height("detail") >= 12.5
+    assert clone.is_visible("page_footer") is False
+    assert clone.is_visible("detail") is True
+    assert clone.effective_groups() == [{"field": "cliente", "label": "Cliente"}]
+
+
+def test_legacy_json_without_new_keys_keeps_defaults():
+    legacy = {
+        "name": "vecchio",
+        "title": "Vecchio",
+        "table": "fatture",
+        "bands": {"detail": [{"id": "c", "kind": "field", "expr": "cliente", "w": 80, "h": 6}]},
+    }
+    spec = ReportSpec.from_dict(legacy)
+    assert spec.band_order == []
+    assert spec.band_heights == {}
+    assert spec.band_visible == {}
+    assert spec.sort_fields == []
+    assert spec.groups == []
+    assert spec.effective_band_order() == list(BAND_NAMES)
+    assert spec.effective_groups() == []
+
+
+def test_sort_fields_change_row_order():
+    spec = make_spec()
+    spec.bands["detail"] = [Control("c", "field", x=0, y=0, w=100, h=6, expr="cliente")]
+    spec.sort_fields = [{"field": "cliente", "direction": "desc"}]
+    pages = render_report(spec, ROWS)
+    detail_texts = [op.text for op in pages[0].ops if op.text in ("Alfa", "Beta")]
+    assert detail_texts == ["Beta", "Alfa", "Alfa"]
+
+
+def test_sort_fields_numeric_and_multiple_keys():
+    spec = make_spec()
+    spec.bands["detail"] = [Control("c", "field", x=0, y=0, w=100, h=6, expr="cliente")]
+    spec.sort_fields = [
+        {"field": "cliente", "direction": "asc"},
+        {"field": "importo", "direction": "desc"},
+    ]
+    rows = [
+        {"cliente": "Beta", "importo": 1},
+        {"cliente": "Alfa", "importo": 10},
+        {"cliente": "Alfa", "importo": 200},
+    ]
+    pages = render_report(spec, rows)
+    assert [op.text for op in pages[0].ops if op.text in ("Alfa", "Beta")] == [
+        "Alfa",
+        "Alfa",
+        "Beta",
+    ]
+
+
+def test_hidden_band_is_not_rendered():
+    spec = make_spec()
+    spec.band_visible = {"title": False, "page_footer": False}
+    pages = render_report(spec, ROWS)
+    all_text = texts(pages)
+    assert "Elenco fatture" not in all_text
+    assert not any("Pagina" in text for text in all_text)
+    assert "Alfa" in all_text
+
+
+def test_band_height_adds_vertical_space():
+    spec = make_spec()
+    spec.bands["detail"] = [Control("c", "field", x=0, y=0, w=100, h=6, expr="cliente")]
+    spec.band_heights = {"detail": 30}
+    rows = [{"cliente": f"Cliente {i}", "importo": i} for i in range(4)]
+    pages = render_report(spec, rows)
+    detail_ops = [op for op in pages[0].ops if op.text.startswith("Cliente")]
+    assert len(detail_ops) == 4
+    assert detail_ops[1].y - detail_ops[0].y >= 30
+
+
+def test_multiple_groups_emit_headers_and_totals():
+    spec = make_spec()
+    spec.groups = [
+        {"field": "cliente", "label": "Cliente"},
+        {"field": "pagata", "label": "Pagata"},
+    ]
+    rows = [
+        {"cliente": "Alfa", "importo": 100, "pagata": 1},
+        {"cliente": "Alfa", "importo": 20, "pagata": 1},
+        {"cliente": "Alfa", "importo": 5, "pagata": 0},
+        {"cliente": "Beta", "importo": 7, "pagata": 1},
+    ]
+    pages = render_report(spec, rows)
+    all_text = texts(pages)
+    assert all_text.count("Gruppo") == 5
+    assert any(t.startswith("Totale: 120") for t in all_text)
+    assert any(t.startswith("Totale: 5") for t in all_text)
+
+
+def test_underline_roundtrip():
+    control = Control("x", "text", text="sottolineato", underline=True)
+    clone = Control.from_dict(control.to_dict())
+    assert clone.underline is True
+    assert clone.to_dict() == control.to_dict()
+
+
+def test_field_display_name_uses_table_and_field():
+    assert field_display_name("fatture", "cliente") == "fatture->cliente"
+    assert field_display_name("", "cliente") == "cliente"

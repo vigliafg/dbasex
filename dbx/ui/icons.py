@@ -450,6 +450,7 @@ def make_button(
     button.setIconSize(ICON_SIZE)
     button.setProperty("dbx_icon", name)
     button.setCheckable(checkable)
+    button.setAutoDefault(False)
     if tooltip:
         button.setToolTip(tooltip)
     if slot is not None:

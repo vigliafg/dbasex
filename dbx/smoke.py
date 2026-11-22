@@ -17,7 +17,7 @@ def run_smoke() -> int:
     from .designers.form_expert import FormExpert
     from .designers.menu_builder import MenuBuilderDialog
     from .designers.project_builder import build_project, validate_project
-    from .designers.report_builder import ReportBuilderDialog
+    from .designers.report_builder import ReportDesignerWidget
     from .designers.script_builder import ScriptBuilderDialog
     from .designers.table_builder import TableBuilderDialog
     from .io.pdf_export import export_pdf, page_pixmap
@@ -77,8 +77,9 @@ def run_smoke() -> int:
     checks.append("form runtime + eventi")
 
     report_artifact = project.artifact("reports", "fatture_per_cliente")
-    report_dialog = ReportBuilderDialog(project, ReportSpec.from_dict(report_artifact))
-    checks.append("report builder")
+    report_dialog = ReportDesignerWidget(project, ReportSpec.from_dict(report_artifact))
+    assert len(report_dialog.canvas.band_tops()) == 7
+    checks.append("report designer a bande")
 
     ScriptBuilderDialog(project, project.artifact("scripts", "riepilogo_fatture"))
     checks.append("script builder")
@@ -92,6 +93,7 @@ def run_smoke() -> int:
 
     preview = ReportPreviewDialog(project, "fatture_per_cliente")
     assert preview.pages, "anteprima report vuota"
+    assert preview.total_label.text().startswith("Totale:")
     checks.append("anteprima report")
     runner = ProjectRunner(project, "form_clienti", "principale")
     assert runner.current is not None

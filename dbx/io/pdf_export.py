@@ -55,9 +55,12 @@ def _paint_page(painter: QPainter, page: Page, scale: float) -> None:
                 painter.drawPixmap(rect, pixmap, QRectF(pixmap.rect()))
             continue
         font = QFont()
+        if op.font_name:
+            font.setFamily(op.font_name)
         font.setPixelSize(max(4, int(round(op.font_size * MM_PER_PT * scale))))
         font.setBold(op.bold)
         font.setItalic(op.italic)
+        font.setUnderline(op.underline)
         painter.setFont(font)
         painter.setPen(QPen(_color(op.color, "#111111")))
         if op.border:

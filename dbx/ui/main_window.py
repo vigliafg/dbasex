@@ -33,7 +33,7 @@ from ..designers.form_builder import FormDesignerWidget
 from ..designers.form_expert import FormExpert
 from ..designers.menu_builder import MenuBuilderDialog
 from ..designers.project_builder import BuildError, build_project, validate_project
-from ..designers.report_builder import ReportBuilderDialog
+from ..designers.report_builder import ReportDesignerWidget
 from ..designers.script_builder import QtScriptUI, ScriptBuilderDialog
 from ..designers.table_builder import TableBuilderDialog
 from ..runtime.form_runtime import FormRuntime
@@ -61,6 +61,7 @@ MODES = {
     "FormDesignerWidget": "Design",
     "FormBuilderDialog": "Design",
     "ReportBuilderDialog": "Design",
+    "ReportDesignerWidget": "Design",
     "ScriptBuilderDialog": "Modifica",
     "MenuBuilderDialog": "Design",
     "FormRuntime": "Esecuzione",
@@ -573,9 +574,9 @@ class MainWindow(QMainWindow):
                 f"Report {table.display_name()}",
             )
             spec.bands["detail"][0].expr = table.fields[0].name
-            dialog = ReportBuilderDialog(self.project, spec, self)
-            dialog.accepted.connect(self._refresh_navigator)
-            self._open_designer(f"{category}:new:{id(dialog)}", dialog, category)
+            designer = ReportDesignerWidget(self.project, spec, self)
+            self._wire_report_designer(designer)
+            self._open_designer(f"reports:new:{id(designer)}", designer, category)
             return
         if category == "scripts":
             dialog = ScriptBuilderDialog(
@@ -605,13 +606,15 @@ class MainWindow(QMainWindow):
         icon = icons.icon(OBJECT_ICONS.get(category, "finestra"))
         if isinstance(widget, QDialog):
             return self.editors.open_dialog(key, widget, icon=icon, size=widget.size())
-        return self.editors.open(
+        sub = self.editors.open(
             key,
             widget.windowTitle() or "Finestra",
             widget,
             icon=icon,
             size=widget.size(),
         )
+        widget.windowTitleChanged.connect(sub.setWindowTitle)
+        return sub
 
     def new_form_wizard(self) -> None:
         if not self._require_project():
@@ -702,6 +705,62 @@ class MainWindow(QMainWindow):
             return
         self.editors.open_dialog(key, dialog, icon=icons.icon("report"), size=QSize(940, 800))
 
+    def _wire_report_designer(self, designer: ReportDesignerWidget) -> None:
+        designer.preview_handler = self.preview_report
+        designer.new_requested.connect(lambda: self.new_object("reports"))
+        designer.open_requested.connect(self.choose_report)
+        designer.saved.connect(self._refresh_navigator)
+        designer.status_message.connect(
+            lambda text: self.statusBar().showMessage(text, 4000)
+        )
+
+    def open_report_designer(self, name: str) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        artifact = self.project.artifact("reports", name)
+        if artifact is None:
+            QMessageBox.warning(self, "Report", f"Report inesistente: {name}")
+            return
+        key = f"reports:{name}"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        designer = ReportDesignerWidget(self.project, ReportSpec.from_dict(artifact), self)
+        self._wire_report_designer(designer)
+        sub = self.editors.open(
+            key,
+            f"Report Designer ({designer.spec.name})",
+            designer,
+            icon=icons.icon("report"),
+            size=QSize(1180, 800),
+        )
+        designer.windowTitleChanged.connect(sub.setWindowTitle)
+
+    def choose_report(self) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        names = self.project.names("reports")
+        if not names:
+            QMessageBox.information(self, "dBX", "Il progetto non ha report.")
+            return
+        name, ok = QInputDialog.getItem(self, "Apri report", "Report:", names, 0, False)
+        if ok and name:
+            self.open_report_designer(name)
+
+    def preview_report(self, spec: ReportSpec) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        try:
+            dialog = ReportPreviewDialog(self.project, spec, self)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Report", str(exc))
+            return
+        self._show_report_preview(dialog)
+
     def open_table_structure(self, name: str) -> None:
         if not self._require_project():
             return
@@ -770,8 +829,9 @@ class MainWindow(QMainWindow):
                 self.open_form_designer(name)
                 return
             if category == "reports":
-                dialog = ReportBuilderDialog(self.project, ReportSpec.from_dict(artifact), self)
-            elif category == "scripts":
+                self.open_report_designer(name)
+                return
+            if category == "scripts":
                 dialog = ScriptBuilderDialog(self.project, artifact, self)
             else:
                 dialog = MenuBuilderDialog(self.project, artifact, self)

@@ -702,7 +702,7 @@ Regole:
 | O2 — Navigator/Command/Browse | `[x]` completata (2026-11-22) | — |
 | O3 — Table Structure | `[x]` completata (2026-11-22) | **A** |
 | O4 — Form Designer/Expert/Runtime | `[x]` completata (2026-11-22) | — |
-| O5 — Report Designer/Preview | `[ ]` da iniziare | — |
+| O5 — Report Designer/Preview | `[x]` completata (2026-11-22) | — |
 | O6 — Script/Menu/Project | `[ ]` da iniziare | **B** |
 | O7 — QA e release 0.2 | `[ ]` da iniziare | **C** |
 

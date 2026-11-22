@@ -20,6 +20,9 @@ from ..runtime.report_engine import ReportRenderer, ReportSpec
 from ..runtime.rowset import Rowset, RowsetError
 from . import icons
 
+# Zoom condiviso dalle anteprime aperte nella stessa sessione.
+_SESSION_ZOOM: float | None = None
+
 
 def build_pages(project, spec: ReportSpec):
     table = project.table(spec.table)
@@ -33,7 +36,7 @@ def build_pages(project, spec: ReportSpec):
 
 
 class ReportPreviewDialog(QDialog):
-    """Finestra Preview: pagina bianca, barra inferiore con navigazione e zoom."""
+    """Finestra Preview: pagina bianca, barra inferiore con navigazione, zoom e stampa."""
 
     def __init__(self, project, report, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -51,8 +54,8 @@ class ReportPreviewDialog(QDialog):
         self.page_labels: list[QLabel] = []
         self.index = 0
         self.baseline = 3.6
-        self.zoom = self.baseline
-        self._fitted = False
+        self.zoom = _SESSION_ZOOM or self.baseline
+        self._fitted = _SESSION_ZOOM is not None
         self._build_ui()
         self.reload()
 
@@ -88,7 +91,15 @@ class ReportPreviewDialog(QDialog):
         self.zoom_label = QLabel("")
         bar.addWidget(self.zoom_label)
         bar.addWidget(icons.make_button("Aumenta", "zoom_in", lambda: self.set_zoom(self.zoom * 1.25), self, "Aumenta zoom"))
+        self.single_button = icons.make_button(
+            "Una pagina", "elenco", lambda: self.toggle_single_page(), self, "Mostra una pagina per volta", checkable=True
+        )
+        bar.addWidget(self.single_button)
         bar.addStretch(1)
+        self.total_label = QLabel("Totale: 0")
+        bar.addWidget(self.total_label)
+        bar.addSpacing(8)
+        bar.addWidget(icons.make_button("Aggiorna", "aggiorna", self.reload, self, "Rigenera l'anteprima"))
         bar.addWidget(icons.make_button("Stampa…", "stampa", self.print_pages, self))
         bar.addWidget(icons.make_button("Esporta PDF…", "esporta", self.save_pdf, self))
         bar.addWidget(icons.make_button("Chiudi", "chiudi", self.accept, self))
@@ -104,6 +115,7 @@ class ReportPreviewDialog(QDialog):
         width_mm, _height_mm = self.spec.page_dimensions()
         available = max(200, self.scroll.viewport().width() - 40)
         self.zoom = max(0.8, min(6.0, available / max(1.0, width_mm)))
+        self._remember_zoom()
         self._render_pages()
 
     # ----------------------------------------------------------------- pagine
@@ -126,12 +138,15 @@ class ReportPreviewDialog(QDialog):
             self.page_labels.append(label)
             self.pages_layout.addWidget(label, 0, Qt.AlignmentFlag.AlignHCenter)
         self.index = min(self.index, max(0, len(self.pages) - 1))
+        self.total_label.setText(f"Totale: {len(self.pages)}")
         self._render_pages()
         self.info.setText(f"{self.spec.title or self.spec.name} — {len(self.pages)} pagina" + ("e" if len(self.pages) != 1 else ""))
 
     def _render_pages(self) -> None:
-        for label, page in zip(self.page_labels, self.pages):
+        single = self.single_button.isChecked()
+        for index, (label, page) in enumerate(zip(self.page_labels, self.pages)):
             label.setPixmap(page_pixmap(page, self.zoom))
+            label.setVisible(not single or index == self.index)
         self.zoom_label.setText(f"{int(round(self.zoom / self.baseline * 100))}%")
         self.page_label.setText(f"{self.index + 1 if self.pages else 0} di {len(self.pages)}")
         self.first_button.setEnabled(self.index > 0)
@@ -144,10 +159,25 @@ class ReportPreviewDialog(QDialog):
             return
         self.index = max(0, min(index, len(self.pages) - 1))
         self._render_pages()
-        self.scroll.ensureWidgetVisible(self.page_labels[self.index])
+        if self.single_button.isChecked():
+            self.scroll.verticalScrollBar().setValue(0)
+        else:
+            self.scroll.ensureWidgetVisible(self.page_labels[self.index])
+
+    def toggle_single_page(self) -> None:
+        if not self.pages:
+            return
+        self._render_pages()
+        if not self.single_button.isChecked():
+            self.scroll.ensureWidgetVisible(self.page_labels[self.index])
+
+    def _remember_zoom(self) -> None:
+        global _SESSION_ZOOM
+        _SESSION_ZOOM = self.zoom
 
     def set_zoom(self, zoom: float) -> None:
         self.zoom = max(0.4, min(4.0, zoom))
+        self._remember_zoom()
         self._render_pages()
 
     # ------------------------------------------------------------------ azioni

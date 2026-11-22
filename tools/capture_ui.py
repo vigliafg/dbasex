@@ -107,7 +107,7 @@ def run(theme: str = "silver") -> int:
             raise RuntimeError("fatture_per_cliente non presente nel progetto demo")
         report_dialog = ReportBuilderDialog(project, ReportSpec.from_dict(report_artifact))
         widgets.append(report_dialog)
-        captured.append(_capture(app, report_dialog, "07-report-designer.png", (1140, 780)))
+        captured.append(_capture(app, report_dialog, "07-report-designer.png", (1180, 800)))
 
         report_preview = ReportPreviewDialog(project, ReportSpec.from_dict(report_artifact))
         widgets.append(report_preview)

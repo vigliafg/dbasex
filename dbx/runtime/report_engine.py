@@ -24,8 +24,30 @@ BAND_NAMES = (
     "page_footer",
     "summary",
 )
+DEFAULT_BAND_ORDER = list(BAND_NAMES)
+BAND_LABELS = {
+    "title": "Title",
+    "page_header": "Page header",
+    "group_header": "Group header",
+    "detail": "Details",
+    "group_footer": "Group footer",
+    "page_footer": "Page footer",
+    "summary": "Summary",
+}
 CONTROL_KINDS = ("text", "field", "expr", "total", "line", "rect", "image")
 DEFAULT_MARGINS = {"top": 15.0, "bottom": 15.0, "left": 15.0, "right": 15.0}
+
+
+def field_display_name(table: str, field: str) -> str:
+    """Nome visualizzato in stile Crystal: ``TABELLA->CAMPO``."""
+    return f"{table}->{field}" if table else field
+
+
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in ("1", "true", "yes", "sì", "si", "on")
+
 
 
 @dataclass
@@ -39,8 +61,10 @@ class Control:
     text: str = ""
     expr: str = ""
     font_size: int = 10
+    font_name: str = ""
     bold: bool = False
     italic: bool = False
+    underline: bool = False
     align: str = "left"
     border: bool = False
     fill: str = ""
@@ -60,8 +84,10 @@ class Control:
             "text": self.text,
             "expr": self.expr,
             "font_size": self.font_size,
+            "font_name": self.font_name,
             "bold": self.bold,
             "italic": self.italic,
+            "underline": self.underline,
             "align": self.align,
             "border": self.border,
             "fill": self.fill,
@@ -83,8 +109,10 @@ class Control:
             text=str(data.get("text", "")),
             expr=str(data.get("expr", "")),
             font_size=int(data.get("font_size", 10) or 10),
+            font_name=str(data.get("font_name", "")),
             bold=bool(data.get("bold", False)),
             italic=bool(data.get("italic", False)),
+            underline=bool(data.get("underline", False)),
             align=str(data.get("align", "left")),
             border=bool(data.get("border", False)),
             fill=str(data.get("fill", "")),
@@ -110,6 +138,11 @@ class ReportSpec:
     bands: dict[str, list[Control]] = dc_field(
         default_factory=lambda: {name: [] for name in BAND_NAMES}
     )
+    band_order: list[str] = dc_field(default_factory=list)
+    band_heights: dict[str, float] = dc_field(default_factory=dict)
+    band_visible: dict[str, bool] = dc_field(default_factory=dict)
+    sort_fields: list[dict[str, str]] = dc_field(default_factory=list)
+    groups: list[dict[str, str]] = dc_field(default_factory=list)
 
     @classmethod
     def create(cls, name: str, table: str, title: str = "") -> "ReportSpec":
@@ -131,6 +164,28 @@ class ReportSpec:
     def band(self, name: str) -> list[Control]:
         return self.bands.get(name, [])
 
+    def effective_band_order(self) -> list[str]:
+        """Ordine delle bande sul foglio, completato con quelle mancanti."""
+        order = [name for name in self.band_order if name in BAND_NAMES]
+        for name in BAND_NAMES:
+            if name not in order:
+                order.append(name)
+        return order
+
+    def is_visible(self, name: str) -> bool:
+        return bool(self.band_visible.get(name, True))
+
+    def band_height(self, name: str, minimum: float = 0.0) -> float:
+        return max(float(self.band_heights.get(name, 0.0) or 0.0), minimum)
+
+    def effective_groups(self) -> list[dict[str, str]]:
+        """Gruppi espliciti oppure il vecchio ``group_by`` per compatibilità."""
+        if self.groups:
+            return [group for group in self.groups if group.get("field")]
+        if self.group_by:
+            return [{"field": self.group_by, "label": self.group_label}]
+        return []
+
     def page_dimensions(self) -> tuple[float, float]:
         width, height = PAGE_SIZES.get(self.page_size, PAGE_SIZES["A4"])
         if self.orientation == "landscape":
@@ -146,6 +201,19 @@ class ReportSpec:
         for band_name in self.bands:
             if band_name not in BAND_NAMES:
                 errors.append(f"Banda sconosciuta: {band_name}")
+        if len(set(self.band_order)) != len(self.band_order):
+            errors.append("Ordine delle bande con duplicati")
+        for band_name in self.band_order:
+            if band_name not in BAND_NAMES:
+                errors.append(f"Ordine bande: banda sconosciuta {band_name}")
+        for entry in self.sort_fields:
+            if not str(entry.get("field", "")).strip():
+                errors.append("Ordinamento senza campo")
+            if str(entry.get("direction", "asc")).lower() not in ("asc", "desc"):
+                errors.append(f"Direzione di ordinamento non valida: {entry.get('direction')}")
+        for entry in self.groups:
+            if not str(entry.get("field", "")).strip():
+                errors.append("Gruppo senza campo")
         for band_name, controls in self.bands.items():
             for control in controls:
                 if control.kind not in CONTROL_KINDS:
@@ -172,6 +240,17 @@ class ReportSpec:
                 name: [control.to_dict() for control in controls]
                 for name, controls in self.bands.items()
             },
+            "band_order": list(self.band_order),
+            "band_heights": {name: float(value) for name, value in self.band_heights.items()},
+            "band_visible": {name: bool(value) for name, value in self.band_visible.items()},
+            "sort_fields": [
+                {"field": str(entry.get("field", "")), "direction": str(entry.get("direction", "asc"))}
+                for entry in self.sort_fields
+            ],
+            "groups": [
+                {"field": str(entry.get("field", "")), "label": str(entry.get("label", ""))}
+                for entry in self.groups
+            ],
         }
 
     @classmethod
@@ -181,6 +260,37 @@ class ReportSpec:
         bands: dict[str, list[Control]] = {name: [] for name in BAND_NAMES}
         for name, controls in (data.get("bands") or {}).items():
             bands[str(name)] = [Control.from_dict(c) for c in controls]
+        band_order = [
+            str(name)
+            for name in (data.get("band_order") or [])
+            if str(name) in BAND_NAMES
+        ]
+        band_heights = {
+            str(name): float(value)
+            for name, value in (data.get("band_heights") or {}).items()
+            if str(name) in BAND_NAMES
+        }
+        band_visible = {
+            str(name): _as_bool(value)
+            for name, value in (data.get("band_visible") or {}).items()
+            if str(name) in BAND_NAMES
+        }
+        sort_fields = [
+            {
+                "field": str(entry.get("field", "")),
+                "direction": str(entry.get("direction", "asc")).lower(),
+            }
+            for entry in (data.get("sort_fields") or [])
+            if isinstance(entry, dict)
+        ]
+        groups = [
+            {
+                "field": str(entry.get("field", "")),
+                "label": str(entry.get("label", "")),
+            }
+            for entry in (data.get("groups") or [])
+            if isinstance(entry, dict)
+        ]
         return cls(
             name=str(data.get("name", "")),
             title=str(data.get("title", "")),
@@ -193,6 +303,11 @@ class ReportSpec:
             orientation=str(data.get("orientation", "portrait")),
             margins=margins,
             bands=bands,
+            band_order=band_order,
+            band_heights=band_heights,
+            band_visible=band_visible,
+            sort_fields=sort_fields,
+            groups=groups,
         )
 
 
@@ -206,8 +321,10 @@ class Op:
     text: str = ""
     lines: list[str] = dc_field(default_factory=list)
     font_size: int = 10
+    font_name: str = ""
     bold: bool = False
     italic: bool = False
+    underline: bool = False
     align: str = "left"
     border: bool = False
     fill: str = ""
@@ -352,7 +469,8 @@ class ReportRenderer:
         self._page: Page | None = None
         self._y = self.margin_top
         self._report_acc: dict[str, _Accumulator] = {}
-        self._group_acc: dict[str, dict[str, _Accumulator]] = {}
+        self._group_acc: dict[tuple[str, ...], dict[str, _Accumulator]] = {}
+        self._group_fields = spec.effective_groups()
         total_controls = [
             control
             for controls in spec.bands.values()
@@ -364,19 +482,24 @@ class ReportRenderer:
 
     # ------------------------------------------------------------------ layout
     def _footer_height(self) -> float:
+        if not self.spec.is_visible("page_footer"):
+            return 0.0
         controls = self.spec.band("page_footer")
         if not controls:
-            return 0.0
-        return max(c.y + c.h for c in controls)
+            return self.spec.band_height("page_footer")
+        return self.spec.band_height(
+            "page_footer", max(c.y + c.h for c in controls)
+        )
 
     def _content_bottom(self) -> float:
         return self.page_height - self.margin_bottom - self._footer_height()
 
     def _band_height(self, name: str) -> float:
-        controls = self.spec.band(name)
-        if not controls:
+        if not self.spec.is_visible(name):
             return 0.0
-        return max(c.y + c.h for c in controls)
+        controls = self.spec.band(name)
+        minimum = max((c.y + c.h for c in controls), default=0.0)
+        return self.spec.band_height(name, minimum)
 
     def _new_page(self) -> Page:
         page = Page(index=len(self._pages), width=self.page_width, height=self.page_height)
@@ -386,16 +509,23 @@ class ReportRenderer:
     def _start_page(self) -> None:
         self._page = self._new_page()
         self._y = self.margin_top
-        self._emit_band("page_header", None, allow_break=False)
+        first_page = len(self._pages) == 1
+        for name in self.spec.effective_band_order():
+            if name not in ("title", "page_header"):
+                continue
+            if name == "title" and not first_page:
+                continue
+            self._emit_band(name, None, allow_break=False)
 
     def _finish_page(self) -> None:
         if self._page is None:
             return
-        controls = self.spec.band("page_footer")
-        if controls:
-            footer_top = self.page_height - self.margin_bottom - self._footer_height()
-            for control in controls:
-                self._place(control, footer_top, None, None, page=self._page)
+        if self.spec.is_visible("page_footer"):
+            controls = self.spec.band("page_footer")
+            if controls:
+                footer_top = self.page_height - self.margin_bottom - self._footer_height()
+                for control in controls:
+                    self._place(control, footer_top, None, None, page=self._page)
         self._page = None
 
     def _ensure_space(self, height: float) -> None:
@@ -406,7 +536,7 @@ class ReportRenderer:
             self._finish_page()
             self._start_page()
 
-    def _place(self, control: Control, band_top: float, record: dict[str, Any] | None, group: str | None, page: Page | None = None) -> None:
+    def _place(self, control: Control, band_top: float, record: dict[str, Any] | None, group: tuple[str, ...] | None, page: Page | None = None) -> None:
         target = page or self._page
         if target is None:
             return
@@ -426,8 +556,10 @@ class ReportRenderer:
                 text=text,
                 lines=lines,
                 font_size=control.font_size,
+                font_name=control.font_name,
                 bold=control.bold,
                 italic=control.italic,
+                underline=control.underline,
                 align=control.align,
                 border=control.border,
                 fill=control.fill,
@@ -435,11 +567,13 @@ class ReportRenderer:
             )
         )
 
-    def _emit_band(self, name: str, record: dict[str, Any] | None, group: str | None = None, allow_break: bool = True) -> None:
-        controls = self.spec.band(name)
-        if not controls:
+    def _emit_band(self, name: str, record: dict[str, Any] | None, group: tuple[str, ...] | None = None, allow_break: bool = True) -> None:
+        if not self.spec.is_visible(name):
             return
+        controls = self.spec.band(name)
         height = self._band_height(name)
+        if not controls and height <= 0:
+            return
         if allow_break:
             self._ensure_space(height)
         if self._page is None:
@@ -448,33 +582,43 @@ class ReportRenderer:
             self._place(control, self._y, record, group)
         self._y += height
 
-    def _group_key(self, record: dict[str, Any]) -> str | None:
-        if not self.spec.group_by:
+    def _group_key(self, record: dict[str, Any]) -> tuple[str, ...] | None:
+        if not self._group_fields:
             return None
-        try:
-            value = Expression(self.spec.group_by).evaluate(record, self.variables, self.spec.table)
-        except ExpressionError:
-            value = record.get(self.spec.group_by)
-        return "" if value is None else str(value)
+        values: list[str] = []
+        for group in self._group_fields:
+            field = str(group.get("field", ""))
+            try:
+                value = Expression(field).evaluate(record, self.variables, self.spec.table)
+            except ExpressionError:
+                value = record.get(field)
+            values.append("" if value is None else str(value))
+        return tuple(values)
 
-    def _accumulate(self, record: dict[str, Any], group: str | None) -> None:
+    def _accumulate(self, record: dict[str, Any], group: tuple[str, ...] | None) -> None:
         for control in self._total_controls:
             try:
                 value = Expression(control.expr).evaluate(record, self.variables, self.spec.table)
             except ExpressionError:
                 value = None
             self._report_acc[control.id].add(value)
-            if group is not None and control.id in self._group_acc.get(group, {}):
-                self._group_acc[group][control.id].add(value)
+            if not group:
+                continue
+            for level in range(len(group)):
+                key = group[: level + 1]
+                bucket = self._group_acc.setdefault(
+                    key, {c.id: _Accumulator(c.func) for c in self._total_controls}
+                )
+                bucket[control.id].add(value)
 
-    def _total_value(self, control: Control, group: str | None) -> Any:
+    def _total_value(self, control: Control, group: tuple[str, ...] | None) -> Any:
         if control.kind != "total":
             return None
-        if group is not None and control.id in self._group_acc.get(group, {}):
+        if group and control.id in self._group_acc.get(group, {}):
             return self._group_acc[group][control.id].value()
         return self._report_acc[control.id].value()
 
-    def _control_text(self, control: Control, record: dict[str, Any] | None, group: str | None) -> str:
+    def _control_text(self, control: Control, record: dict[str, Any] | None, group: tuple[str, ...] | None) -> str:
         if control.kind in ("line", "rect", "image"):
             return ""
         if control.kind == "text":
@@ -495,29 +639,60 @@ class ReportRenderer:
                 value = ""
         return _format_value(value, control.fmt)
 
+    def _sort_key(self, record: dict[str, Any], field: str) -> tuple[int, Any]:
+        try:
+            value = Expression(field).evaluate(record, self.variables, self.spec.table)
+        except ExpressionError:
+            value = record.get(field)
+        if value is None or value == "":
+            return (3, "")
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return (0, float(value))
+        return (1, str(value).casefold())
+
+    def _sorted_rows(self) -> list[dict[str, Any]]:
+        entries = [
+            entry
+            for entry in self.spec.sort_fields
+            if str(entry.get("field", "")).strip()
+        ]
+        rows = list(self.rows)
+        for entry in reversed(entries):
+            field = str(entry.get("field", ""))
+            reverse = str(entry.get("direction", "asc")).lower() == "desc"
+            rows.sort(key=lambda row, f=field: self._sort_key(row, f), reverse=reverse)
+        return rows
+
     def layout(self) -> list[Page]:
         self._pages = []
         self._page = None
         self._report_acc = {c.id: _Accumulator(c.func) for c in self._total_controls}
+        self._group_acc = {}
         self._start_page()
-        self._emit_band("title", None, allow_break=False)
-        group_key: str | None = None
-        for record in self.rows:
+        current: tuple[str, ...] | None = None
+        for record in self._sorted_rows():
             key = self._group_key(record)
-            if key != group_key:
-                if group_key is not None:
-                    self._emit_band("group_footer", None, group=group_key)
-                group_key = key
-                if self.spec.group_by:
-                    if key is not None and key not in self._group_acc:
-                        self._group_acc[key] = {
-                            c.id: _Accumulator(c.func) for c in self._total_controls
-                        }
-                    self._emit_band("group_header", record, group=key)
+            if key != current:
+                shared = 0
+                if current is not None and key is not None:
+                    while (
+                        shared < len(current)
+                        and shared < len(key)
+                        and current[shared] == key[shared]
+                    ):
+                        shared += 1
+                if current is not None:
+                    for level in range(len(current) - 1, shared - 1, -1):
+                        self._emit_band("group_footer", None, group=current[: level + 1])
+                if key is not None:
+                    for level in range(shared, len(key)):
+                        self._emit_band("group_header", record, group=key[: level + 1])
+                current = key
             self._accumulate(record, key)
             self._emit_band("detail", record)
-        if group_key is not None:
-            self._emit_band("group_footer", None, group=group_key)
+        if current is not None:
+            for level in range(len(current) - 1, -1, -1):
+                self._emit_band("group_footer", None, group=current[: level + 1])
         if not self.rows:
             self._emit_band("detail", None)
         self._emit_band("summary", None)

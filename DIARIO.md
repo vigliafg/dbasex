@@ -12,7 +12,7 @@
 | O2 — Navigator/Command/Browse | completata (2026-11-22) | — |
 | O3 — Table Structure | completata (2026-11-22) | A |
 | O4 — Form Designer/Expert/Runtime | completata (2026-11-22) | — |
-| O5 — Report Designer/Preview | da iniziare | — |
+| O5 — Report Designer/Preview | completata (2026-11-22) | — |
 | O6 — Script/Menu/Project | da iniziare | B |
 | O7 — QA e release 0.2 | da iniziare | C |
 
@@ -170,6 +170,38 @@
   - Form molto larghi restano scrollabili dentro subwindow MDI strette.
 - **Prossimo passo:** Ondata 5 — Report Designer a bande impilate e Preview.
 
+### 2026-11-22 — Ondata 5 — avvio
+- **Stato:** in corso
+- **Obiettivo:** sostituire il canvas a banda singola con il foglio a bande impilate, due toolbar, dialoghi Insert Field / Sort Order e anteprima completa.
+- **File previsti:** `dbx/runtime/report_engine.py`, `dbx/designers/report_builder.py`, `dbx/ui/report_preview.py`, `dbx/io/pdf_export.py`, `dbx/ui/main_window.py`, `dbx/ui/design.py`, test.
+
+### 2026-11-22 — Ondata 5 — chiusura
+- **Stato:** completata
+- **Branch/commit:** `main` — commit dell'ondata
+- **Obiettivo:** report designer a foglio unico con bande etichettate, formattazione, ordinamenti, gruppi e anteprima completa.
+- **File toccati:** `dbx/runtime/report_engine.py`, `dbx/designers/report_builder.py` (riscritto), `dbx/ui/report_preview.py`, `dbx/io/pdf_export.py`, `dbx/ui/main_window.py`, `dbx/ui/design.py`, `dbx/ui/icons.py`, `dbx/smoke.py`, `tools/capture_ui.py`, `tests/test_report_engine.py`, `tests/test_ui_report_designer.py` (nuovo), `tests/test_ui_designers.py`, `docs/ui-parity.md`, rendering.
+- **Scelte/deviazioni:**
+  - `ReportSpec` esteso in modo additivo: `band_order`, `band_heights`, `band_visible`, `sort_fields`, `groups`; `Control` acquisisce `underline` e `font_name`. I JSON esistenti si caricano con default vuoti e il vecchio `group_by` resta valido.
+  - Renderer: `band_visible` e `band_heights` sono rispettati; `sort_fields` ordina in memoria con chiavi multiple; `groups` supporta più livelli con header/footer e totali per livello, mentre `group_by` equivale a un gruppo singolo.
+  - L'ordine personalizzato delle bande governa titolo/intestazione e riepilogo; le bande di flusso (`group_header`, `detail`, `group_footer`) mantengono la sequenza di paginazione, perché invertirle romperebbe il flusso dei record. Deviazione annotata.
+  - Report Designer convertito in `ReportDesignerWidget` (`QWidget`) e aperto nell'MDI; alias `ReportBuilderDialog` mantenuto per smoke, test e capture.
+  - Canvas a foglio unico: gutters con etichette inglesi (`Title`, `Page header`, …), griglia puntinata, delimitatori trascinabili, otto maniglie di resize, selezione singola, allineamento nella banda, zoom 50–200%, stato `L:R:` in pollici.
+  - Due toolbar: standard (nuovo, apri, salva, stampa, taglia/copia/incolla, undo/redo, inserisci campo, ordinamento, testo, totali, gruppo, bande) e formattazione (font, corpo, B/I/U, allineamenti, bordo, colore, zoom).
+  - Dialoghi funzionanti: `Insert Database Field` con `Browse Field Data…`, `Edit Text Field`, `Record Sort Order` (Add/Remove, direzione, riordino), `Insert Group`, `Total`.
+  - Inspector ad albero riusato da O4: gruppi Layout, Data, Format e proprietà del report quando non c'è selezione.
+  - I campi sono mostrati come `TABELLA->CAMPO`; `Insert Group` aggiunge anche un campo nel `group_header` per rendere visibile il valore.
+  - Preview: toolbar inferiore con primo/precedente/successivo/ultimo, `1 di N`, zoom, `Totale: N`, aggiorna, stampa, PDF, chiudi; pagina singola/continua; fit-width all'apertura; zoom ricordato per sessione.
+  - Aggiunti ai token `report_band` / `report_band_active`, così il canvas resta leggibile anche in tema Dark.
+  - I pulsanti icona non sono più `autoDefault` per evitare il fondo navy sui pulsanti disabilitati delle toolbar.
+- **Test:** `174 passed`; smoke headless OK con report designer a bande e anteprima; `tools/capture_ui.py` OK in Silver e Dark.
+- **Screenshot:** `07-report-designer.png` e `08-report-preview.png` aggiornati; `10-desktop-mdi.png` rigenerato.
+- **Problemi aperti:**
+  - Selezione singola: allineamento nella banda, non allineamento/distribuzione fra più controlli.
+  - L'ordine personalizzato delle bande non inverte le bande di flusso dei record.
+  - `Insert Group` non genera automaticamente un totale di gruppo, che si aggiunge con `Total`.
+  - Il canvas non visualizza immagini né anteprime reali dei dati.
+- **Prossimo passo:** Ondata 6 — Script, Menu, Project Builder; poi **Checkpoint B**.
+
 ## Checkpoint A — fine Ondata 3 (2026-11-22)
 
 - **Stato ondate:** O0, O1, O2, O3 completate; O4, O5, O6, O7 da iniziare.
@@ -186,4 +218,4 @@
 
 ## Ripresa
 
-**Ondata 4 completata.** Prossima azione: **Ondata 5 — Report Designer/Preview**. Non ripartire da O0–O4; fermarsi al **Checkpoint B** a fine O6.
+**Ondata 5 completata.** Prossima azione: **Ondata 6 — Script, Menu, Project Builder**, poi fermarsi al **Checkpoint B**. Non ripartire da O0–O5.
