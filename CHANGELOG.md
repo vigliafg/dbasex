@@ -3,7 +3,11 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
-## [Non rilasciato] — 0.5.0 in corso
+## [0.5.0] — 2026-11-22
+
+Release del **catalogo azioni script** in stile FileMaker: passi core categorizzati, Step Picker e
+runtime con cursore dati. Gli script restano JSON con forma testuale bidirezionale; nessun nuovo
+linguaggio e nessuna migrazione per i progetti esistenti.
 
 ### Aggiunto
 
@@ -33,8 +37,11 @@ e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
 ### Note di aggiornamento
 
-- Il catalogo è descrittivo: nessun cambio di comportamento del motore in questa ondata.
-- Gli script JSON e testuali esistenti restano validi.
+- Il catalogo dello Step Picker è descrittivo; i passi core sono eseguiti dal medesimo
+  `ScriptEngine`.
+- Gli script JSON e testuali esistenti restano validi; nessun campo obbligatorio nuovo.
+- Le scritture degli script sono immediate per passo: non c'è una transazione implicita.
+- Versione dell'applicazione e del pacchetto portata a `0.5.0`.
 
 ## [0.4.0] — 2026-11-22
 

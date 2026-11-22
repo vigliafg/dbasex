@@ -778,3 +778,49 @@
   smoke, screenshot Aurora/Dark, documentazione e `docs/qa-0.5.md`, versione `0.5.0` in
   `dbx/__init__.py`/`pyproject.toml`/README/test, CHANGELOG con data, tag `v0.5.0`, Checkpoint C.
   Non ripartire da O0–O6.
+
+### 2026-11-22 — Ondata 0.5.0 — O7 QA e release 0.5.0
+- **Stato:** in corso
+- **Branch/commit:** `main`, da `3cc7e4c`.
+- **Obiettivo:** collaudo finale della 0.5.0, documentazione QA, versione `0.5.0`, tag e Checkpoint C.
+- **File previsti:** `docs/qa-0.5.md` (nuovo), `dbx/__init__.py`, `pyproject.toml`,
+  `tests/test_ui_shell.py`, `README.md`, `CHANGELOG.md`, `docs/ui-parity.md`,
+  `docs/reference/dbx-ui/README.md`, `PLAN.md`, `DIARIO.md`.
+
+### 2026-11-22 — Ondata 0.5.0 — O7 chiusura e release 0.5.0
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O7 e tag `v0.5.0`.
+- **Obiettivo:** collaudo finale, documentazione QA e release 0.5.0.
+- **File toccati:** `docs/qa-0.5.md` (nuovo), `dbx/__init__.py`, `pyproject.toml`,
+  `tests/test_ui_shell.py`, `README.md`, `CHANGELOG.md`, `docs/ui-parity.md`,
+  `docs/reference/dbx-ui/README.md`, `PLAN.md`, `DIARIO.md`.
+- **Scelte:**
+  - Versione `0.5.0` in `dbx/__init__.py`, `pyproject.toml`, README e test di release.
+  - CHANGELOG con sezione `[0.5.0] — 2026-11-22`, riepilogo della release e note di aggiornamento
+    su script esistenti e scritture immediate.
+  - `docs/qa-0.5.md` con automazione, collaudo manuale, screenshot e limiti accettati.
+  - `docs/ui-parity.md` aggiornato a 0.5 e ai passi core; indice render aggiornato.
+  - README riallineato: introduzione 0.5, limiti noti 0.5 e riferimento a `docs/qa-0.5.md`.
+  - Nessuna migrazione: gli script JSON e testuali 0.4 restano validi.
+- **Test:** `345 passed`; smoke headless OK con `program editor` e `script core actions`;
+  `dbx --version` = 0.5.0; catture Aurora e Dark OK.
+- **Screenshot:** `11-script-editor.png` e `24-script-step-picker.png` rigenerati in Aurora e Dark.
+- **Problemi aperti:** nessuno bloccante; restano i limiti dichiarati (nessuna transazione implicita,
+  `NEW RECORD` con default, nessun debugger o script trigger).
+- **Prossimo passo:** release chiusa; eventuali estensioni future (import CSV, transazioni esplicite,
+  trigger) da pianificare in una nuova ondata.
+
+## Checkpoint C — fine O7 e release 0.5.0 (2026-11-22)
+
+- **Stato ondate:** 0.4.0 O0–O4 rilasciata come `0.4.0` (tag `v0.4.0`); 0.5.0 O5–O7 completata e
+  rilasciata come `0.5.0` (tag `v0.5.0`). Catalogo azioni, Step Picker, 17 passi core, cursore dati,
+  forma testuale, validazione e runtime form sono pronti.
+- **Test eseguiti:** `345 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK;
+  `python -m dbx --version` = `0.5.0`; `python tools/capture_ui.py` OK; `--theme dark` OK.
+- **Screenshot:** serie `01`–`24`; `11-script-editor.png` e `24-script-step-picker.png` aggiornati.
+- **Decisioni:** release 0.5.0 con scritture immediate per passo, nessuna transazione implicita,
+  `NEW RECORD` sui default e `ELSE IF` come zucchero sintattico.
+- **Decisioni rimandate all’utente:** import CSV, transazioni esplicite, script trigger,
+  debugger/passo-passo e motore di calcolo completo restano fuori dalla 0.5.
+- **RIPRESA:** nessuna ondata aperta. Per ripartire, leggere `PLAN.md` e `DIARIO.md`, controllare
+  `git status`/`git log` e concordare con l’utente la prossima release; non ripartire da O0–O7.

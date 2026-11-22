@@ -1,6 +1,6 @@
-# Stato di parità UI — dBX 0.4 vs dBASE 5.5
+# Stato di parità UI — dBX 0.5 vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (release 0.4.0)
+Aggiornato: 2026-11-22 (release 0.5.0)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
 `fuori scope` = escluso dalla 0.3 per decisione di piano; `mancante` = non implementato.
@@ -45,7 +45,9 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - `21-query-expert.png` e `22-report-expert.png` mostrano i nuovi esperti guidati.
 - `23-qbe-mode.png` mostra il Query Designer in modalità QBE, con example elements e righe OR.
 - `24-script-step-picker.png` mostra il catalogo azioni categorizzato del Program Editor.
-- Le checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md` e
-  `docs/qa-0.3.md`.
+- La 0.5.0 completa il Program Editor con 17 passi core, cursore dati e Step Picker; rende visibili
+  categoria e descrizione nell'Inspector e nel dialogo dei parametri.
+- Le checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md`,
+  `docs/qa-0.3.md`, `docs/qa-0.4.md` e `docs/qa-0.5.md`.
 - Il Label Designer è stato rimosso: la categoria Etichette è stata sostituita da **Schema**.
 - Query Designer, Query Results e le query come sorgente di form/report sono parte della release 0.3.0.

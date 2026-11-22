@@ -1,16 +1,18 @@
 # dBX — personal database in stile dBASE 5.5
 
-**Versione 0.4.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
+**Versione 0.5.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
 con motore **SQLite**, ispirato a *dBASE 5.5 for Windows* (Borland). Riunisce in un'unica applicazione
 i costruttori visivi che resero celebre dBASE: tabelle, form, report, script, menu e progetto.
 L'interfaccia usa il tema **Aurora**: zone colorate con gradienti, menu con icona e descrizione,
 focus visibile e superfici chiare al posto del grigio Win16.
 
-La 0.4 aggiunge gli **Esperti** per tabella, query, form e report e la modalità **QBE** del Query
-Designer, con example elements, intervalli, pattern e righe OR in sola lettura. Restano il
-**clone strutturale + chrome dBASE** concordato nel piano: desktop MDI, Navigator a categorie,
-Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande impilate,
-Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
+La 0.5 completa il percorso della 0.4 con il **catalogo delle azioni script**: categorie,
+descrizioni, Step Picker visuale e un set di passi core per controllo, tabelle, record, campi,
+query, report, dialoghi e segnale acustico. Restano gli **Esperti** per tabella, query, form e
+report e la modalità **QBE** del Query Designer. Il target resta il **clone strutturale + chrome
+dBASE** concordato nel piano: desktop MDI, Navigator a categorie, Table Structure a griglia unica,
+Form Designer a tre zone, Report Designer a bande impilate, Program Editor, Menu Designer e Project
+Editor. Non è un clone pixel-perfect di Win16.
 
 ## Funzioni
 
@@ -223,16 +225,16 @@ Le immagini Borland sono incluse con finalità di studio e confronto; i relativi
 titolari originali. dBX non ridistribuisce asset grafici Borland nell'applicazione.
 
 Lo stato finestra-per-finestra è in [`docs/ui-parity.md`](docs/ui-parity.md); le checklist di
-collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md` e `docs/qa-0.4.md`.
+collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md` e `docs/qa-0.5.md`.
 
-## Limiti noti della 0.4
+## Limiti noti della 0.5
 
 - Le query sono statiche: niente parametri interattivi, RIGHT/FULL JOIN o aggregazioni nel designer.
 - Il QBE è una vista di sola ricerca: niente Insert/Delete/Set/ChangeTo, crosstab o CALC; gli
   example elements richiedono che la tabella collegata sia già nella query.
 - Un OR su campi di tabelle in LEFT JOIN è permesso ma segnalato: può escludere righe senza
   corrispondenza.
-- I form su query sono in sola lettura nella 0.4; per modificare i dati usare un form su tabella.
+- I form su query sono in sola lettura nella 0.5; per modificare i dati usare un form su tabella.
 - Query Results non offre modifica inline: è una vista di controllo, non un Browse.
 - I report su query usano le colonne della query; i sottoreport e le query annidate non sono previsti.
 - Il Label Designer è stato rimosso e sostituito dal Database Designer ER.
