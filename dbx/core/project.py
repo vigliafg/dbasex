@@ -29,9 +29,10 @@ from .metadata import MetadataError, Table, slugify
 MANIFEST_NAME = "project.dbx.json"
 LOCK_NAME = ".dbx.lock"
 
-CATEGORIES = ("tables", "forms", "reports", "scripts", "menus")
+CATEGORIES = ("tables", "diagrams", "forms", "reports", "scripts", "menus")
 CATEGORY_LABELS = {
     "tables": "Tabelle",
+    "diagrams": "Schema",
     "forms": "Form",
     "reports": "Report",
     "scripts": "Script",
@@ -39,6 +40,7 @@ CATEGORY_LABELS = {
 }
 OBJECT_SUFFIX = {
     "tables": "table",
+    "diagrams": "diagram",
     "forms": "form",
     "reports": "report",
     "scripts": "script",

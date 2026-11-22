@@ -29,6 +29,7 @@ from .. import APP_NAME, __version__
 from ..config import add_recent, load_config, recent_projects, save_config
 from ..core.form_model import FormSpec
 from ..core.project import CATEGORY_LABELS, Project, ProjectError
+from ..designers.database_designer import DatabaseDesignerWidget
 from ..designers.form_builder import FormDesignerWidget
 from ..designers.form_expert import FormExpert
 from ..designers.menu_builder import MenuBuilderWidget
@@ -50,6 +51,7 @@ from .theme import apply_theme
 
 OBJECT_ICONS = {
     "tables": "tabella",
+    "diagrams": "tabella",
     "forms": "form",
     "reports": "report",
     "scripts": "script",
@@ -59,6 +61,7 @@ OBJECT_ICONS = {
 MODES = {
     "DataView": "Sfoglia",
     "TableBuilderDialog": "Struttura",
+    "DatabaseDesignerWidget": "Schema",
     "FormDesignerWidget": "Design",
     "FormBuilderDialog": "Design",
     "ReportBuilderDialog": "Design",
@@ -309,11 +312,13 @@ class MainWindow(QMainWindow):
         self.act_refresh.triggered.connect(self._refresh_navigator)
 
     def _build_object_actions(self) -> None:
+        self.act_diagram = icons.make_action("Database Designer…", "tabella", self)
         self.act_table = icons.make_action("Nuova tabella…", "tabella", self)
         self.act_form = icons.make_action("Nuovo form…", "form", self)
         self.act_report = icons.make_action("Nuovo report…", "report", self)
         self.act_script = icons.make_action("Nuovo script…", "script", self)
         self.act_menu = icons.make_action("Nuovo menu…", "menu", self)
+        self.act_diagram.triggered.connect(self.open_database_designer)
         self.act_table.triggered.connect(lambda: self.new_object("tables"))
         self.act_form.triggered.connect(lambda: self.new_object("forms"))
         self.act_report.triggered.connect(lambda: self.new_object("reports"))
@@ -403,6 +408,7 @@ class MainWindow(QMainWindow):
 
         objects_menu = DescriptiveMenu("&Oggetto", menu)
         menu.addMenu(objects_menu)
+        add(objects_menu, self.act_diagram, "Apri il diagramma ER e modifica lo schema del database")
         add(objects_menu, self.act_table, "Crea una nuova tabella con campi e relazioni")
         add(objects_menu, self.act_form, "Crea un form con il Form Expert o da zero")
         add(objects_menu, self.act_report, "Crea un report a bande con gruppi e totali")
@@ -585,6 +591,9 @@ class MainWindow(QMainWindow):
         if not self._require_project():
             return
         assert self.project is not None
+        if category == "diagrams":
+            self.open_database_designer()
+            return
         if category == "tables":
             dialog = TableBuilderDialog(self.project, None, self)
             dialog.accepted.connect(lambda: self._after_new_table(dialog))
@@ -881,6 +890,29 @@ class MainWindow(QMainWindow):
         )
         editor.windowTitleChanged.connect(sub.setWindowTitle)
 
+    def open_database_designer(self) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        key = "diagrams:schema"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        designer = DatabaseDesignerWidget(self.project, self)
+        designer.saved.connect(self._refresh_navigator)
+        designer.status_message.connect(
+            lambda text: self.statusBar().showMessage(text, 4000)
+        )
+        sub = self.editors.open(
+            key,
+            "Database Designer — Schema ER",
+            designer,
+            icon=icons.icon("tabella"),
+            size=QSize(1180, 760),
+        )
+        designer.windowTitleChanged.connect(sub.setWindowTitle)
+
     def open_table_structure(self, name: str) -> None:
         if not self._require_project():
             return
@@ -944,6 +976,9 @@ class MainWindow(QMainWindow):
             existing = self.editors.find(key)
             if existing is not None:
                 self.mdi.setActiveSubWindow(existing)
+                return
+            if category == "diagrams":
+                self.open_database_designer()
                 return
             if category == "forms":
                 self.open_form_designer(name)
@@ -1290,6 +1325,7 @@ class MainWindow(QMainWindow):
             getattr(self, "act_close", None),
             getattr(self, "act_settings", None),
             getattr(self, "act_project", None),
+            getattr(self, "act_diagram", None),
             getattr(self, "act_table", None),
             getattr(self, "act_form", None),
             getattr(self, "act_report", None),

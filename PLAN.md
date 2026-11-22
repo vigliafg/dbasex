@@ -730,8 +730,10 @@ Regole:
 | Program Editor | `dbx/designers/script_builder.py` | O6 |
 | Menu Designer | `dbx/designers/menu_builder.py` | O6 |
 | Project Editor/Builder | `dbx/designers/project_builder.py` | O6 |
-| Query Designer | — | 0.3 |
-| Label Designer | — | 0.3 |
+| Query Designer | `dbx/designers/query_builder.py` | 0.3 |
+| Query Results | `dbx/ui/query_results.py` | 0.3 |
+| Database Designer ER | `dbx/designers/database_designer.py` | 0.3 |
+| Label Designer | — | rimosso |
 
 ---
 
@@ -744,3 +746,37 @@ Regole:
 - `docs/ui-parity.md` (creato in O0)
 - `DIARIO.md`
 - `AGENTS.md`
+
+---
+
+## 14. Piano 0.3.0 — Database Designer ER e Query
+
+**Obiettivo:** sostituire il Label Designer con un **Database Designer visuale ER**, aggiungere il
+Query Designer e usare le query come sorgente dati di form e report.
+
+**Fuori scope:** Label Designer/Etichette, barcode/QR, RIGHT/FULL JOIN, parametri interattivi delle
+query, modifica del motore per la rinomina tabella, Interactive Tutor.
+
+| Ondata | Scope | Checkpoint |
+|---|---|---|
+| O0 — Preparazione | `[x]` completata (2026-11-22) | — |
+| O1 — Schema graph e layout ER | `[x]` completata (2026-11-22) | — |
+| O2 — Canvas Database Designer | `[x]` completata (2026-11-22) | — |
+| O3 — Editing schema | `[x]` completata (2026-11-22) | **A** |
+| O4 — Motore Query | `[ ]` da iniziare | — |
+| O5 — Query Designer | `[ ]` da iniziare | — |
+| O6 — Query Results e sorgente dati | `[ ]` da iniziare | **B** |
+| O7 — Release 0.3.0 | `[ ]` da iniziare | **C** |
+
+### Decisioni di 0.3.0
+
+- Il Navigator sostituisce `Etichette` con **Schema**; `Query` diventa attiva.
+- Il diagramma ER è persistito come artefatto `diagrams/schema.diagram.json` (posizioni, zoom, note).
+- Il grafo deriva sempre dai metadati reali (`Table`, `ForeignKey`); il diagramma non duplica lo schema.
+- Le modifiche a tabelle e relazioni usano `Project.apply_table` con backup e conferma.
+- La creazione/modifica avanzata dei campi riusa `TableBuilderDialog`; il canvas gestisce relazioni e
+  layout.
+- Le query sono SELECT parametrizzate, in sola lettura, con INNER/LEFT JOIN.
+- Form e report possono scegliere `table` o `query` come sorgente; i form su query sono read-only
+  nella 0.3.
+- Export diagramma in PNG e SVG.

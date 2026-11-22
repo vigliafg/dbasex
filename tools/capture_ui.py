@@ -29,6 +29,7 @@ from PyQt6.QtCore import QPoint  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QWidget  # noqa: E402
 
 from dbx.core.form_model import FormSpec  # noqa: E402
+from dbx.designers.database_designer import DatabaseDesignerWidget  # noqa: E402
 from dbx.designers.form_builder import FormDesignerWidget  # noqa: E402
 from dbx.designers.menu_builder import MenuBuilderWidget  # noqa: E402
 from dbx.designers.project_builder import ProjectEditorWidget  # noqa: E402
@@ -158,6 +159,12 @@ def run(theme: str = "aurora") -> int:
         project_editor = ProjectEditorWidget(project)
         widgets.append(project_editor)
         captured.append(_capture(app, project_editor, "13-project-editor.png", (900, 640)))
+
+        database_designer = DatabaseDesignerWidget(project)
+        widgets.append(database_designer)
+        captured.append(
+            _capture(app, database_designer, "15-database-designer.png", (1180, 760))
+        )
     finally:
         for widget in reversed(widgets):
             widget.close()

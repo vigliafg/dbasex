@@ -30,11 +30,11 @@ from .menu import DescriptiveMenu, add_entry
 NAV_CATEGORIES = [
     ("all", "Tutti", "elenco", True),
     ("tables", "Tabelle", "tabella", True),
+    ("diagrams", "Schema", "tabella", True),
     ("queries", "Query", "cerca", False),
     ("forms", "Form", "form", True),
     ("reports", "Report", "report", True),
     ("menus", "Menu", "menu", True),
-    ("labels", "Etichette", "stampa", False),
     ("scripts", "Programmi", "script", True),
     ("images", "Immagini", "immagine", False),
     ("sounds", "Suoni", "esegui", False),
@@ -50,6 +50,7 @@ SELECTABLE_CATEGORIES = ["all", *AVAILABLE_CATEGORIES]
 
 CATEGORY_ICONS = {
     "tables": "tabella",
+    "diagrams": "tabella",
     "forms": "form",
     "reports": "report",
     "scripts": "script",
@@ -59,6 +60,7 @@ CATEGORY_ICONS = {
 FILTERS = [
     ("Tutti i file (*.*)", "all"),
     ("Tabelle (*.table.json)", "tables"),
+    ("Schema (*.diagram.json)", "diagrams"),
     ("Form (*.form.json)", "forms"),
     ("Report (*.report.json)", "reports"),
     ("Programmi (*.script.json)", "scripts"),

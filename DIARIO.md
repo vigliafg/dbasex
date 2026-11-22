@@ -16,6 +16,14 @@
 | O6 — Script/Menu/Project | completata (2026-11-22) | B |
 | O7 — QA e release 0.2 | completata (2026-11-22) | C |
 | UI 0.2.1 — Tema Aurora e menu descrittivi | completata (2026-11-22) | — |
+| 0.3.0 — O0 Preparazione | completata (2026-11-22) | — |
+| 0.3.0 — O1 Schema graph | completata (2026-11-22) | — |
+| 0.3.0 — O2 Canvas ER | completata (2026-11-22) | — |
+| 0.3.0 — O3 Editing schema | completata (2026-11-22) | A |
+| 0.3.0 — O4 Motore Query | da iniziare | — |
+| 0.3.0 — O5 Query Designer | da iniziare | — |
+| 0.3.0 — O6 Query Results/sorgente | da iniziare | B |
+| 0.3.0 — O7 Release | da iniziare | C |
 
 ## Registro
 
@@ -361,3 +369,67 @@
     focus con il mouse.
 - **Test:** `209 passed`; smoke OK; cattura Aurora/Dark OK.
 - **Prossimo passo:** 0.3 — Query Designer, Query Results e Label Designer.
+
+### 2026-11-22 — Ondata 0.3.0 — avvio e preparazione
+- **Stato:** in corso
+- **Obiettivo:** preparare il piano 0.3.0 con Database Designer ER al posto del Label Designer,
+  Query Designer, Query Results e query come sorgente dati.
+- **Decisioni:**
+  - Label Designer ed Etichette rimossi; il Navigator sostituisce la categoria con **Schema**.
+  - Nuova categoria progetto `diagrams` con artefatto canonico `schema.diagram.json`.
+  - Il grafo ER deriva da `Table`/`ForeignKey`; il diagramma salva solo layout, zoom e note.
+  - Editing tabelle/campi riusa `TableBuilderDialog`; relazioni e layout sono gestiti dal canvas.
+  - Applicazione delle modifiche con `Project.apply_table`, backup e conferma.
+  - Query SELECT in sola lettura, INNER/LEFT JOIN; query come sorgente di form/report.
+  - Form su query in sola lettura nella 0.3.
+  - Export diagramma PNG/SVG.
+- **Prossimo passo:** O1 — schema graph e layout ER.
+
+
+### 2026-11-22 — Ondata 0.3.0 — O0 chiusura
+- **Stato:** completata
+- **Obiettivo:** preparazione del piano 0.3.0 e baseline.
+- **Scelte:** Label Designer rimosso; Navigator con categoria Schema; diagramma `schema` come artefatto
+  `diagrams`; grafo derivato dai metadati; query come sorgente dati in O6.
+- **Test:** baseline `224 passed` dopo le modifiche O1–O3.
+- **Prossimo passo:** O1.
+
+### 2026-11-22 — Ondata 0.3.0 — O1 schema graph e layout
+- **Stato:** completata
+- **File:** `dbx/core/schema_graph.py`, `dbx/core/diagram_model.py`, `dbx/core/project.py`,
+  `tests/test_schema_graph.py`, `tests/test_diagram_model.py`.
+- **Scelte:** nodi = `Table` reali; archi = `ForeignKey`; cardinalità 1:1 se le colonne figlio sono
+  PK o indice unico, altrimenti 1:N; layout salvato in `diagrams/schema.diagram.json` con posizioni,
+  zoom e note; auto-layout deterministico.
+- **Test:** 11 nuovi test sul grafo, cardinalità, validazione, roundtrip e layout.
+
+### 2026-11-22 — Ondata 0.3.0 — O2 Database Designer
+- **Stato:** completata
+- **File:** `dbx/designers/database_designer.py`, `dbx/ui/navigator.py`, `dbx/ui/main_window.py`,
+  `dbx/samples.py`, `tools/capture_ui.py`, test.
+- **Scelte:** card tabella con PK/FK, tipi e caption; archi ortogonali crow’s foot con cardinalità e
+  `ON DELETE`; pan, zoom 25–200%, griglia, auto-layout; export PNG/SVG; Inspector condiviso.
+  Categoria Navigator **Schema** al posto di Etichette; `Oggetto → Database Designer…`; diagramma
+  demo nel progetto Rubrica.
+- **Test:** apertura MDI, drag/zoom, layout persistente, export PNG/SVG, Navigator aggiornato.
+- **Screenshot:** `15-database-designer.png`.
+
+### 2026-11-22 — Ondata 0.3.0 — O3 editing schema
+- **Stato:** completata
+- **File:** `dbx/designers/database_designer.py`, test.
+- **Scelte:** nuova tabella e modifica campi via `TableBuilderDialog`; creazione relazione con dialog
+  figlio/padre e campi PK/unique; eliminazione relazione e tabella con conferma; applicazione tramite
+  `Project.apply_table`/`drop_table` con backup; blocco della cancellazione di tabelle referenziate.
+- **Test:** nuova relazione, eliminazione relazione, eliminazione tabella, schema persistente;
+  `224 passed`; smoke OK; cattura Aurora/Dark OK.
+- **Prossimo passo:** **Checkpoint A**, poi O4 — motore Query.
+
+## Checkpoint A — fine O3 (2026-11-22)
+
+- **Stato ondate:** O0, O1, O2, O3 completate; O4–O7 da iniziare.
+- **Test eseguiti:** `224 passed`; smoke headless OK; cattura screenshot OK.
+- **Screenshot:** `15-database-designer.png` aggiunto; `01`–`14` rigenerati in Aurora.
+- **Decisioni:** Label Designer rimosso; Database Designer ER è la sostituzione ufficiale.
+- **RIPRESA:** checkpoint A attivo. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
+  `git status`/`git log` e iniziare l'**Ondata 4 — motore Query**. Non ripartire da O0–O3; fermarsi
+  al **Checkpoint B** dopo O6.

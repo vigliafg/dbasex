@@ -21,6 +21,7 @@ def test_demo_is_valid_and_run_without_errors(demo):
     assert validate_project(demo) == []
     assert demo.names("forms") == ["form_clienti", "form_fatture"]
     assert demo.names("reports") == ["fatture_per_cliente"]
+    assert demo.names("diagrams") == ["schema"]
     assert demo.names("scripts") == ["riepilogo_fatture"]
     assert demo.settings["main_form"] == "form_clienti"
 
@@ -65,6 +66,7 @@ def test_build_creates_directory_and_zip(demo, tmp_path):
     assert "data/Rubrica.sqlite" in names
     assert any(name.endswith("clienti.table.json") for name in names)
     assert any(name.endswith("form_clienti.form.json") for name in names)
+    assert any(name.endswith("schema.diagram.json") for name in names)
 
 
 def test_build_refuses_invalid_project(demo, tmp_path):

@@ -15,9 +15,10 @@ Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di
 | Strumento | Cosa fa |
 |---|---|
 | **Desktop MDI** | Finestre documento dentro `QMdiArea`, menu `Progetto · Modifica · Visualizza · Oggetto · Procedure · Proprietà · Finestra · ?`, SpeedBar a icone raggruppate, barra di stato con coordinate, oggetto, record e modalità |
-| **Navigator** | Categorie con icona, `[Untitled]` in cima, filtro file, directory corrente, azioni contestuali; Query/Etichette/Immagini/Suoni/Cataloghi/Personalizzati visibili ma disabilitate |
+| **Navigator** | Categorie con icona, `[Untitled]` in cima, filtro file, directory corrente, azioni contestuali, categoria **Schema** per il Database Designer; Query/Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
 | **Command Window** | Riquadri `Command` / `Command Results` nell'MDI, cronologia con ↑/↓, comandi `HELP`, `TABELLE`, `USE`, `RECORD`, `CLEAR` ed espressioni |
 | **Browse / Vista Dati** | Griglia editabile, selettore di record, barra di navigazione, filtro, ordinamento, nuovo/elimina, export CSV, opzioni di editing e larghezze colonna persistenti |
+| **Database Designer ER** | Diagramma entità-relazione delle tabelle reali, card con campi e PK/FK, archi con cardinalità e `ON DELETE`, pan/zoom, auto-layout, export PNG/SVG, creazione relazioni e modifica schema con backup |
 | **Table Builder** | Struttura a griglia unica (`Field · Name · Type · Width · Decimal · Index`), tipi, obbligatorietà, default, didascalie, formati, regole, lookup, indici, relazioni, anteprima DDL, `Save As`, stampa, migrazioni con backup |
 | **Form Expert** | Wizard a cinque passi: assistito o vuoto, tabella, scelta campi, layout, font/colori/stile |
 | **Form Designer** | Palette `Controls` / `Field`, canvas con righelli e griglia 8 px, otto maniglie reali, selezione multipla, clipboard, undo/redo, allineamento, distribuzione, z-order, pagine a schede, Object Inspector ad albero, eventi e metodi |
@@ -100,6 +101,8 @@ Ogni ambiente segue lo schema generale di dBASE 5.5 (senza imitarne i colori Win
 - **Browse**: intestazione scura, colonna selettore, barra di navigazione, filtro, ordinamento.
 - **Table Structure**: nome e tipo in alto, metadati (campi, indici, relazioni, record), griglia
   numerata dei campi, schede Indici / Relazioni / Proprietà / Anteprima DDL.
+- **Database Designer**: diagramma ER con card delle tabelle, campi PK/FK, archi crow’s foot,
+  cardinalità, pan/zoom, auto-layout e export PNG/SVG; creazione relazioni e modifica schema dal canvas.
 - **Form Expert** e **Form Designer** a tre zone: palette `Controls` + `Field` a sinistra, anteprima
   live al centro con righelli e griglia di punti, Object Inspector a destra con schede
   Proprietà / Eventi / Metodi; stato `Object · Page · Top · Left · Height · Width`.
@@ -189,13 +192,16 @@ Properties Inspector, Crystal Reports), con indice in `README.md`, specifica di 
 Le immagini Borland sono incluse con finalità di studio e confronto; i relativi diritti restano dei
 titolari originali. dBX non ridistribuisce asset grafici Borland nell'applicazione.
 
-Lo stato finestra-per-finestra è in [`docs/ui-parity.md`](docs/ui-parity.md); la checklist di
-collaudo della release è in [`docs/qa-0.2.md`](docs/qa-0.2.md).
+Lo stato finestra-per-finestra è in [`docs/ui-parity.md`](docs/ui-parity.md); le checklist di
+collaudo sono in `docs/qa-0.2.md` e `docs/qa-0.3.md`.
 
-## Limiti noti della 0.2
+## Limiti noti della 0.3
 
-- **Query Designer**, **Query Results** e **Label Designer** sono fuori dalla 0.2 e previsti per la 0.3;
-  le categorie corrispondenti restano visibili ma disabilitate.
+- **Query Designer** e **Query Results** sono in arrivo con O4–O6; la categoria Query resta visibile
+  ma disabilitata finché non vengono completati.
+- Il Label Designer è stato rimosso e sostituito dal Database Designer ER.
+- Il Database Designer gestisce un solo diagramma `schema` per progetto e una relazione per volta nel
+  dialog; le chiavi composite si creano dal Table Builder.
 - Il Form Designer usa una palette in pannello ridimensionabile, non una finestra flottante come
   l'originale; il Report Designer ha selezione singola.
 - Gli eventi form sono un dispatcher di azioni singole, non un linguaggio di scripting; i corpi dei

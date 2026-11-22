@@ -19,7 +19,7 @@ def test_navigator_categories_and_list(qapp, demo_project) -> None:
     navigator.set_project(demo_project)
     try:
         assert set(navigator._buttons) == {key for key, *_ in NAV_CATEGORIES}
-        assert navigator.filter_combo.count() == 6
+        assert navigator.filter_combo.count() == 7
         assert navigator.directory_edit.text() == str(demo_project.path)
         assert navigator.list.count() > 0
         rows = _rows(navigator)
@@ -36,11 +36,11 @@ def test_navigator_categories_and_list(qapp, demo_project) -> None:
 def test_navigator_unavailable_categories_are_visible_but_disabled(qapp) -> None:
     navigator = Navigator()
     try:
-        for key in ("queries", "labels", "images", "sounds", "catalogs", "custom"):
+        for key in ("queries", "images", "sounds", "catalogs", "custom"):
             assert key in navigator._buttons
             assert not navigator._buttons[key].isEnabled()
             assert "non disponibile" in navigator._buttons[key].toolTip()
-        for key in ("all", "tables", "forms", "reports", "scripts", "menus"):
+        for key in ("all", "tables", "diagrams", "forms", "reports", "scripts", "menus"):
             assert navigator._buttons[key].isEnabled()
     finally:
         navigator.deleteLater()
@@ -54,7 +54,7 @@ def test_navigator_filter(qapp, demo_project) -> None:
         assert navigator.category == "tables"
         rows = _rows(navigator)
         assert all(
-            not value.startswith(("forms:", "reports:", "scripts:", "menus:"))
+            not value.startswith(("diagrams:", "forms:", "reports:", "scripts:", "menus:"))
             for value in rows
         )
         assert any(value.startswith("tables:") for value in rows)

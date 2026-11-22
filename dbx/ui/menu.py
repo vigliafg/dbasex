@@ -8,7 +8,7 @@ abilitazione, stato selezionato e scorciatoie continuano a funzionare.
 
 from __future__ import annotations
 
-from PyQt6.QtCore import QPoint, QPointF, QRect, QSize, Qt, QTimer
+from PyQt6.QtCore import QPoint, QPointF, QRect, QSize, Qt
 from PyQt6.QtGui import QColor, QFont, QFontMetrics, QIcon, QLinearGradient, QPainter, QPen
 from PyQt6.QtWidgets import QApplication, QMenu, QWidget, QWidgetAction
 
@@ -21,9 +21,17 @@ ENTRY_MIN_WIDTH = 440
 class DescriptiveMenu(QMenu):
     """Menu che porta il focus sulla prima voce descrittiva all'apertura."""
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
     def showEvent(self, event) -> None:  # noqa: N802 - API Qt
         super().showEvent(event)
-        QTimer.singleShot(0, self._focus_first)
+        for action in self.actions():
+            if isinstance(action, QWidgetAction):
+                widget = action.defaultWidget()
+                if isinstance(widget, MenuEntry):
+                    widget._sync()
+        self._focus_first()
 
     def _focus_first(self) -> None:
         if not self.isVisible():
@@ -70,10 +78,6 @@ class MenuEntry(QWidget):
         self.setFixedHeight(ENTRY_HEIGHT)
         self.setAccessibleName(action.text().replace("&", ""))
         self.setAccessibleDescription(self.description)
-        self._open_timer = QTimer(self)
-        self._open_timer.setSingleShot(True)
-        self._open_timer.timeout.connect(self._open_submenu)
-        action.changed.connect(self._sync)
         self._sync()
 
     # ------------------------------------------------------------------ stato
@@ -94,12 +98,9 @@ class MenuEntry(QWidget):
         if self.isEnabled():
             self.setFocus(Qt.FocusReason.MouseFocusReason)
         self.update()
-        if self.submenu is not None and self.isEnabled():
-            self._open_timer.start(300)
 
     def leaveEvent(self, _event) -> None:  # noqa: D102 - API Qt
         self._hover = False
-        self._open_timer.stop()
         self.update()
 
     # ------------------------------------------------------------------ mouse
@@ -274,7 +275,7 @@ class MenuEntry(QWidget):
 
 def add_entry(menu: QMenu, action, description: str) -> QWidgetAction:
     """Aggiunge una voce icona + descrizione al menu."""
-    entry = MenuEntry(action, description, menu)
+    entry = MenuEntry(action, description)
     wrapper = QWidgetAction(menu)
     wrapper.setDefaultWidget(entry)
     wrapper.setText(action.text())
@@ -294,7 +295,6 @@ def add_entry(menu: QMenu, action, description: str) -> QWidgetAction:
         except RuntimeError:
             return
 
-    action.changed.connect(sync_wrapper)
     menu.addAction(wrapper)
     return wrapper
 
@@ -302,7 +302,7 @@ def add_entry(menu: QMenu, action, description: str) -> QWidgetAction:
 def add_submenu_entry(parent: QMenu, submenu: QMenu, description: str) -> QWidgetAction:
     """Aggiunge un sottomenu come voce icona + descrizione con freccia."""
     action = submenu.menuAction()
-    entry = MenuEntry(action, description, parent, submenu=submenu)
+    entry = MenuEntry(action, description, submenu=submenu)
     wrapper = QWidgetAction(parent)
     wrapper.setDefaultWidget(entry)
     wrapper.setText(action.text())

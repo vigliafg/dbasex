@@ -5,7 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from .core import types as T
-from .core.form_model import FormControl, FormSpec
+from .core.diagram_model import DiagramSpec
+from .core.form_model import FormSpec
+from .core.schema_graph import SchemaGraph
 from .core.metadata import Field, ForeignKey, Index, Table, new_id
 from .core.project import Project
 from .runtime.report_engine import Control, ReportSpec
@@ -112,6 +114,8 @@ def create_demo_project(path: str | Path, name: str = "Rubrica") -> Project:
     clienti, fatture = _clienti(), _fatture()
     project.apply_table(clienti)
     project.apply_table(fatture)
+    graph = SchemaGraph.from_tables([clienti, fatture])
+    project.add_object("diagrams", DiagramSpec.from_graph(graph).to_dict())
 
     form_clienti = FormSpec.create(clienti, name="form_clienti")
     form_clienti.caption = "Clienti"

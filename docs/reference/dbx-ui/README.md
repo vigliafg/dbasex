@@ -26,6 +26,7 @@ l'unica fonte di verità per README, `docs/ui-parity.md` e `docs/qa-0.2.md`.
 | `12-menu-designer.png` | Menu Designer |
 | `13-project-editor.png` | Project Editor |
 | `14-menu-progetto.png` | Menu Progetto con icona + descrizione |
+| `15-database-designer.png` | Database Designer ER con tabelle e relazioni |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.
