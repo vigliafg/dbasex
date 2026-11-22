@@ -1,15 +1,15 @@
 # dBX — personal database in stile dBASE 5.5
 
-**Versione 0.5.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
+**Versione 0.6.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
 con motore **SQLite**, ispirato a *dBASE 5.5 for Windows* (Borland). Riunisce in un'unica applicazione
 i costruttori visivi che resero celebre dBASE: tabelle, form, report, script, menu e progetto.
 L'interfaccia usa il tema **Aurora**: zone colorate con gradienti, menu con icona e descrizione,
 focus visibile e superfici chiare al posto del grigio Win16.
 
-La 0.5 completa il percorso della 0.4 con il **catalogo delle azioni script**: categorie,
-descrizioni, Step Picker visuale e un set di passi core per controllo, tabelle, record, campi,
-query, report, dialoghi e segnale acustico. Restano gli **Esperti** per tabella, query, form e
-report e la modalità **QBE** del Query Designer. Il target resta il **clone strutturale + chrome
+La 0.6 porta le **operazioni quotidiane**: Find mode con più criteri, “Ometti” e ricerche salvate,
+sostituzione testuale, importazione CSV guidata con anteprima e mappatura, rinomina e duplicazione
+degli oggetti, compattazione e verifica del database. Restano gli **Esperti**, la modalità **QBE** e
+il catalogo delle **azioni script** della 0.4–0.5. Il target resta il **clone strutturale + chrome
 dBASE** concordato nel piano: desktop MDI, Navigator a categorie, Table Structure a griglia unica,
 Form Designer a tre zone, Report Designer a bande impilate, Program Editor, Menu Designer e Project
 Editor. Non è un clone pixel-perfect di Win16.
@@ -26,6 +26,9 @@ Editor. Non è un clone pixel-perfect di Win16.
 | **Query Designer** | Tabelle e campi con spunta, INNER/LEFT JOIN suggeriti dalle foreign key, filtri AND, ordinamento multiplo, anteprima SQL parametrizzata e risultato tipizzato in sola lettura; modalità **QBE** con query image, example elements, intervalli, pattern e righe OR |
 | **Esperti** | Procedure guidate per tabella (template, campi, indici, DDL), query (join dalle FK, campi, criteri, ordinamento), report (layout tabellare/colonnare/riepilogo, gruppi) e form; producono artefatti normali, poi modificabili nei designer |
 | **Query Results** | Griglia read-only con tipi e formati dBX, aggiornamento, conteggio righe/colonne ed export CSV |
+| **Trova / Sostituisci** | Find mode per tabella con criteri AND/OR, “Ometti”, operatori su testo, numeri e date, ricerche salvate; sostituzione sui record visibili con ambito e distinzione maiuscole |
+| **Importa CSV** | Wizard con rilevamento di codifica e delimitatore, anteprima, mappatura colonne → campi, conversione tipi e opzione di svuotamento con backup |
+| **Manutenzione** | Rinomina tabella con aggiornamento dei riferimenti, duplicazione di oggetti (tabelle con dati), compattazione con backup e verifica integrità SQLite |
 | **Query come sorgente** | Form generati da query in sola lettura (campi calcolati, niente inserimento/modifica) e report a bande su colonne di query con gruppi, totali, filtro e ordinamento |
 | **Table Builder** | Struttura a griglia unica (`Field · Name · Type · Width · Decimal · Index`), tipi, obbligatorietà, default, didascalie, formati, regole, lookup, indici, relazioni, anteprima DDL, `Save As`, stampa, migrazioni con backup |
 | **Form Expert** | Wizard a cinque passi: assistito o vuoto, tabella, scelta campi, layout, font/colori/stile |
@@ -151,6 +154,7 @@ la serie `01`–`24` copre le finestre, `14-menu-progetto.png` mostra il menu ic
 | Nuovo progetto / Apri progetto / Salva progetto | `Ctrl+N` / `Ctrl+O` / `Ctrl+S` |
 | Annulla / Ripeti | `Ctrl+Z` / `Ctrl+Y` (anche `Ctrl+Shift+Z`) |
 | Taglia / Copia / Incolla / Elimina | `Ctrl+X` / `Ctrl+C` / `Ctrl+V` / `Canc` |
+| Trova nella Browse / Sostituisci | `Ctrl+F` / `Ctrl+H` |
 | Aggiorna Navigator | `Ctrl+R` |
 | Zoom avanti / indietro / 100% | `Ctrl++` / `Ctrl+-` / `Ctrl+0` |
 | Chiudi finestra documento | `Ctrl+W` |
@@ -225,10 +229,13 @@ Le immagini Borland sono incluse con finalità di studio e confronto; i relativi
 titolari originali. dBX non ridistribuisce asset grafici Borland nell'applicazione.
 
 Lo stato finestra-per-finestra è in [`docs/ui-parity.md`](docs/ui-parity.md); le checklist di
-collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md` e `docs/qa-0.5.md`.
+collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md` e `docs/qa-0.6.md`.
 
-## Limiti noti della 0.5
+## Limiti noti della 0.6
 
+- La ricerca guidata lavora su una tabella alla volta; non esiste ancora una ricerca globale tra oggetti.
+- L'import CSV scrive in una tabella esistente: non crea una tabella nuova dalla struttura del file.
+- La rinomina di una tabella non aggiorna le finestre già aperte: vanno riaperte.
 - Le query sono statiche: niente parametri interattivi, RIGHT/FULL JOIN o aggregazioni nel designer.
 - Il QBE è una vista di sola ricerca: niente Insert/Delete/Set/ChangeTo, crosstab o CALC; gli
   example elements richiedono che la tabella collegata sia già nella query.

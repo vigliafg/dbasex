@@ -3,6 +3,35 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.6.0] — 2026-11-22
+
+Release delle **operazioni quotidiane**: ricerca guidata, sostituzione, importazione CSV e
+manutenzione degli oggetti. I progetti 0.5 si aprono senza migrazione.
+
+### Aggiunto
+
+- **Find mode** nella Browse: più criteri combinati in AND o OR, operatori su testo, numeri e date,
+  campo vuoto/non vuoto, opzione **Ometti** e conteggio dei record trovati. Scorciatoia `Ctrl+F`.
+- **Ricerche salvate** per tabella, con nome, caricamento ed eliminazione dal dialogo di ricerca.
+- **Sostituisci** (`Ctrl+H`): ambito su tutti i campi testuali o su un campo, distinzione
+  maiuscole/minuscole, parole intere e sostituzione sui soli record visibili.
+- **Importa CSV**: wizard con rilevamento di codifica e delimitatore, anteprima delle prime righe,
+  mappatura colonna → campo suggerita per nome/didascalia, conversione nei tipi dBX, rapporto della
+  riga in errore e svuotamento opzionale della tabella con backup.
+- **Rinomina tabella** dal Table Structure: aggiorna schema SQLite, foreign key, query, form, report,
+  script, diagrammi e ricerche salvate.
+- **Duplica oggetto** dal Navigator per tabelle, query, form, report, script, menu e diagrammi; per le
+  tabelle copia struttura e dati.
+- **Manutenzione database** nel menu Progetto: compattazione con backup e verifica integrità.
+- **QA visiva**: rendering `25-find-dialog.png` e `26-import-csv.png`.
+
+### Note di aggiornamento
+
+- Nessun campo nuovo obbligatorio nei JSON: i progetti 0.5 restano validi.
+- La ricerca guidata e la sostituzione lavorano sulla tabella aperta nella Browse.
+- L'import CSV richiede una tabella di destinazione già esistente.
+- La rinomina non aggiorna le finestre già aperte: riaprirle dopo l'operazione.
+
 ## [0.5.0] — 2026-11-22
 
 Release del **catalogo azioni script** in stile FileMaker: passi core categorizzati, Step Picker e

@@ -824,3 +824,86 @@
   debugger/passo-passo e motore di calcolo completo restano fuori dalla 0.5.
 - **RIPRESA:** nessuna ondata aperta. Per ripartire, leggere `PLAN.md` e `DIARIO.md`, controllare
   `git status`/`git log` e concordare con l’utente la prossima release; non ripartire da O0–O7.
+
+### 2026-11-22 — Ondata 0.6.0 — O1 Find mode, sostituzione e ricerche salvate
+- **Stato:** completata
+- **Branch/commit:** `main`; commit `554d506` (O1–O2).
+- **Obiettivo:** portare nella Browse la ricerca guidata in stile Find mode, la sostituzione e le
+  ricerche salvate.
+- **File toccati:** `dbx/core/search.py` (nuovo), `dbx/ui/find_dialog.py` (nuovo),
+  `dbx/ui/data_view.py`, `tests/test_search.py` (nuovo), `tests/test_ui_search.py` (nuovo),
+  `dbx/smoke.py`.
+- **Scelte:**
+  - `SearchRequest` con criteri combinati in AND (`all`) o OR (`any`); `omit` per criterio esclude
+    le righe corrispondenti.
+  - Operatori: contiene, uguale, diverso, inizia/finisce, maggiore/maggiore uguale, minore/minore
+    uguale, vuoto/non vuoto; i jolly `%` e `_` sono trattati come testo.
+  - Ricerche salvate in `project.settings["saved_finds"]` per tabella, con caricamento ed
+    eliminazione dal dialogo.
+  - Sostituzione con ambito su tutti i campi testuali o su un campo, distinzione maiuscole e parole
+    intere; agisce sui record visibili dopo filtro e ricerca.
+  - Scorciatoie `Ctrl+F` e `Ctrl+H`; la status bar riporta criteri e record trovati.
+- **Test:** `tests/test_search.py` e `tests/test_ui_search.py` verdi; smoke con `find mode`.
+- **Screenshot:** `25-find-dialog.png`.
+- **Problemi aperti:** nessuna ricerca globale tra oggetti; la sostituzione non tocca i record
+  esclusi dal filtro.
+- **Prossimo passo:** O2 — importazione CSV.
+
+### 2026-11-22 — Ondata 0.6.0 — O2 Import CSV guidato
+- **Stato:** completata
+- **Branch/commit:** `main`; commit `554d506` (O1–O2).
+- **Obiettivo:** importare CSV/TXT in una tabella esistente con anteprima e mappatura.
+- **File toccati:** `dbx/io/csv_io.py`, `dbx/ui/import_wizard.py` (nuovo),
+  `dbx/ui/data_view.py`, `dbx/ui/icons.py`, `tests/test_csv_import.py` (nuovo), `dbx/smoke.py`.
+- **Scelte:**
+  - Rilevamento automatico di delimitatore (`;`, `,`, tab, `|`) e codifica (`utf-8-sig`, fallback
+    `latin-1`), con selezione manuale nel wizard.
+  - Anteprima delle prime 50 righe e mappatura colonna → campo suggerita per nome o didascalia.
+  - Conversione nei tipi dBX tramite `Rowset`, quindi regole e indici restano applicati; l’errore
+    riporta la riga del file e l’intera importazione viene annullata.
+  - Svuotamento opzionale della tabella con conferma e backup; nessuna creazione automatica di
+    tabelle dal file.
+  - Le colonne possono essere ignorate; due colonne non possono scrivere lo stesso campo.
+- **Test:** `tests/test_csv_import.py` verde; smoke con `import csv: 2 record`.
+- **Screenshot:** `26-import-csv.png`.
+- **Problemi aperti:** l’import Excel/XML e la creazione tabella da CSV restano fuori scope.
+- **Prossimo passo:** O3 — manutenzione e release 0.6.0.
+
+### 2026-11-22 — Ondata 0.6.0 — O3 Manutenzione e release 0.6.0
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O3 e tag `v0.6.0`.
+- **Obiettivo:** rinomina, duplicazione, compattazione/verifica, QA e release 0.6.0.
+- **File toccati:** `dbx/core/refactor.py` (nuovo), `dbx/core/project.py`,
+  `dbx/designers/table_builder.py`, `dbx/ui/navigator.py`, `dbx/ui/main_window.py`,
+  `tests/test_refactor.py` (nuovo), `tests/test_ui_maintenance.py` (nuovo), `dbx/smoke.py`,
+  `tools/capture_ui.py`, documentazione.
+- **Scelte:**
+  - Rinomina tabella con `ALTER TABLE`, aggiornamento di FK, lookup, query (`base`, join, campi,
+    filtri `ref`, ordinamenti), form, report, script, diagrammi e ricerche salvate.
+  - Duplicazione dal Navigator: copia JSON per gli oggetti, struttura e dati per le tabelle, nomi
+    univoci con suffisso.
+  - Compattazione con backup e verifica `PRAGMA integrity_check` nel menu Progetto.
+  - Corretto `Project.apply_table` sul caso “nessuna modifica”: ora passa `previous_name` e non
+    segnala più un falso oggetto duplicato.
+  - Versione `0.6.0`, CHANGELOG datato, `docs/qa-0.6.md`, README, parity e indice render aggiornati.
+- **Test:** `374 passed`; smoke OK con `find mode`, `import csv` e `duplicazione oggetti +
+  integrità`; `dbx --version` = `0.6.0`; catture Aurora e Dark OK.
+- **Screenshot:** `25-find-dialog.png` e `26-import-csv.png`; serie `01`–`26` rigenerata.
+- **Problemi aperti:** le finestre già aperte non seguono la rinomina; compattazione e verifica sono
+  sincrone; restano le sette funzionalità delle ondate O4–O11.
+- **Prossimo passo:** Checkpoint D; dopo `continua`, O4 — campi calcolati e auto-enter.
+
+## Checkpoint D — fine O3 e release 0.6.0 (2026-11-22)
+
+- **Stato ondate:** 0.6.0 O1–O3 completata e rilasciata come `0.6.0` (tag `v0.6.0`). Find mode,
+  sostituzione, ricerche salvate, import CSV, rinomina/duplicazione e manutenzione sono pronti.
+- **Test eseguiti:** `374 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK;
+  `python -m dbx --version` = `0.6.0`; `python tools/capture_ui.py` OK; `--theme dark` OK.
+- **Screenshot:** serie `01`–`26`; nuovi `25-find-dialog.png` e `26-import-csv.png`.
+- **Decisioni:** ricerca per tabella (non globale), import in tabella esistente, rinomina con
+  aggiornamento dei riferimenti noti, duplicazione con copia dati per le tabelle.
+- **Decisioni rimandate all’utente:** import Excel/XML, creazione tabella da CSV, ricerca globale,
+  grafici interattivi e automazione avanzata.
+- **RIPRESA:** nessuna ondata aperta. Dopo `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare
+  `git status`/`git log` e iniziare l’**Ondata 4 — Campi calcolati e auto-enter**; non ripartire da
+  O1–O3.

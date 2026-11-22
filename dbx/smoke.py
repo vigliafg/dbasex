@@ -12,8 +12,12 @@ def run_smoke() -> int:
     os.environ.setdefault("DBX_CONFIG_DIR", str(Path(tempfile.mkdtemp(prefix="dbx-smoke-config-"))))
     from PyQt6.QtWidgets import QApplication
 
+    from .core import types as T
     from .core.form_model import FormSpec
+    from .core.metadata import Field, Table
     from .core.query_model import QuerySpec
+    from .core.refactor import check_database, duplicate_object
+    from .core.search import SearchCriterion, SearchRequest
     from .designers.database_designer import DatabaseDesignerWidget
     from .designers.form_builder import FormDesignerWidget
     from .designers.form_expert import FormExpert
@@ -61,7 +65,12 @@ def run_smoke() -> int:
 
     view = DataView(project, "clienti")
     assert view.rowset.count() == 3
-    checks.append("vista dati")
+    view._search = SearchRequest([SearchCriterion("citta", "contains", "Roma")])
+    view.refresh()
+    assert len(view.rowset) == 1
+    view.clear_find()
+    assert len(view.rowset) == 3
+    checks.append("vista dati + find mode")
 
     table_dialog = TableBuilderDialog(project, project.require_table("clienti"))
     assert "clienti" in table_dialog.current_table().name
@@ -192,6 +201,36 @@ def run_smoke() -> int:
     assert core.error is None, core.error
     checks.append("script core actions")
 
+    imported_table = Table(
+        name="import_smoke",
+        fields=[Field("codice", T.TEXT, required=True), Field("nome", T.TEXT)],
+    )
+    project.apply_table(imported_table)
+    csv_path = root / "import_smoke.csv"
+    csv_path.write_text("codice;nome\nC1;Alfa\nC2;Beta\n", encoding="utf-8")
+    from .io.csv_io import records_from_table
+    from .ui.import_wizard import ImportCsvDialog
+
+    importer = ImportCsvDialog(project, "import_smoke")
+    importer.path_edit.setText(str(csv_path))
+    importer.reload_preview()
+    imported = importer._insert_records(
+        records_from_table(
+            importer._rows,
+            imported_table,
+            importer.current_mapping(),
+            importer.header_box.isChecked(),
+        ),
+        False,
+    )
+    assert imported == 2
+    checks.append(f"import csv: {imported} record")
+
+    duplicate = duplicate_object(project, "queries", "clienti_attivi")
+    assert project.artifact("queries", duplicate) is not None
+    assert check_database(project) == "ok"
+    checks.append("duplicazione oggetti + integrità")
+
     target = build_project(project, root / "dist")
     assert target.exists()
     checks.append(f"build: {target.name}")
@@ -215,6 +254,7 @@ def run_smoke() -> int:
     script_editor,
     menu_designer,
     project_editor,
+    importer,
 )
     app.processEvents()
     return 0

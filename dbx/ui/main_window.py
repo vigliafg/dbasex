@@ -176,6 +176,7 @@ class MainWindow(QMainWindow):
         self.navigator.new_object.connect(self.new_object)
         self.navigator.new_expert.connect(self.new_expert_object)
         self.navigator.delete_object.connect(self.delete_object)
+        self.navigator.duplicate_object.connect(self.duplicate_project_object)
         self.navigator.structure_object.connect(self.open_table_structure)
         dock = QWidget()
         layout = QVBoxLayout(dock)
@@ -250,6 +251,8 @@ class MainWindow(QMainWindow):
             "Salva progetto", "salva", self, QKeySequence.StandardKey.Save
         )
         self.act_print = icons.make_action("Stampa…", "stampa", self)
+        self.act_compact = icons.make_action("Compatta database…", "impostazioni", self)
+        self.act_integrity = icons.make_action("Verifica integrità…", "ok", self)
         self.act_close = icons.make_action("Chiudi progetto", "chiudi", self)
         self.act_quit = icons.make_action(
             "Esci", "chiudi", self, QKeySequence.StandardKey.Quit
@@ -258,6 +261,8 @@ class MainWindow(QMainWindow):
         self.act_open.triggered.connect(self.open_project)
         self.act_save.triggered.connect(self.save_project)
         self.act_print.triggered.connect(self.print_current)
+        self.act_compact.triggered.connect(self.compact_database)
+        self.act_integrity.triggered.connect(self.verify_database)
         self.act_close.triggered.connect(self.close_project)
         self.act_quit.triggered.connect(self.close)
 
@@ -401,6 +406,12 @@ class MainWindow(QMainWindow):
         )
         file_menu.addSeparator()
         add(file_menu, self.act_project, "Apri il Project Editor del progetto corrente")
+        file_menu.addSeparator()
+        maintenance = DescriptiveMenu("Manutenzione database", file_menu)
+        maintenance.setIcon(icons.icon("impostazioni"))
+        file_menu.addMenu(maintenance)
+        add(maintenance, self.act_compact, "Crea un backup, compatta e ottimizza il database")
+        add(maintenance, self.act_integrity, "Verifica l'integrità del database SQLite")
         file_menu.addSeparator()
         add(file_menu, self.act_close, "Chiudi il progetto e tutte le sue finestre")
         add(file_menu, self.act_quit, "Esci da dBX")
@@ -1268,6 +1279,68 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(
                         self, "Script", "\n".join(result.log[-12:]) or "Eseguito"
                     )
+
+    def compact_database(self) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        from ..core.refactor import compact_database as compact_project_database
+
+        answer = QMessageBox.question(
+            self,
+            "Compatta database",
+            "Verrà creato un backup e il database sarà compattato. Continuare?",
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            backup = compact_project_database(self.project)
+        except Exception as exc:
+            QMessageBox.warning(self, "Compattazione non riuscita", str(exc))
+            return
+        self.statusBar().showMessage(
+            f"Database compattato · backup: {backup}" if backup else "Database compattato", 6000
+        )
+
+    def verify_database(self) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        from ..core.refactor import check_database
+
+        try:
+            result = check_database(self.project)
+        except Exception as exc:
+            QMessageBox.warning(self, "Verifica non riuscita", str(exc))
+            return
+        if result == "ok":
+            QMessageBox.information(self, "Integrità database", "Il database è integro.")
+        else:
+            QMessageBox.warning(self, "Integrità database", result)
+        self.statusBar().showMessage(f"Integrità database: {result}", 5000)
+
+    def duplicate_project_object(self, category: str, name: str) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        from ..core.refactor import duplicate_object
+
+        suggestion = f"{name}_copia" if category == "tables" else f"{name} copia"
+        new_name, ok = QInputDialog.getText(
+            self,
+            "Duplica oggetto",
+            f"Nuovo nome per {CATEGORY_LABELS.get(category, category).lower()} «{name}»:",
+            text=suggestion,
+        )
+        if not ok or not new_name.strip():
+            return
+        try:
+            created = duplicate_object(self.project, category, name, new_name.strip())
+        except (ProjectError, MetadataError) as exc:
+            QMessageBox.warning(self, "Duplicazione non riuscita", str(exc))
+            return
+        self._refresh_navigator()
+        self.statusBar().showMessage(f"Oggetto duplicato: {created}", 4000)
 
     def delete_object(self, category: str, name: str) -> None:
         if not self._require_project():

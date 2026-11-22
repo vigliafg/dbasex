@@ -366,7 +366,9 @@ class Project:
         except MetadataError as exc:
             raise ProjectError(str(exc)) from exc
         if not plan:
-            self.put_object("tables", table.to_dict())
+            self.put_object(
+                "tables", table.to_dict(), previous_name=old.name if old else None
+            )
             self.save()
             return plan
         if backup and (plan.destructive or plan.kind == "rebuild"):

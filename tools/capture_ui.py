@@ -30,6 +30,7 @@ from PyQt6.QtWidgets import QApplication, QWidget  # noqa: E402
 
 from dbx.core.form_model import FormSpec  # noqa: E402
 from dbx.core.query_model import QuerySpec  # noqa: E402
+from dbx.core.search import SearchCriterion, SearchRequest  # noqa: E402
 from dbx.designers.database_designer import DatabaseDesignerWidget  # noqa: E402
 from dbx.designers.form_builder import FormDesignerWidget  # noqa: E402
 from dbx.designers.menu_builder import MenuBuilderWidget  # noqa: E402
@@ -48,6 +49,8 @@ from dbx.samples import create_demo_project  # noqa: E402
 from dbx.ui.app import create_application  # noqa: E402
 from dbx.ui.command_window import CommandWindow  # noqa: E402
 from dbx.ui.data_view import DataView  # noqa: E402
+from dbx.ui.find_dialog import FindDialog  # noqa: E402
+from dbx.ui.import_wizard import ImportCsvDialog  # noqa: E402
 from dbx.ui.main_window import MainWindow  # noqa: E402
 from dbx.ui.navigator import Navigator  # noqa: E402
 from dbx.ui.query_results import QueryResultsWidget  # noqa: E402
@@ -229,6 +232,31 @@ def run(theme: str = "aurora") -> int:
         step_picker.select_action("export_csv")
         widgets.append(step_picker)
         captured.append(_capture(app, step_picker, "24-script-step-picker.png", (560, 500)))
+
+        find_dialog = FindDialog(
+            project,
+            project.require_table("clienti"),
+            SearchRequest(
+                [
+                    SearchCriterion("citta", "contains", "Milano"),
+                    SearchCriterion("attivo", "eq", "1"),
+                ]
+            ),
+        )
+        widgets.append(find_dialog)
+        captured.append(_capture(app, find_dialog, "25-find-dialog.png", (760, 480)))
+
+        csv_path = Path(tempfile.mkdtemp(prefix="dbx-capture-csv-")) / "clienti.csv"
+        csv_path.write_text(
+            "codice;nome;citta;email\nC010;Delta Srl;Milano;info@delta.it\n"
+            "C011;Epsilon Spa;Roma;info@epsilon.it\n",
+            encoding="utf-8",
+        )
+        import_dialog = ImportCsvDialog(project, "clienti")
+        import_dialog.path_edit.setText(str(csv_path))
+        import_dialog.reload_preview()
+        widgets.append(import_dialog)
+        captured.append(_capture(app, import_dialog, "26-import-csv.png", (900, 720)))
     finally:
         for widget in reversed(widgets):
             widget.close()

@@ -1,6 +1,6 @@
-# Stato di parità UI — dBX 0.5 vs dBASE 5.5
+# Stato di parità UI — dBX 0.6 vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (release 0.5.0)
+Aggiornato: 2026-11-22 (release 0.6.0)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
 `fuori scope` = escluso dalla 0.3 per decisione di piano; `mancante` = non implementato.
@@ -10,7 +10,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Desktop + menu + SpeedBar | `01`, `43` | `dbx/ui/main_window.py` | fatto | — |
 | Navigator | `01`, `42`, `43` | `dbx/ui/navigator.py` | fatto | Immagini/Suoni/Cataloghi/Personalizzati disabilitate |
 | Command Window | `01`, `02`, `04` | `dbx/ui/command_window.py` | fatto | Comandi limitati a HELP/TABELLE/USE/RECORD/CLEAR/espressioni |
-| Browse / Table | `07`, `11`, `18` | `dbx/ui/data_view.py` | fatto | — |
+| Browse / Table | `07`, `11`, `18` | `dbx/ui/data_view.py` | fatto | Find mode, sostituzione e import CSV (0.6) |
 | Table Structure | `08`, `09`, `13`, `14` | `dbx/designers/table_builder.py` | fatto | Rinomina tabella rimandata al motore; stampa minimale |
 | Table Expert | — | `dbx/designers/table_expert.py` | fatto (0.4/O1) | Template, campi e indici; crea e apre la tabella in Browse |
 | Query Expert | — | `dbx/designers/query_expert.py` | fatto (0.4/O2) | Join suggeriti dalle FK, campi, criteri AND e ordinamento |
@@ -45,9 +45,13 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - `21-query-expert.png` e `22-report-expert.png` mostrano i nuovi esperti guidati.
 - `23-qbe-mode.png` mostra il Query Designer in modalità QBE, con example elements e righe OR.
 - `24-script-step-picker.png` mostra il catalogo azioni categorizzato del Program Editor.
+- `25-find-dialog.png` mostra il Find mode con criteri AND/OR, “Ometti” e ricerche salvate.
+- `26-import-csv.png` mostra l'importazione CSV con anteprima e mappatura delle colonne.
+- La 0.6.0 aggiunge ricerca guidata, sostituzione, import CSV, rinomina/duplicazione oggetti e
+  manutenzione del database.
 - La 0.5.0 completa il Program Editor con 17 passi core, cursore dati e Step Picker; rende visibili
   categoria e descrizione nell'Inspector e nel dialogo dei parametri.
 - Le checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md`,
-  `docs/qa-0.3.md`, `docs/qa-0.4.md` e `docs/qa-0.5.md`.
+  `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md` e `docs/qa-0.6.md`.
 - Il Label Designer è stato rimosso: la categoria Etichette è stata sostituita da **Schema**.
 - Query Designer, Query Results e le query come sorgente di form/report sono parte della release 0.3.0.

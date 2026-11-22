@@ -1160,13 +1160,14 @@ class TableBuilderDialog(QDialog):
             QMessageBox.warning(self, "Struttura non valida", str(exc))
             return
         if self.original is not None and table.name.lower() != self.original.name.lower():
-            QMessageBox.warning(
-                self,
-                "Rinomina non supportata",
-                "La rinomina di una tabella esistente non è supportata da Table Structure.\n"
-                "Usa «Save As…» per creare una copia con il nuovo nome.",
-            )
-            return
+            from ..core.refactor import rename_table
+
+            try:
+                rename_table(self.project, self.original.name, table.name)
+            except (ProjectError, MetadataError) as exc:
+                QMessageBox.warning(self, "Rinomina non riuscita", str(exc))
+                return
+            self.original = self.project.require_table(table.name)
         old = self.project.table(table.name) if self.project else None
         try:
             plan = ddl.plan_migration(old, table)

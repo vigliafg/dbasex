@@ -930,3 +930,58 @@ Rendering nuovi: `20-table-expert.png`, `21-query-expert.png`, `22-report-expert
 | 0.5.0 — O5 Catalogo e Step Picker | `[x]` completata (2026-11-22) | — |
 | 0.5.0 — O6 Passi core e runtime | `[x]` completata (2026-11-22) | **B** |
 | 0.5.0 — O7 QA e release | `[x]` completata (2026-11-22) — versione 0.5.0 | **C** |
+
+## 16. Piano 0.6.0–0.9.0 — Operazioni quotidiane, calcolo e stampa
+
+**Origine:** analisi comparata di dBASE 5.5, Paradox for Windows e FileMaker Pro; selezione delle
+dieci mancanze più frequenti per un personal database desktop.
+
+### Decisioni
+
+| Decisione | Scelta |
+|---|---|
+| Rilascio | Quattro release: **0.6.0** ricerca/import/manutenzione, **0.7.0** calcolo/aggregazione, **0.8.0** etichette/grafici/viste, **0.9.0** automazione |
+| Ricerca | Find mode per tabella con criteri AND/OR, “Ometti” e ricerche salvate; nessuna ricerca globale tra oggetti in 0.6 |
+| Import | CSV/TXT in una tabella esistente, con anteprima, codifica, delimitatore e mappatura |
+| Rinomina | Aggiorna schema SQLite e riferimenti noti; le finestre aperte vanno riaperte |
+| Duplicazione | Copia JSON per gli oggetti; per le tabelle copia struttura e dati |
+| Manutenzione | Backup prima di compattare; verifica integrità tramite SQLite |
+| Calcoli | Campi calcolati e auto-enter solo dopo la 0.6, con migrazione additiva |
+| Aggregati | `GROUP BY` e funzioni di aggregazione nella query, sempre in sola lettura |
+| Stampa | Etichette e mail merge riusano report e query esistenti |
+| Grafici | Barre, linee e torta dai gruppi e dai totali del report |
+| Viste | Vista Lista del form e portale con ordinamento/filtro, senza cambiare il modello dati |
+| Automazione | Parametri di script, variabili globali e transazioni esplicite in 0.9 |
+| Fuori scope | Ricerca globale multi-oggetto, import Excel/XML, grafici interattivi, server e plugin |
+
+### Ondate
+
+| Ondata | Contenuto | Checkpoint |
+|---|---|---|
+| O1 — Find mode, sostituzione e ricerche salvate | Dialogo criteri, operatori, “Ometti”, salvataggio, `Ctrl+F`/`Ctrl+H` | — |
+| O2 — Import CSV guidato | Codifica, delimitatore, anteprima, mappatura, conversione, svuotamento con backup | — |
+| O3 — Manutenzione e release 0.6.0 | Rinomina, duplicazione, compatta/verifica, QA, screenshot, tag | **D** |
+| O4 — Campi calcolati e auto-enter | Calcoli persistenti, serie, date automatiche, migrazione additiva | — |
+| O5 — Aggregati nella query | `GROUP BY`, SUM/COUNT/AVG/MIN/MAX, campi calcolati di query | — |
+| O6 — Crosstab e release 0.7.0 | Pivot read-only, QA, screenshot, tag | **E** |
+| O7 — Etichette e mail merge | Label Designer leggero, selezione record, stampa multipla | — |
+| O8 — Grafici nel report | Barre, linee, torta da gruppi e totali; anteprima e PDF | — |
+| O9 — Vista Lista e portale | Form in lista, portale con ordinamento/filtro, release 0.8.0 | — |
+| O10 — Automazione | Parametri script, variabili globali, transazioni esplicite | — |
+| O11 — QA e release 0.9.0 | Test, screenshot, documentazione, tag | **F** |
+
+### Stato di avanzamento 0.6.0–0.9.0
+
+| Ondata | Stato | Checkpoint |
+|---|---|---|
+| 0.6.0 — O1 Find mode e ricerche salvate | `[x]` completata (2026-11-22) | — |
+| 0.6.0 — O2 Import CSV guidato | `[x]` completata (2026-11-22) | — |
+| 0.6.0 — O3 Manutenzione e release | `[x]` completata (2026-11-22) — versione 0.6.0 | **D** |
+| 0.7.0 — O4 Campi calcolati | `[ ]` da iniziare | — |
+| 0.7.0 — O5 Aggregati query | `[ ]` da iniziare | — |
+| 0.7.0 — O6 Crosstab e release | `[ ]` da iniziare | **E** |
+| 0.8.0 — O7 Etichette e mail merge | `[ ]` da iniziare | — |
+| 0.8.0 — O8 Grafici report | `[ ]` da iniziare | — |
+| 0.8.0 — O9 Vista Lista e release | `[ ]` da iniziare | — |
+| 0.9.0 — O10 Automazione | `[ ]` da iniziare | — |
+| 0.9.0 — O11 QA e release | `[ ]` da iniziare | **F** |

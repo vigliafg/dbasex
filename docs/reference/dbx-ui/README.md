@@ -1,6 +1,6 @@
 # Rendering dell'interfaccia dBX
 
-Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.5.0), generati con:
+Questa cartella contiene gli screenshot canonici dell'interfaccia **Aurora** (0.6.0), generati con:
 
 ```bash
 python tools/capture_ui.py
@@ -36,6 +36,8 @@ l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `do
 | `22-report-expert.png` | Report Expert con scelta del layout |
 | `23-qbe-mode.png` | Query Designer in modalità QBE con query image, example elements e OR |
 | `24-script-step-picker.png` | Step Picker con catalogo azioni categorizzato e descrizioni |
+| `25-find-dialog.png` | Find mode con criteri, “Ometti” e ricerche salvate |
+| `26-import-csv.png` | Importazione CSV con anteprima e mappatura colonne |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.

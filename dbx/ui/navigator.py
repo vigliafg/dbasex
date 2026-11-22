@@ -78,6 +78,7 @@ class Navigator(QWidget):
     new_object = pyqtSignal(str)
     new_expert = pyqtSignal(str)
     delete_object = pyqtSignal(str, str)
+    duplicate_object = pyqtSignal(str, str)
     structure_object = pyqtSignal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -335,6 +336,11 @@ class Navigator(QWidget):
                         lambda _checked=False, c=category, n=name: self.run_object.emit(c, n)
                     )
                     add_entry(menu, run, "Esegui l'oggetto con i dati reali")
+                duplicate = icons.make_action("Duplica…", "copia", menu)
+                duplicate.triggered.connect(
+                    lambda _checked=False, c=category, n=name: self.duplicate_object.emit(c, n)
+                )
+                add_entry(menu, duplicate, "Crea una copia dell'oggetto con un nuovo nome")
                 menu.addSeparator()
                 delete = icons.make_action("Elimina", "elimina", menu)
                 delete.triggered.connect(
