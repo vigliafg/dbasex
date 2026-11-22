@@ -36,6 +36,7 @@ from ..core.query_engine import QueryError, query_table
 from ..core.query_model import QuerySpec
 from ..core.project import Project
 from ..ui import design
+from .expert_common import ExpertWizard
 
 LAYOUTS = (
     ("labels_left", "Etichette a sinistra, campi in colonna"),
@@ -121,7 +122,7 @@ class LayoutPreview(QWidget):
                 painter.drawRect(QRect(inner.left() + 48, top, inner.width() - 48, 10))
 
 
-class FormExpert(QWizard):
+class FormExpert(ExpertWizard):
     """Wizard Form Expert in cinque passi."""
 
     def __init__(
@@ -130,19 +131,11 @@ class FormExpert(QWizard):
         parent: QWidget | None = None,
         suggested_name: str = "",
     ) -> None:
-        super().__init__(parent)
         self.project = project
         self.suggested_name = suggested_name
-        self.setWindowTitle("Form Expert")
+        super().__init__(parent, "Form Expert")
         self.resize(660, 500)
-        self.setWizardStyle(QWizard.WizardStyle.ModernStyle)
-        self.setButtonText(QWizard.WizardButton.NextButton, "Avanti >")
-        self.setButtonText(QWizard.WizardButton.BackButton, "< Indietro")
-        self.setButtonText(QWizard.WizardButton.FinishButton, "Crea form")
-        self.setButtonText(QWizard.WizardButton.CancelButton, "Annulla")
-        self.setButtonText(QWizard.WizardButton.HelpButton, "Aiuto")
-        self.setOption(QWizard.WizardOption.HaveHelpButton, True)
-        self.helpRequested.connect(self._show_help)
+        self.set_finish_text("Crea form")
         self._build_pages()
 
     # ------------------------------------------------------------------ pagine

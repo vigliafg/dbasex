@@ -35,7 +35,9 @@ from dbx.designers.form_builder import FormDesignerWidget  # noqa: E402
 from dbx.designers.menu_builder import MenuBuilderWidget  # noqa: E402
 from dbx.designers.project_builder import ProjectEditorWidget  # noqa: E402
 from dbx.designers.query_builder import QueryDesignerWidget  # noqa: E402
+from dbx.designers.query_expert import QueryExpert  # noqa: E402
 from dbx.designers.report_builder import ReportBuilderDialog  # noqa: E402
+from dbx.designers.report_expert import ReportExpert  # noqa: E402
 from dbx.designers.script_builder import ScriptBuilderWidget  # noqa: E402
 from dbx.designers.table_builder import TableBuilderDialog  # noqa: E402
 from dbx.designers.table_expert import TableExpert  # noqa: E402
@@ -203,6 +205,14 @@ def run(theme: str = "aurora") -> int:
         table_expert = TableExpert(project, suggested_name="clienti")
         widgets.append(table_expert)
         captured.append(_capture(app, table_expert, "20-table-expert.png", (780, 580)))
+
+        query_expert = QueryExpert(project, suggested_name="clienti_fatture")
+        widgets.append(query_expert)
+        captured.append(_capture(app, query_expert, "21-query-expert.png", (840, 640)))
+
+        report_expert = ReportExpert(project, suggested_name="report_clienti")
+        widgets.append(report_expert)
+        captured.append(_capture(app, report_expert, "22-report-expert.png", (840, 660)))
     finally:
         for widget in reversed(widgets):
             widget.close()

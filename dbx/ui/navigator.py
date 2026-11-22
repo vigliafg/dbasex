@@ -284,10 +284,18 @@ class Navigator(QWidget):
             action.triggered.connect(slot)
             add_entry(menu, action, description)
 
-        def add_table_expert() -> None:
-            action = icons.make_action("Tabella con esperto…", "esperto", menu)
-            action.triggered.connect(lambda _checked=False: self.new_expert.emit("tables"))
-            add_entry(menu, action, "Crea una tabella da un template guidato")
+        def add_expert(category: str) -> None:
+            labels = {
+                "tables": "Tabella con esperto…",
+                "queries": "Query con esperto…",
+                "forms": "Form con esperto…",
+                "reports": "Report con esperto…",
+            }
+            action = icons.make_action(labels.get(category, "Nuovo con esperto…"), "esperto", menu)
+            action.triggered.connect(
+                lambda _checked=False, c=category: self.new_expert.emit(c)
+            )
+            add_entry(menu, action, f"Crea {NAV_LABELS.get(category, category).lower()} con una procedura guidata")
 
         if item is None:
             for category in AVAILABLE_CATEGORIES:
@@ -297,7 +305,8 @@ class Navigator(QWidget):
                     lambda _checked=False, c=category: self.new_object.emit(c),
                 )
             menu.addSeparator()
-            add_table_expert()
+            for category in ("tables", "queries", "forms", "reports"):
+                add_expert(category)
         else:
             data = item.data(Qt.ItemDataRole.UserRole)
             if isinstance(data, str) and data.startswith("new:"):
@@ -307,8 +316,8 @@ class Navigator(QWidget):
                     f"Crea un nuovo oggetto in {NAV_LABELS.get(category, category)}",
                     lambda _checked=False, c=category: self.new_object.emit(c),
                 )
-                if category == "tables":
-                    add_table_expert()
+                if category in ("tables", "queries", "forms", "reports"):
+                    add_expert(category)
             elif isinstance(data, str) and ":" in data:
                 category, name = data.split(":", 1)
                 open_action = icons.make_action("Apri / modifica", "apri", menu)

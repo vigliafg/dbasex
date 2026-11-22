@@ -29,7 +29,7 @@ from .. import APP_NAME, __version__
 from ..config import add_recent, load_config, recent_projects, save_config
 from ..core.form_model import FormSpec
 from ..core.metadata import MetadataError
-from ..core.query_model import QuerySpec
+from ..core.query_model import QueryError, QuerySpec
 from ..core.project import CATEGORY_LABELS, Project, ProjectError
 from ..designers.database_designer import DatabaseDesignerWidget
 from ..designers.form_builder import FormDesignerWidget
@@ -37,7 +37,9 @@ from ..designers.query_builder import NewQueryDialog, QueryDesignerWidget
 from ..designers.form_expert import FormExpert
 from ..designers.menu_builder import MenuBuilderWidget
 from ..designers.project_builder import BuildError, ProjectEditorWidget, build_project, validate_project
+from ..designers.query_expert import QueryExpert
 from ..designers.report_builder import NewReportDialog, ReportDesignerWidget
+from ..designers.report_expert import ReportExpert
 from ..designers.script_builder import QtScriptUI, ScriptBuilderWidget
 from ..designers.table_builder import TableBuilderDialog
 from ..designers.table_expert import TableExpert
@@ -325,16 +327,22 @@ class MainWindow(QMainWindow):
         self.act_table = icons.make_action("Nuova tabella…", "tabella", self)
         self.act_table_expert = icons.make_action("Tabella con esperto…", "esperto", self)
         self.act_query = icons.make_action("Nuova query…", "cerca", self)
+        self.act_query_expert = icons.make_action("Query con esperto…", "esperto", self)
         self.act_form = icons.make_action("Nuovo form…", "form", self)
+        self.act_form_expert = icons.make_action("Form con esperto…", "esperto", self)
         self.act_report = icons.make_action("Nuovo report…", "report", self)
+        self.act_report_expert = icons.make_action("Report con esperto…", "esperto", self)
         self.act_script = icons.make_action("Nuovo script…", "script", self)
         self.act_menu = icons.make_action("Nuovo menu…", "menu", self)
         self.act_diagram.triggered.connect(self.open_database_designer)
         self.act_table.triggered.connect(lambda: self.new_object("tables"))
         self.act_table_expert.triggered.connect(self.new_table_expert)
         self.act_query.triggered.connect(lambda: self.new_object("queries"))
+        self.act_query_expert.triggered.connect(self.new_query_expert)
         self.act_form.triggered.connect(lambda: self.new_object("forms"))
+        self.act_form_expert.triggered.connect(self.new_form_wizard)
         self.act_report.triggered.connect(lambda: self.new_object("reports"))
+        self.act_report_expert.triggered.connect(self.new_report_expert)
         self.act_script.triggered.connect(lambda: self.new_object("scripts"))
         self.act_menu.triggered.connect(lambda: self.new_object("menus"))
 
@@ -426,6 +434,9 @@ class MainWindow(QMainWindow):
         expert_menu = DescriptiveMenu("Nuovo con esperto", objects_menu)
         objects_menu.addMenu(expert_menu)
         add(expert_menu, self.act_table_expert, "Crea una tabella da un template guidato")
+        add(expert_menu, self.act_query_expert, "Crea una query con campi, join e criteri guidati")
+        add(expert_menu, self.act_form_expert, "Crea un form con il Form Expert")
+        add(expert_menu, self.act_report_expert, "Crea un report con layout e gruppi guidati")
         add(objects_menu, self.act_query, "Crea una query con campi, join, filtri e ordinamento")
         add(objects_menu, self.act_form, "Crea un form con il Form Expert o da zero")
         add(objects_menu, self.act_report, "Crea un report a bande con gruppi e totali")
@@ -608,6 +619,15 @@ class MainWindow(QMainWindow):
         if category == "tables":
             self.new_table_expert()
             return
+        if category == "queries":
+            self.new_query_expert()
+            return
+        if category == "forms":
+            self.new_form_wizard()
+            return
+        if category == "reports":
+            self.new_report_expert()
+            return
         self.new_object(category)
 
     def new_object(self, category: str) -> None:
@@ -784,6 +804,74 @@ class MainWindow(QMainWindow):
         self._refresh_navigator()
         self.open_query_designer(spec.name)
         self.statusBar().showMessage(f"Query {spec.name} creata", 4000)
+
+    def new_query_expert(self) -> None:
+        """Crea una query con il Query Expert e la apre nel designer."""
+        if not self._require_project():
+            return
+        assert self.project is not None
+        tables = self.project.names("tables")
+        if not tables:
+            QMessageBox.information(self, "Query", "Crea prima una tabella.")
+            return
+        suggested = self._unique_name("queries", f"query_{tables[0]}")
+        wizard = QueryExpert(self.project, self, suggested_name=suggested)
+        if wizard.exec() != QDialog.DialogCode.Accepted:
+            return
+        try:
+            spec = wizard.build_spec()
+        except (QueryError, ValueError) as exc:
+            QMessageBox.warning(self, "Query non valida", str(exc))
+            return
+        if self.project.artifact("queries", spec.name) is not None:
+            answer = QMessageBox.question(
+                self,
+                "Query esistente",
+                f"La query «{spec.name}» esiste già. Sostituirla?",
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+        self.project.put_object("queries", spec.to_dict())
+        self.project.save()
+        self._refresh_navigator()
+        self.open_query_designer(spec.name)
+        self.statusBar().showMessage(f"Query {spec.name} creata", 4000)
+
+    def new_report_expert(self) -> None:
+        """Crea un report con il Report Expert e lo apre nel designer."""
+        if not self._require_project():
+            return
+        assert self.project is not None
+        sources = self.project.names("tables")
+        if not sources:
+            QMessageBox.information(self, "Report", "Crea prima una tabella o una query.")
+            return
+        suggested = self._unique_name("reports", f"report_{sources[0]}")
+        wizard = ReportExpert(self.project, self, suggested_name=suggested)
+        if wizard.exec() != QDialog.DialogCode.Accepted:
+            return
+        try:
+            spec = wizard.build_spec()
+        except (QueryError, ValueError) as exc:
+            QMessageBox.warning(self, "Report non valido", str(exc))
+            return
+        errors = spec.validate()
+        if errors:
+            QMessageBox.warning(self, "Report non valido", "\n".join(errors))
+            return
+        if self.project.artifact("reports", spec.name) is not None:
+            answer = QMessageBox.question(
+                self,
+                "Report esistente",
+                f"Il report «{spec.name}» esiste già. Sostituirlo?",
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+        self.project.put_object("reports", spec.to_dict())
+        self.project.save()
+        self._refresh_navigator()
+        self.open_report_designer(spec.name)
+        self.statusBar().showMessage(f"Report {spec.name} creato", 4000)
 
     def open_query_designer(self, name: str) -> None:
         if not self._require_project():
@@ -1483,8 +1571,11 @@ class MainWindow(QMainWindow):
             getattr(self, "act_table", None),
             getattr(self, "act_table_expert", None),
             getattr(self, "act_query", None),
+            getattr(self, "act_query_expert", None),
             getattr(self, "act_form", None),
+            getattr(self, "act_form_expert", None),
             getattr(self, "act_report", None),
+            getattr(self, "act_report_expert", None),
             getattr(self, "act_script", None),
             getattr(self, "act_menu", None),
             getattr(self, "act_run", None),

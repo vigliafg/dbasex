@@ -32,6 +32,8 @@ l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `do
 | `18-form-query.png` | Form runtime alimentato da una query, sola lettura |
 | `19-report-query.png` | Report a bande su query con gruppi e totali |
 | `20-table-expert.png` | Table Expert con template, campi e riepilogo |
+| `21-query-expert.png` | Query Expert con join suggeriti dalle foreign key |
+| `22-report-expert.png` | Report Expert con scelta del layout |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.

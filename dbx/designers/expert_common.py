@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from PyQt6.QtCore import QRegularExpression, pyqtSignal
+from PyQt6.QtCore import QRegularExpression, Qt, pyqtSignal
 from PyQt6.QtGui import QRegularExpressionValidator
 from PyQt6.QtWidgets import (
     QAbstractItemView,
@@ -19,6 +19,8 @@ from PyQt6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMessageBox,
     QSpinBox,
     QTableWidget,
@@ -275,9 +277,122 @@ class FieldEditor(QWidget):
         return edit.text().strip() if isinstance(edit, QLineEdit) else ""
 
 
+class FieldTransfer(QWidget):
+    """Doppia lista sorgente/destinazione per gli esperti di query e report."""
+
+    changed = pyqtSignal()
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._all: list[tuple[str, str]] = []
+        self._selected: list[str] = []
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+
+        left = QVBoxLayout()
+        left.addWidget(QLabel("Disponibili"))
+        self.available_list = QListWidget()
+        self.available_list.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.available_list.itemDoubleClicked.connect(lambda _item: self.add_selected())
+        left.addWidget(self.available_list, 1)
+        layout.addLayout(left, 1)
+
+        middle = QVBoxLayout()
+        middle.addStretch(1)
+        self.add_button = icons.make_button(
+            "Aggiungi >", "successivo", self.add_selected, self, "Sposta il campo nella selezione"
+        )
+        self.add_all_button = icons.make_button(
+            "Aggiungi tutti", "ultimo", self.add_all, self, "Sposta tutti i campi"
+        )
+        self.remove_button = icons.make_button(
+            "< Rimuovi", "precedente", self.remove_selected, self, "Riporta il campo tra i disponibili"
+        )
+        for button in (self.add_button, self.add_all_button, self.remove_button):
+            middle.addWidget(button)
+        middle.addStretch(1)
+        layout.addLayout(middle)
+
+        right = QVBoxLayout()
+        right.addWidget(QLabel("Selezionati"))
+        self.selected_list = QListWidget()
+        self.selected_list.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.selected_list.itemDoubleClicked.connect(lambda _item: self.remove_selected())
+        right.addWidget(self.selected_list, 1)
+        layout.addLayout(right, 1)
+
+    def set_available(
+        self,
+        items: Iterable[tuple[str, str]],
+        selected: Iterable[str] | None = None,
+    ) -> None:
+        previous = set(self._selected if selected is None else selected)
+        self._all = [(str(key), str(label)) for key, label in items]
+        available = {key for key, _label in self._all}
+        self._selected = [key for key in self._all_keys() if key in previous and key in available]
+        self._refresh()
+
+    def _all_keys(self) -> list[str]:
+        return [key for key, _label in self._all]
+
+    def set_selected(self, keys: Iterable[str]) -> None:
+        wanted = [str(key) for key in keys]
+        available = {key for key, _label in self._all}
+        self._selected = [key for key in wanted if key in available]
+        self._refresh()
+
+    def selected_keys(self) -> list[str]:
+        return list(self._selected)
+
+    def _refresh(self) -> None:
+        selected_set = set(self._selected)
+        labels = dict(self._all)
+        self.available_list.clear()
+        for key, label in self._all:
+            if key in selected_set:
+                continue
+            item = QListWidgetItem(label)
+            item.setData(Qt.ItemDataRole.UserRole, key)
+            self.available_list.addItem(item)
+        self.selected_list.clear()
+        for key in self._selected:
+            item = QListWidgetItem(labels.get(key, key))
+            item.setData(Qt.ItemDataRole.UserRole, key)
+            self.selected_list.addItem(item)
+
+    def add_selected(self) -> None:
+        keys = [
+            str(item.data(Qt.ItemDataRole.UserRole))
+            for item in self.available_list.selectedItems()
+        ]
+        if not keys:
+            return
+        self._selected.extend(key for key in keys if key not in self._selected)
+        self._refresh()
+        self.changed.emit()
+
+    def add_all(self) -> None:
+        self._selected = self._all_keys()
+        self._refresh()
+        self.changed.emit()
+
+    def remove_selected(self) -> None:
+        keys = {
+            str(item.data(Qt.ItemDataRole.UserRole))
+            for item in self.selected_list.selectedItems()
+        }
+        if not keys:
+            return
+        self._selected = [key for key in self._selected if key not in keys]
+        self._refresh()
+        self.changed.emit()
+
+
 __all__ = [
     "ExpertWizard",
     "FieldEditor",
+    "FieldTransfer",
     "decimals_from_fmt",
     "fmt_from_decimals",
 ]

@@ -19,9 +19,11 @@ def run_smoke() -> int:
     from .designers.form_expert import FormExpert
     from .designers.project_builder import build_project, validate_project
     from .designers.query_builder import QueryDesignerWidget
+    from .designers.query_expert import QueryExpert
     from .designers.menu_builder import MenuBuilderWidget
     from .designers.project_builder import ProjectEditorWidget
     from .designers.report_builder import ReportDesignerWidget
+    from .designers.report_expert import ReportExpert
     from .ui.query_results import QueryResultsWidget
     from .designers.script_builder import ScriptBuilderWidget
     from .designers.table_builder import TableBuilderDialog
@@ -73,6 +75,16 @@ def run_smoke() -> int:
     table_spec.validate()
     assert table_spec.fields and table_spec.field("email") is not None
     checks.append("table expert")
+
+    query_expert = QueryExpert(project, suggested_name="query_smoke")
+    query_spec = query_expert.build_spec()
+    assert query_spec.validate(project.tables()) == []
+    checks.append("query expert")
+
+    report_expert = ReportExpert(project, suggested_name="report_smoke")
+    report_spec = report_expert.build_spec()
+    assert report_spec.validate() == []
+    checks.append("report expert")
 
     form_artifact = project.artifact("forms", "form_clienti")
     form_designer = FormDesignerWidget(project, FormSpec.from_dict(form_artifact))

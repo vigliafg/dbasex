@@ -13,6 +13,8 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Browse / Table | `07`, `11`, `18` | `dbx/ui/data_view.py` | fatto | — |
 | Table Structure | `08`, `09`, `13`, `14` | `dbx/designers/table_builder.py` | fatto | Rinomina tabella rimandata al motore; stampa minimale |
 | Table Expert | — | `dbx/designers/table_expert.py` | fatto (0.4/O1) | Template, campi e indici; crea e apre la tabella in Browse |
+| Query Expert | — | `dbx/designers/query_expert.py` | fatto (0.4/O2) | Join suggeriti dalle FK, campi, criteri AND e ordinamento |
+| Report Expert | — | `dbx/designers/report_expert.py` | fatto (0.4/O2) | Layout tabellare/colonnare/riepilogo, gruppi, stile |
 | Database Designer ER | — | `dbx/designers/database_designer.py` | fatto (0.3/O3) | Diagramma, relazioni e modifiche schema; export PNG/SVG |
 | Query Designer | `15`, `19`, `20`, `21` | `dbx/designers/query_builder.py` | fatto (0.3/O5) | Query statiche, INNER/LEFT JOIN, filtri e ordinamento |
 | Query Results | `16`, `17` | `dbx/ui/query_results.py` | fatto (0.3/O6) | Griglia read-only, aggiornamento ed export CSV |
@@ -40,6 +42,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
   Designer, Query Designer e Query Results.
 - `18-form-query.png` e `19-report-query.png` mostrano form e report alimentati da query.
 - `20-table-expert.png` mostra il Table Expert introdotto nella 0.4.
+- `21-query-expert.png` e `22-report-expert.png` mostrano i nuovi esperti guidati.
 - Le checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md` e
   `docs/qa-0.3.md`.
 - Il Label Designer è stato rimosso: la categoria Etichette è stata sostituita da **Schema**.

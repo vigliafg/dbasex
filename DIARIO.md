@@ -599,3 +599,31 @@
 - **Screenshot:** `20-table-expert.png`.
 - **Problemi aperti:** nessuno; Query/Report Expert e QBE restano nelle ondate successive.
 - **Prossimo passo:** O2 — Query Expert e Report Expert.
+
+### 2026-11-22 — Ondata 0.4.0 — O2 Query Expert e Report Expert
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O2.
+- **Obiettivo:** completare gli esperti di query e report e allineare il Form Expert allo shell comune.
+- **File toccati:** `dbx/designers/query_expert.py` (nuovo), `dbx/designers/report_expert.py`
+  (nuovo), `dbx/designers/expert_common.py`, `dbx/designers/form_expert.py`,
+  `dbx/ui/main_window.py`, `dbx/ui/navigator.py`, `dbx/smoke.py`, `tools/capture_ui.py`,
+  `tests/test_query_expert.py` (nuovo), `tests/test_report_expert.py` (nuovo),
+  `docs/ui-parity.md`, `docs/reference/dbx-ui/README.md`, `PLAN.md`, `DIARIO.md`.
+- **Scelte:**
+  - `FieldTransfer` condiviso per la scelta dei campi; niente duplicazione tra query e report.
+  - Query Expert: tabella base, join suggeriti dalle FK in entrambe le direzioni, campi,
+    criteri AND, ordinamento, riepilogo SQL. Gli OR restano nella modalità QBE di O3.
+  - Report Expert: sorgente tabella o query, layout tabellare/colonnare/riepilogo, campi,
+    gruppo, ordinamento, orientamento/font e riepilogo.
+  - Il layout Riepilogo richiede un gruppo al momento di Avanti/Fine; il modello senza gruppo
+    resta un report tabellare valido.
+  - `ReportSpec` viene popolato con le bande esistenti (titolo, page header, dettaglio,
+    gruppo, page footer) e validate con lo stesso motore.
+  - Form Expert ora eredita da `ExpertWizard`; comportamento invariato.
+  - Voci `Nuovo con esperto` per tabella, query, form e report nel menu Oggetto e nel
+    menu contestuale del Navigator.
+- **Test:** `286 passed`; smoke headless OK con `query expert` e `report expert`; cattura
+  Aurora OK.
+- **Screenshot:** `21-query-expert.png`, `22-report-expert.png`.
+- **Problemi aperti:** nessuno bloccante; QBE e OR sono il scope di O3.
+- **Prossimo passo:** O3 — modello e motore QBE, poi Checkpoint A.
