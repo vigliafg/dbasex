@@ -37,7 +37,9 @@ BAND_LABELS = {
     "page_footer": "Page footer",
     "summary": "Summary",
 }
-CONTROL_KINDS = ("text", "field", "expr", "total", "line", "rect", "image")
+CONTROL_KINDS = ("text", "field", "expr", "total", "line", "rect", "image", "chart")
+CHART_TYPES = ("bar", "line", "pie")
+CHART_LABELS = {"bar": "Barre", "line": "Linee", "pie": "Torta"}
 DEFAULT_MARGINS = {"top": 15.0, "bottom": 15.0, "left": 15.0, "right": 15.0}
 
 
@@ -75,6 +77,8 @@ class Control:
     func: str = "sum"
     label: str = ""
     fmt: str = ""
+    chart_type: str = "bar"
+    category: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -98,6 +102,8 @@ class Control:
             "func": self.func,
             "label": self.label,
             "fmt": self.fmt,
+            "chart_type": self.chart_type,
+            "category": self.category,
         }
 
     @classmethod
@@ -123,6 +129,8 @@ class Control:
             func=str(data.get("func", "sum")),
             label=str(data.get("label", "")),
             fmt=str(data.get("fmt", "")),
+            chart_type=str(data.get("chart_type", "bar")),
+            category=str(data.get("category", "")),
         )
 
 
@@ -245,6 +253,19 @@ class ReportSpec:
                     errors.append(f"{band_name}: espressione mancante nel controllo {control.id}")
                 if control.kind == "total" and control.func not in ("sum", "count", "avg", "min", "max"):
                     errors.append(f"{band_name}: funzione totale non valida {control.func}")
+                if control.kind == "chart":
+                    if control.chart_type not in CHART_TYPES:
+                        errors.append(
+                            f"{band_name}: tipo di grafico sconosciuto {control.chart_type}"
+                        )
+                    if not control.expr and control.func != "count":
+                        errors.append(
+                            f"{band_name}: il grafico {control.id} non ha un'espressione"
+                        )
+                    if control.func not in ("sum", "count", "avg", "min", "max"):
+                        errors.append(
+                            f"{band_name}: funzione del grafico non valida {control.func}"
+                        )
         return errors
 
     def to_dict(self) -> dict[str, Any]:
@@ -356,6 +377,8 @@ class Op:
     border: bool = False
     fill: str = ""
     color: str = ""
+    chart_type: str = "bar"
+    series: list[tuple[str, float]] = dc_field(default_factory=list)
 
 
 @dataclass
@@ -570,6 +593,27 @@ class ReportRenderer:
         target = page or self._page
         if target is None:
             return
+        if control.kind == "chart":
+            target.ops.append(
+                Op(
+                    kind="chart",
+                    x=self.margin_left + control.x,
+                    y=band_top + control.y,
+                    w=control.w,
+                    h=control.h,
+                    text=control.text,
+                    font_size=control.font_size,
+                    font_name=control.font_name,
+                    bold=True,
+                    align=control.align,
+                    border=control.border,
+                    fill=control.fill,
+                    color=control.color,
+                    chart_type=control.chart_type,
+                    series=self._chart_series(control, group),
+                )
+            )
+            return
         text = self._control_text(control, record, group)
         lines = (
             wrap_text(text, control.w, control.font_size, control.bold)
@@ -656,6 +700,49 @@ class ReportRenderer:
         if group and control.id in self._group_acc.get(group, {}):
             return self._group_acc[group][control.id].value()
         return self._report_acc[control.id].value()
+
+    def _chart_series(
+        self, control: Control, group: tuple[str, ...] | None = None
+    ) -> list[tuple[str, float]]:
+        """Aggrega i record per categoria, per barre, linee o torta."""
+        rows = self._sorted_rows()
+        if group:
+            levels = len(group)
+            selected: list[dict[str, Any]] = []
+            for record in rows:
+                key = self._group_key(record)
+                if key is not None and key[:levels] == group:
+                    selected.append(record)
+            rows = selected
+        category = control.category.strip()
+        if not category and self._group_fields:
+            category = str(self._group_fields[0].get("field", ""))
+        buckets: dict[str, _Accumulator] = {}
+        order: list[str] = []
+        for record in rows:
+            if category:
+                raw = self._value_of(category, record)
+                label = _format_value(raw) or "(vuoto)"
+            else:
+                label = "Totale"
+            bucket = buckets.get(label)
+            if bucket is None:
+                bucket = _Accumulator(control.func)
+                buckets[label] = bucket
+                order.append(label)
+            if control.func == "count" and not control.expr:
+                bucket.add(1)
+            else:
+                bucket.add(self._value_of(control.expr, record))
+        series: list[tuple[str, float]] = []
+        for label in order:
+            value = buckets[label].value()
+            try:
+                number = float(value if value is not None else 0.0)
+            except (TypeError, ValueError):
+                number = 0.0
+            series.append((label, number))
+        return series
 
     def _control_text(self, control: Control, record: dict[str, Any] | None, group: tuple[str, ...] | None) -> str:
         if control.kind in ("line", "rect", "image"):

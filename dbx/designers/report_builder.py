@@ -38,6 +38,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from ..core import types as T
 from ..core.metadata import Table, new_id, slugify
 from ..core.query_engine import QueryError, query_table, run_query
 from ..core.query_model import QuerySpec
@@ -45,6 +46,8 @@ from ..core.project import Project, ProjectError
 from ..runtime.report_engine import (
     BAND_LABELS,
     BAND_NAMES,
+    CHART_LABELS,
+    CHART_TYPES,
     CONTROL_KINDS,
     Control,
     ReportSpec,
@@ -334,6 +337,33 @@ class ReportCanvas(QWidget):
             painter.drawRect(rect)
         elif control.kind == "image":
             painter.drawText(rect, int(Qt.AlignmentFlag.AlignCenter), "Immagine")
+        elif control.kind == "chart":
+            title = control.text or CHART_LABELS.get(control.chart_type, "Grafico")
+            painter.drawText(
+                rect.adjusted(2, 1, -2, 0),
+                int(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop),
+                title,
+            )
+            inner = rect.adjusted(4, 14, -4, -4)
+            if inner.width() > 4 and inner.height() > 4:
+                if control.chart_type == "pie":
+                    painter.setBrush(QColor(design.CHART_COLORS[0]))
+                    painter.drawEllipse(inner)
+                else:
+                    count = 4
+                    slot = inner.width() / count
+                    for index in range(count):
+                        height = inner.height() * (0.45 + 0.13 * index)
+                        painter.fillRect(
+                            QRectF(
+                                inner.left() + slot * index + slot * 0.18,
+                                inner.bottom() - height,
+                                slot * 0.64,
+                                height,
+                            ),
+                            QColor(design.CHART_COLORS[index]),
+                        )
+            painter.setBrush(Qt.BrushStyle.NoBrush)
         else:
             text = control.text or control.expr
             if control.kind == "field" and control.expr:
@@ -897,6 +927,115 @@ class TotalDialog(QDialog):
         return str(self.band_combo.currentData() or "summary"), control
 
 
+class ChartDialog(QDialog):
+    """``Insert Chart``: tipo, categoria, valore, funzione, titolo e banda."""
+
+    def __init__(
+        self,
+        project: Project,
+        table: Table | str,
+        groups: list[dict[str, str]] | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Chart")
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+        self.type_combo = QComboBox()
+        for key in CHART_TYPES:
+            self.type_combo.addItem(CHART_LABELS.get(key, key), key)
+        form.addRow("Tipo", self.type_combo)
+        self.title_edit = QLineEdit("Grafico")
+        form.addRow("Titolo", self.title_edit)
+        self.category_combo = QComboBox()
+        self.category_combo.addItem("(nessuno)", "")
+        model = _table_model(project, table)
+        name = _source_name(table)
+        for field in (model.fields if model else []):
+            self.category_combo.addItem(
+                field_display_name(name, field.name), field.name
+            )
+        default_group = (groups or [{}])[0].get("field", "") if groups else ""
+        if default_group:
+            index = self.category_combo.findData(default_group)
+            if index >= 0:
+                self.category_combo.setCurrentIndex(index)
+        form.addRow("Categoria", self.category_combo)
+        value_row = QHBoxLayout()
+        self.value_combo = QComboBox()
+        for field in (model.fields if model else []):
+            self.value_combo.addItem(
+                field_display_name(name, field.name), field.name
+            )
+        if model is not None:
+            numeric = next(
+                (field for field in model.fields if field.type == T.DECIMAL),
+                next(
+                    (
+                        field
+                        for field in model.fields
+                        if field.type == T.INTEGER
+                    ),
+                    None,
+                ),
+            )
+            if numeric is not None:
+                self.value_combo.setCurrentIndex(
+                    max(0, self.value_combo.findData(numeric.name))
+                )
+        self.func_combo = QComboBox()
+        for label, key in (
+            ("Somma", "sum"),
+            ("Conteggio", "count"),
+            ("Media", "avg"),
+            ("Minimo", "min"),
+            ("Massimo", "max"),
+        ):
+            self.func_combo.addItem(label, key)
+        value_row.addWidget(self.value_combo, 1)
+        value_row.addWidget(self.func_combo, 1)
+        form.addRow("Valore", value_row)
+        self.band_combo = QComboBox()
+        self.band_combo.addItem("Summary", "summary")
+        self.band_combo.addItem("Group footer (per gruppo)", "group_footer")
+        form.addRow("Banda", self.band_combo)
+        layout.addLayout(form)
+        hint = QLabel(
+            "Il grafico aggrega i record del report per la categoria scelta "
+            "(per default il primo gruppo) e usa la funzione indicata."
+        )
+        hint.setObjectName("nav_hint")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+        self.resize(540, 300)
+
+    def control(self) -> tuple[str, Control]:
+        field = str(self.value_combo.currentData() or "")
+        category = str(self.category_combo.currentData() or "")
+        control = Control(
+            id=new_id(),
+            kind="chart",
+            x=0.0,
+            y=0.0,
+            w=170.0,
+            h=45.0,
+            text=self.title_edit.text().strip(),
+            expr=f"[{field}]" if field else "",
+            category=f"[{category}]" if category else "",
+            func=str(self.func_combo.currentData() or "sum"),
+            chart_type=str(self.type_combo.currentData() or "bar"),
+            font_size=9,
+            border=True,
+        )
+        return str(self.band_combo.currentData() or "summary"), control
+
+
 class NewReportDialog(QDialog):
     """Sceglie nome, titolo e sorgente (tabella o query) del nuovo report."""
 
@@ -1145,6 +1284,12 @@ class ReportDesignerWidget(QWidget):
         )
         bar.addWidget(icons.make_button("Testo", "testo", self.edit_text, self, "Edit Text Field"))
         bar.addWidget(icons.make_button("Totali", "somma", self.insert_total, self, "Insert Total"))
+        bar.addWidget(
+            icons.make_button(
+                "Grafico", "report", self.insert_chart, self,
+                "Insert Chart: barre, linee o torta dai gruppi del report",
+            )
+        )
         bar.addWidget(icons.make_button("Gruppo", "tabella", self.insert_group, self, "Insert Group"))
         self.bands_button = QToolButton()
         self.bands_button.setText("Bande")
@@ -1477,6 +1622,17 @@ class ReportDesignerWidget(QWidget):
                             ],
                         ),
                         ("fmt", "Format", "text", control.fmt, None),
+                        (
+                            "chart_type",
+                            "Chart",
+                            "choice",
+                            control.chart_type,
+                            [
+                                (key, CHART_LABELS.get(key, key))
+                                for key in CHART_TYPES
+                            ],
+                        ),
+                        ("category", "Category", "text", control.category, None),
                     ],
                 ),
                 (
@@ -1648,6 +1804,19 @@ class ReportDesignerWidget(QWidget):
     def insert_total(self) -> None:
         self._apply_header()
         dialog = TotalDialog(self.project, self._field_table(), self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        band, control = dialog.control()
+        self._insert(band, control)
+
+    def insert_chart(self) -> None:
+        self._apply_header()
+        dialog = ChartDialog(
+            self.project,
+            self._field_table(),
+            self.spec.effective_groups(),
+            self,
+        )
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         band, control = dialog.control()

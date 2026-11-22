@@ -14,7 +14,14 @@ e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 - **Anteprima, stampa e PDF** delle etichette riusando la finestra Preview dei report.
 - **Navigator e menu Oggetto** espongono la categoria Etichette; il Project Editor e la validazione
   controllano sorgente e geometria dei fogli.
-- Rendering `31-label-designer.png` e `32-label-preview.png`.
+- **Grafici nel report** (O8): controllo `chart` con barre, linee e torta, aggregazione
+  SUM/COUNT/AVG/MIN/MAX per categoria (primo gruppo del report o campo esplicito), titolo e bordo.
+- **Report Designer**: dialogo Insert Chart con tipo, categoria, valore, funzione e banda; il
+  grafico nel group footer è limitato al gruppo corrente.
+- **Anteprima, stampa e PDF** disegnano i grafici con la palette di `design.py`, senza immagini
+  esterne né dipendenze nuove.
+- Rendering `31-label-designer.png`, `32-label-preview.png`, `33-report-chart.png` e
+  `34-report-chart-designer.png`.
 
 ## [0.7.0] — 2026-11-22
 

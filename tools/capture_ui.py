@@ -50,7 +50,7 @@ from dbx.designers.step_picker import StepPickerDialog  # noqa: E402
 from dbx.designers.table_builder import TableBuilderDialog  # noqa: E402
 from dbx.designers.table_expert import TableExpert  # noqa: E402
 from dbx.runtime.form_runtime import FormRuntime  # noqa: E402
-from dbx.runtime.report_engine import ReportSpec  # noqa: E402
+from dbx.runtime.report_engine import Control, ReportSpec  # noqa: E402
 from dbx.samples import create_demo_project  # noqa: E402
 from dbx.ui.app import create_application  # noqa: E402
 from dbx.ui.command_window import CommandWindow  # noqa: E402
@@ -359,6 +359,44 @@ def run(theme: str = "aurora") -> int:
         widgets.append(label_preview)
         captured.append(
             _capture(app, label_preview, "32-label-preview.png", (940, 800))
+        )
+
+        chart_spec = ReportSpec.from_dict(report_artifact)
+        chart_control = Control(
+            id="grafico_capture",
+            kind="chart",
+            x=0,
+            y=14,
+            w=170,
+            h=52,
+            text="Importo per cliente",
+            expr="[importo]",
+            category="[cliente]",
+            func="sum",
+            chart_type="bar",
+            font_size=10,
+            border=True,
+        )
+        chart_spec.bands["summary"].append(chart_control)
+        chart_preview = ReportPreviewDialog(project, chart_spec)
+        chart_preview._fitted = True
+        chart_preview.set_zoom(2.2)
+        widgets.append(chart_preview)
+        captured.append(
+            _capture(app, chart_preview, "33-report-chart.png", (940, 800))
+        )
+
+        chart_designer = ReportBuilderDialog(project, chart_spec)
+        chart_designer.canvas.set_zoom_factor(0.65)
+        chart_designer.canvas.load(chart_spec)
+        chart_designer.selected_id = chart_control.id
+        chart_designer.canvas.selected = chart_control.id
+        chart_designer.active_band = "summary"
+        chart_designer._show_control(chart_control)
+        chart_designer._refresh_status()
+        widgets.append(chart_designer)
+        captured.append(
+            _capture(app, chart_designer, "34-report-chart-designer.png", (1180, 800))
         )
     finally:
         for widget in reversed(widgets):

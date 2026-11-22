@@ -48,6 +48,16 @@ UI_FONT_FALLBACKS = ("Segoe UI", "Noto Sans", "DejaVu Sans", "sans-serif")
 REPORT_FONT = FontSpec("Times New Roman", 10.0)
 CODE_FONT = FontSpec("Courier New", 9.0)
 
+# Serie dei grafici: colori leggibili sia a schermo sia in stampa.
+CHART_COLORS = (
+    "#3b7ea8",
+    "#d97757",
+    "#6a994e",
+    "#c9a227",
+    "#7b6cb0",
+    "#4f9e94",
+)
+
 FONTS = {
     "ui": UI_FONT,
     "report": REPORT_FONT,

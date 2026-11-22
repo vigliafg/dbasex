@@ -1,6 +1,6 @@
 # Stato di parità UI — dBX 0.8 in corso vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (0.8.0 in corso, O7)
+Aggiornato: 2026-11-22 (0.8.0 in corso, O8)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
 `fuori scope` = escluso dalla 0.3 per decisione di piano; `mancante` = non implementato.
@@ -22,8 +22,8 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Form Designer | `27`–`31`, `40` | `dbx/designers/form_builder.py` | fatto | Palette in pannello ridimensionabile, non flottante; form query in sola lettura |
 | Properties Inspector | `30`, `31`, `40` | `dbx/ui/widgets.py` | fatto | Albero condiviso con il Report Designer |
 | Form Runtime | `40` | `dbx/runtime/form_runtime.py` | fatto | Dispatcher di azioni, non linguaggio di scripting; query read-only |
-| Report Designer | `32`–`38`, `41` | `dbx/designers/report_builder.py` | fatto | Selezione singola; ordine delle bande di flusso fisso; sorgente query |
-| Report Preview | `39` | `dbx/ui/report_preview.py` | fatto | Zoom persistente per sessione; pagina singola/continua; report su query |
+| Report Designer | `32`–`38`, `41`, `34` | `dbx/designers/report_builder.py` | fatto (grafici 0.8/O8) | Selezione singola; ordine delle bande di flusso fisso; grafici barre/linee/torta |
+| Report Preview | `39`, `33` | `dbx/ui/report_preview.py` | fatto (grafici 0.8/O8) | Zoom persistente per sessione; pagina singola/continua; report su query e grafici |
 | Program Editor | `31`, `32` | `dbx/designers/script_builder.py`, `dbx/designers/step_picker.py` | fatto (catalogo e passi 0.5/O5–O6) | Nessuna esecuzione passo-passo |
 | Menu Designer | — | `dbx/designers/menu_builder.py` | fatto | Anteprima come menu bar, non popup sempre aperto |
 | Project Editor/Builder | — | `dbx/designers/project_builder.py` | fatto | Build sincrono, senza barra di avanzamento |
@@ -56,6 +56,8 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - `30-crosstab.png` mostra la matrice incrociata con totali di riga, colonna e generale.
 - `31-label-designer.png` mostra il Label Designer con preset, griglia e modello; `32-label-preview.png`
   mostra il mail merge su foglio A4.
+- `33-report-chart.png` mostra un grafico a barre nella Preview; `34-report-chart-designer.png`
+  mostra il controllo grafico selezionato nel Report Designer.
 - La 0.6.0 aggiunge ricerca guidata, sostituzione, import CSV, rinomina/duplicazione oggetti e
   manutenzione del database.
 - La 0.5.0 completa il Program Editor con 17 passi core, cursore dati e Step Picker; rende visibili

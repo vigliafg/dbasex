@@ -39,7 +39,7 @@ def run_smoke() -> int:
     from .io.pdf_export import export_pdf, page_pixmap
     from .runtime.form_runtime import FormRuntime
     from .runtime.label_engine import render_labels_for_project
-    from .runtime.report_engine import ReportSpec
+    from .runtime.report_engine import Control, ReportSpec
     from .runtime.script_engine import ScriptEngine
     from .samples import create_demo_project
     from .ui.app import create_application
@@ -247,6 +247,32 @@ def run_smoke() -> int:
     pdf = export_pdf(pages, root / "report.pdf", "smoke")
     assert pdf.exists() and pdf.stat().st_size > 1000
     checks.append(f"report: {len(pages)} pagine, PDF {pdf.stat().st_size} byte")
+
+    chart_spec = ReportSpec.from_dict(report_artifact)
+    chart_spec.bands["summary"].append(
+        Control(
+            id="grafico_smoke",
+            kind="chart",
+            x=0,
+            y=20,
+            w=170,
+            h=45,
+            text="Importo per cliente",
+            expr="[importo]",
+            category="[cliente]",
+            func="sum",
+            chart_type="bar",
+            border=True,
+        )
+    )
+    chart_pages = build_pages(project, chart_spec)
+    chart_ops = [
+        op for page in chart_pages for op in page.ops if op.kind == "chart"
+    ]
+    assert chart_ops and chart_ops[0].series
+    chart_pdf = export_pdf(chart_pages, root / "chart.pdf", "grafico")
+    assert chart_pdf.exists() and chart_pdf.stat().st_size > 1000
+    checks.append("grafici report")
 
     engine = ScriptEngine(project)
     result = engine.run_named("riepilogo_fatture")

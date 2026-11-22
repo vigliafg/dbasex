@@ -44,6 +44,8 @@ l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `do
 | `30-crosstab.png` | Tabella incrociata read-only con totali |
 | `31-label-designer.png` | Label Designer con preset, griglia e modello |
 | `32-label-preview.png` | Mail merge su foglio di etichette A4 |
+| `33-report-chart.png` | Report Preview con grafico a barre per gruppo |
+| `34-report-chart-designer.png` | Controllo grafico selezionato nel Report Designer |
 
 Per il tema storico usare `--theme silver`; per il tema scuro `--theme dark`. Le immagini della 0.1
 nella cartella superiore sono state rimosse: restano nella storia git e sono superate da questa serie.

@@ -1056,3 +1056,35 @@
 - **Problemi aperti:** niente barcode/QR, niente etichette a più colonne di testo o immagini, niente
   selezione manuale dei record oltre a filtro/ordine, nessun designer a controlli liberi.
 - **Prossimo passo:** O8 — grafici nel report (barre, linee, torta da gruppi e totali).
+
+### 2026-11-22 — Ondata 0.8.0 — O8 Grafici nel report
+- **Stato:** completata
+- **Branch/commit:** `main`; commit O8.
+- **Obiettivo:** aggiungere barre, linee e torta ai report, alimentati dai gruppi e dai totali,
+  visibili in anteprima, stampa e PDF senza grafici interattivi né dipendenze nuove.
+- **File toccati:** `dbx/runtime/report_engine.py`, `dbx/io/pdf_export.py`, `dbx/ui/design.py`,
+  `dbx/designers/report_builder.py`, `dbx/smoke.py`, `tools/capture_ui.py`,
+  `tests/test_report_charts.py` (nuovo), `tests/test_ui_report_chart.py` (nuovo),
+  PLAN, CHANGELOG, README, parity, indice render, DIARIO.
+- **Scelte:**
+  - Nuovo tipo di controllo `chart` accanto a testo, campi, totali, linee, rettangoli e immagini:
+    `chart_type` (`bar`/`line`/`pie`), `category`, `expr`, `func` e `text` come titolo.
+  - Il motore aggrega i record per la categoria indicata (per default il primo gruppo del report)
+    con SUM/COUNT/AVG/MIN/MAX; COUNT può non avere espressione e conta i record.
+  - Il grafico in **group footer** considera solo i record del gruppo corrente; nel Summary usa
+    tutto il report. L'ordine delle categorie segue l'ordinamento del report.
+  - `Op` trasporta `chart_type` e `series` già calcolate: il modello è testabile senza Qt e il
+    disegno resta confinato in `pdf_export`.
+  - Barre, linee e torta sono disegnate con `QPainter` e la palette `design.CHART_COLORS`; nessuna
+    immagine temporanea, nessun file esterno, nessun grafico interattivo.
+  - Report Designer: pulsante **Grafico**, dialogo con tipo/titolo/categoria/valore/funzione/banda,
+    campi Chart e Category nell'Inspector e anteprima stilizzata sul foglio.
+  - La validazione rifiuta tipo sconosciuto, espressione mancante (tranne COUNT) e funzione non
+    valida; i report 0.7 restano validi perché i nuovi campi hanno default.
+- **Test:** `443 passed`; smoke OK con `grafici report` e PDF del grafico; test dedicati su
+  aggregazione per gruppo, torta, linee, COUNT, group footer, validazione, serializzazione, query,
+  dialogo, inserimento nel designer, Inspector e rendering della pagina.
+- **Screenshot:** `33-report-chart.png` e `34-report-chart-designer.png`; serie `01`–`34` rigenerata.
+- **Problemi aperti:** niente grafici interattivi, tooltip, assi con scale configurabili, legenda
+  completa oltre 8 voci o esportazione in immagine separata; il grafico non filtra da solo i record.
+- **Prossimo passo:** O9 — vista Lista del form, portale e release 0.8.0 (Checkpoint F).

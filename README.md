@@ -15,7 +15,7 @@ categorie, Table Structure a griglia unica, Form Designer a tre zone, Report Des
 impilate, Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
 
 La 0.8 (in corso) aggiunge **etichette e mail merge** con Label Designer leggero, preset A4/Avery,
-filtro/ordinamento e stampa o PDF su più fogli.
+filtro/ordinamento e stampa o PDF su più fogli, e **grafici** barre/linee/torta nei report.
 
 ## Funzioni
 
@@ -38,7 +38,7 @@ filtro/ordinamento e stampa o PDF su più fogli.
 | **Form Expert** | Wizard a cinque passi: assistito o vuoto, tabella, scelta campi, layout, font/colori/stile |
 | **Form Designer** | Palette `Controls` / `Field`, canvas con righelli e griglia 8 px, otto maniglie reali, selezione multipla, clipboard, undo/redo, allineamento, distribuzione, z-order, pagine a schede, Object Inspector ad albero, eventi e metodi |
 | **Form Runtime** | Navigazione, CRUD, stato del record, sottomaschere uno-a-molti, script, report e messaggi; form su query in sola lettura |
-| **Report Designer** | Foglio unico a bande impilate ed etichettate, delimitatori trascinabili, due toolbar, zoom 50–200%, dialoghi Insert Field / Edit Text / Record Sort Order / Insert Group / Total; sorgente tabella o query |
+| **Report Designer** | Foglio unico a bande impilate ed etichettate, delimitatori trascinabili, due toolbar, zoom 50–200%, dialoghi Insert Field / Edit Text / Record Sort Order / Insert Group / Total / Chart; grafici barre, linee e torta; sorgente tabella o query |
 | **Report Preview** | Pagina singola o continua, fit-width, zoom persistente, totale pagine, aggiornamento, stampa ed export PDF |
 | **Label Designer** | Etichette e mail merge con preset A4/Avery, griglia colonne/righe, margini, modello `[campo]`/`{{espressione}}`, filtro, ordine e salto etichette |
 | **Program Editor** | MiniScript con numeri di riga, evidenziazione di parole chiave/stringhe/commenti/numeri, vista azioni ↔ sorgente bidirezionale, catalogo categorizzato con Step Picker, inspector dei parametri e log di esecuzione; passi core per controllo, tabelle, record, campi, query, report e dialoghi |
