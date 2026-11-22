@@ -121,6 +121,7 @@ class DataView(QWidget):
     """Griglia dati in stile Browse di dBASE."""
 
     status_changed = pyqtSignal(str)
+    structure_requested = pyqtSignal(str)
 
     def __init__(self, project, table_name: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -244,13 +245,21 @@ class DataView(QWidget):
         return str(self.order_combo.currentData() or "")
 
     def edit_structure(self) -> None:
-        from ..designers.table_builder import TableBuilderDialog
+        self.structure_requested.emit(self.table.name)
 
-        dialog = TableBuilderDialog(self.project, self.table, self)
-        if dialog.exec() != QDialog.DialogCode.Accepted:
-            return
+    def reload_structure(self) -> None:
+        """Ricarica la tabella dopo una modifica applicata da Table Structure."""
+        previous_order = self._order_field()
         self.table = self.project.require_table(self.table.name)
         self.rowset = Rowset(self.project.db, self.table)
+        self.order_combo.blockSignals(True)
+        self.order_combo.clear()
+        self.order_combo.addItem("(naturale)", "")
+        for field in self.table.fields:
+            self.order_combo.addItem(field.display_name(), field.name)
+        position = self.order_combo.findData(previous_order)
+        self.order_combo.setCurrentIndex(max(0, position))
+        self.order_combo.blockSignals(False)
         self.refresh()
 
     def edit_options(self) -> None:

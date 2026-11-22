@@ -144,6 +144,7 @@ class MainWindow(QMainWindow):
         self.navigator.run_object.connect(self.run_object)
         self.navigator.new_object.connect(self.new_object)
         self.navigator.delete_object.connect(self.delete_object)
+        self.navigator.structure_object.connect(self.open_table_structure)
         dock = QWidget()
         layout = QVBoxLayout(dock)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -608,6 +609,37 @@ class MainWindow(QMainWindow):
             size=dialog.size(),
         )
 
+    def open_table_structure(self, name: str) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        key = f"structure:{name}"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.mdi.setActiveSubWindow(existing)
+            return
+        table = self.project.table(name)
+        if table is None:
+            QMessageBox.warning(self, "Struttura", f"Tabella inesistente: {name}")
+            return
+        dialog = TableBuilderDialog(self.project, table, self)
+        dialog.table_changed.connect(self._on_table_structure_changed)
+        dialog.table_created.connect(self._refresh_navigator)
+        dialog.accepted.connect(self._refresh_navigator)
+        self.editors.open_dialog(
+            key,
+            dialog,
+            icon=icons.icon("tabella"),
+            size=QSize(1040, 720),
+        )
+
+    def _on_table_structure_changed(self, name: str) -> None:
+        self._refresh_navigator()
+        for sub in self.editors.windows():
+            widget = editor_widget(sub.widget())
+            if isinstance(widget, DataView) and widget.table.name == name:
+                widget.reload_structure()
+
     def open_object(self, category: str, name: str) -> None:
         if not self._require_project():
             return
@@ -622,6 +654,7 @@ class MainWindow(QMainWindow):
                     return
                 view = DataView(self.project, name)
                 view.status_changed.connect(self.record_label.setText)
+                view.structure_requested.connect(self.open_table_structure)
                 self.record_label.setText(view.status.text())
                 self.editors.open(
                     key,

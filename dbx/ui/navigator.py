@@ -73,6 +73,7 @@ class Navigator(QWidget):
     run_object = pyqtSignal(str, str)
     new_object = pyqtSignal(str)
     delete_object = pyqtSignal(str, str)
+    structure_object = pyqtSignal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -272,6 +273,8 @@ class Navigator(QWidget):
             elif isinstance(data, str) and ":" in data:
                 category, name = data.split(":", 1)
                 menu.addAction("Apri / modifica", lambda: self.open_object.emit(category, name))
+                if category == "tables":
+                    menu.addAction("Struttura…", lambda: self.structure_object.emit(name))
                 if category in ("tables", "forms", "reports", "scripts"):
                     menu.addAction("Esegui", lambda: self.run_object.emit(category, name))
                 menu.addSeparator()

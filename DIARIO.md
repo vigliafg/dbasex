@@ -10,7 +10,7 @@
 | O0 — Baseline e design token | completata (2026-11-22) | — |
 | O1 — Shell/MDI/menu/tema | completata (2026-11-22) | — |
 | O2 — Navigator/Command/Browse | completata (2026-11-22) | — |
-| O3 — Table Structure | da iniziare | A |
+| O3 — Table Structure | completata (2026-11-22) | A |
 | O4 — Form Designer/Expert/Runtime | da iniziare | — |
 | O5 — Report Designer/Preview | da iniziare | — |
 | O6 — Script/Menu/Project | da iniziare | B |
@@ -110,10 +110,48 @@
   - La selezione della categoria non filtra fisicamente i file su disco: usa il catalogo del progetto.
 - **Prossimo passo:** Ondata 3 — Table Structure, poi **Checkpoint A**.
 
+### 2026-11-22 — Ondata 3 — avvio
+- **Stato:** in corso
+- **Obiettivo:** sostituire la struttura a schede con la finestra `Table Structure` a griglia unica, con metadati, toolbar e strumenti secondari.
+
+### 2026-11-22 — Ondata 3 — chiusura
+- **Stato:** completata
+- **Branch/commit:** `main` — commit dell'ondata
+- **Obiettivo:** griglia unica dei campi, header e metadati dBASE, toolbar, proprietà estese, integrazione con Browse e Navigator.
+- **File toccati:** `dbx/designers/table_builder.py` (riscritto), `dbx/ui/data_view.py`, `dbx/ui/navigator.py`, `dbx/ui/main_window.py`, `dbx/ui/design.py`, `tests/test_ui_table_builder.py` (nuovo), `tests/test_ui_designers.py`, `docs/ui-parity.md`.
+- **Scelte/deviazioni:**
+  - Griglia principale unica con le colonne `Field · Name · Type · Width · Decimal · Index`; niente più schede per i campi.
+  - `Decimal` è mappato sul formato `.Nf` del campo (il modello non ha un attributo separato) e resta retrocompatibile.
+  - Campi estesi (Obbligatorio, Default, Didascalia, Formato, Regola, Lookup) nel pannello inferiore `Proprietà`; la chiave primaria e gli altri attributi non esposti sono preservati per id.
+  - Indici e relazioni restano nelle griglie del pannello inferiore e alimentano la colonna `Index`; le modifiche alla colonna vengono applicate allo stesso modello, senza duplicarlo.
+  - Riordino con trascinamento della colonna `Field`; `Tab`/`Invio` sull'ultima cella crea il campo successivo; riga attiva alta il doppio.
+  - Metadati `Updated`, `Bytes Used`, `Records`, `Bytes Left` calcolati dal progetto (SQLite); `Bytes Left` è a livello di database.
+  - Toolbar: `Open Exclusive` interpretato come blocco/sblocco della modifica strutturale, `Add Records`, `Save As…`, `Stampa…`, più i pulsanti per gli strumenti secondari.
+  - Migrazione distruttiva con conferma e backup (il backup era già in `Project.apply_table`); `Save Table` come dialog dedicato.
+  - `Save As…` crea una copia con nuovo id tabella; la rinomina di una tabella esistente è rifiutata con messaggio esplicativo, perché il motore non ha ancora una primitiva di rename e non si vuole creare una tabella vuota al posto della vecchia.
+  - `Struttura…` della Browse ora emette un segnale e viene aperta in MDI; dopo l'applicazione la Browse ricarica schema, combo di ordinamento e griglia.
+- **Test:** `116 passed`; smoke headless OK; `tools/capture_ui.py` OK in Silver e Dark.
+- **Screenshot:** `04-table-structure.png` aggiornato; gli altri rendering rigenerati.
+- **Problemi aperti:**
+  - Rinomina tabella rimandata a una futura ondata (richiede supporto nel motore).
+  - La stampa della struttura è minimale (DDL testuale).
+  - `Add Records` genera valori segnaposto per i campi obbligatori senza default.
+- **Prossimo passo:** **Checkpoint A**, poi Ondata 4 — Form Designer, Inspector, Form Expert e runtime form.
+
+## Checkpoint A — fine Ondata 3 (2026-11-22)
+
+- **Stato ondate:** O0, O1, O2, O3 completate; O4, O5, O6, O7 da iniziare.
+- **Test eseguiti:** `116 passed`; `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` OK; `python tools/capture_ui.py` OK in Silver e Dark.
+- **Screenshot:** rendering `01`–`10` aggiornati; `04-table-structure.png` riflette la nuova finestra.
+- **Decisioni rimandate all'utente:** nessuna.
+- **RIPRESA:** checkpoint A attivo. Dopo il comando `continua`, leggere `PLAN.md` e `DIARIO.md`, controllare `git status`/`git log` e iniziare l'**Ondata 4 — Form Designer, Inspector, Form Expert e runtime form**, senza ripartire da O1–O3. Non superare O6 senza il Checkpoint B.
+
 ## Checkpoint
 
-Nessun checkpoint raggiunto.
+- **A** — raggiunto il 2026-11-22 (fine O3).
+- **B** — previsto a fine O6.
+- **C** — previsto a fine O7 (release 0.2).
 
 ## Ripresa
 
-Nessun checkpoint attivo. Prossima azione: **Ondata 3 — Table Structure**. Al termine fermarsi per il **Checkpoint A**.
+**Checkpoint A attivo.** Dopo `continua`: Ondata 4 — Form Designer, Inspector, Form Expert e runtime form. Non ripartire da O0–O3; non superare O6 senza Checkpoint B.

@@ -264,6 +264,8 @@ QLabel#nav_header, QLabel#browse_header, QLabel#pane_title {
 }
 QLabel#nav_hint { color: $disabled; padding: 2px; }
 QFrame#command_pane, QFrame#results_pane { border: 1px solid $panel_shadow; }
+QFrame#table_meta { background: $window_bg; border: 1px solid $panel_shadow; }
+QLabel#table_type { font-weight: 600; }
 QLabel#command_status[state="error"] { color: $error; }
 QTabWidget::pane { border: 1px solid $tab_border; background: $tab_pane_bg; }
 QTabBar::tab {

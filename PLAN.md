@@ -700,7 +700,7 @@ Regole:
 | O0 — Baseline e design token | `[x]` completata (2026-11-22) | — |
 | O1 — Shell/MDI/menu/tema | `[x]` completata (2026-11-22) | — |
 | O2 — Navigator/Command/Browse | `[x]` completata (2026-11-22) | — |
-| O3 — Table Structure | `[ ]` da iniziare | **A** |
+| O3 — Table Structure | `[x]` completata (2026-11-22) | **A** |
 | O4 — Form Designer/Expert/Runtime | `[ ]` da iniziare | — |
 | O5 — Report Designer/Preview | `[ ]` da iniziare | — |
 | O6 — Script/Menu/Project | `[ ]` da iniziare | **B** |
