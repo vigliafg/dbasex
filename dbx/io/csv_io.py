@@ -1,4 +1,4 @@
-"""Import/export CSV per tabelle dBX (C6)."""
+"""Import/export CSV per tabelle dBX (C6, 0.6)."""
 
 from __future__ import annotations
 
@@ -13,6 +13,78 @@ from ..core.metadata import Table
 
 class CsvError(RuntimeError):
     """Errore di import/export CSV."""
+
+
+ENCODINGS = {
+    "auto": "Rilevamento automatico",
+    "utf-8-sig": "UTF-8 (con BOM)",
+    "utf-8": "UTF-8",
+    "latin-1": "Windows-1252 / Latin-1",
+}
+
+DELIMITERS = {
+    "auto": "Rilevamento automatico",
+    ";": "Punto e virgola (;)",
+    ",": "Virgola (,)",
+    "\t": "Tabulazione",
+    "|": "Barra verticale (|)",
+}
+
+
+def detect_delimiter(line: str) -> str:
+    """Sceglie il delimitatore più probabile dalla prima riga utile."""
+    counts = {candidate: line.count(candidate) for candidate in (";", ",", "\t", "|")}
+    best = max(counts, key=lambda key: counts[key])
+    return best if counts[best] else ","
+
+
+def decode_csv(path: str | Path, encoding: str = "auto") -> tuple[str, str]:
+    """Legge il file e restituisce testo e codifica effettivamente usata."""
+    target = Path(path)
+    candidates = ["utf-8-sig"] if encoding in ("auto", "") else [encoding]
+    if encoding in ("auto", ""):
+        candidates.append("latin-1")
+    last_error: Exception | None = None
+    for candidate in candidates:
+        try:
+            return target.read_text(encoding=candidate), candidate
+        except UnicodeDecodeError as exc:
+            last_error = exc
+        except OSError as exc:
+            raise CsvError(f"Lettura CSV non riuscita: {exc}") from exc
+    raise CsvError(f"Codifica non riconosciuta: {last_error}")
+
+
+def read_table(
+    path: str | Path,
+    delimiter: str | None = None,
+    encoding: str = "auto",
+) -> tuple[str, str, list[list[str]]]:
+    """Legge tutte le righe grezze; restituisce delimitatore, codifica e righe."""
+    try:
+        text, used_encoding = decode_csv(path, encoding)
+    except OSError as exc:
+        raise CsvError(f"Lettura CSV non riuscita: {exc}") from exc
+    if not text.strip():
+        raise CsvError("Il file CSV è vuoto")
+    first_line = text.splitlines()[0] if text.splitlines() else ""
+    used_delimiter = detect_delimiter(first_line) if delimiter in (None, "", "auto") else delimiter
+    try:
+        rows = list(csv.reader(text.splitlines(), delimiter=used_delimiter))
+    except csv.Error as exc:
+        raise CsvError(f"CSV non valido: {exc}") from exc
+    return used_delimiter, used_encoding, rows
+
+
+def read_csv(
+    path: str | Path,
+    delimiter: str | None = None,
+    encoding: str = "auto",
+) -> tuple[list[str], list[list[str]]]:
+    _delimiter, _encoding, rows = read_table(path, delimiter, encoding)
+    if not rows:
+        raise CsvError("Il file CSV è vuoto")
+    return rows[0], rows[1:]
 
 
 def export_rows(
@@ -61,19 +133,13 @@ def export_rowset(rowset, path: str | Path, include_id: bool = False) -> Path:
     )
 
 
-def read_csv(path: str | Path, delimiter: str | None = None) -> tuple[list[str], list[list[str]]]:
-    target = Path(path)
+def _convert_cell(text: str, field, line: int, column: str) -> Any:
+    if text == "":
+        return None
     try:
-        text = target.read_text(encoding="utf-8-sig")
-    except OSError as exc:
-        raise CsvError(f"Lettura CSV non riuscita: {exc}") from exc
-    if delimiter is None:
-        first_line = text.splitlines()[0] if text.splitlines() else ""
-        delimiter = ";" if first_line.count(";") >= first_line.count(",") else ","
-    rows = list(csv.reader(text.splitlines(), delimiter=delimiter))
-    if not rows:
-        raise CsvError("Il file CSV è vuoto")
-    return rows[0], rows[1:]
+        return T.to_storage(text, field.type)
+    except ValueError as exc:
+        raise CsvError(f"Riga {line}, colonna {column}: {exc}") from exc
 
 
 def import_rows(
@@ -81,8 +147,9 @@ def import_rows(
     table: Table,
     delimiter: str | None = None,
     has_header: bool = True,
+    encoding: str = "auto",
 ) -> list[dict[str, Any]]:
-    headers, rows = read_csv(path, delimiter)
+    headers, rows = read_csv(path, delimiter, encoding)
     result: list[dict[str, Any]] = []
     if has_header:
         mapping = []
@@ -103,13 +170,55 @@ def import_rows(
             if not name:
                 continue
             field = table.field(name)
-            text = cell.strip()
-            if text == "":
-                record[name] = None
+            if field is None:
                 continue
-            try:
-                record[name] = T.to_storage(text, field.type) if field else text
-            except ValueError as exc:
-                raise CsvError(f"Riga {len(result) + 2}, colonna {headers[index]}: {exc}") from exc
+            record[name] = _convert_cell(cell.strip(), field, len(result) + 2, headers[index])
         result.append(record)
     return result
+
+
+def records_from_table(
+    rows: Sequence[Sequence[str]],
+    table: Table,
+    mapping: Sequence[str | None],
+    has_header: bool,
+    first_data_line: int = 2,
+) -> list[dict[str, Any]]:
+    """Converte righe grezze in record secondo la mappatura colonna → campo."""
+    result: list[dict[str, Any]] = []
+    source = rows[1:] if has_header else rows
+    for offset, raw in enumerate(source):
+        if not any(str(cell).strip() for cell in raw):
+            continue
+        record: dict[str, Any] = {}
+        for index, cell in enumerate(raw):
+            if index >= len(mapping):
+                break
+            name = mapping[index]
+            if not name:
+                continue
+            field = table.field(name)
+            if field is None:
+                continue
+            record[name] = _convert_cell(
+                str(cell).strip(), field, first_data_line + offset, name
+            )
+        result.append(record)
+    return result
+
+
+def _normalize(text: str) -> str:
+    return "".join(char for char in str(text).lower() if char.isalnum())
+
+
+def suggest_mapping(headers: Sequence[str], table: Table) -> list[str | None]:
+    """Associa per nome le colonne del file ai campi della tabella."""
+    by_name = {_normalize(field.name): field.name for field in table.fields}
+    by_caption = {
+        _normalize(field.caption): field.name for field in table.fields if field.caption
+    }
+    mapping: list[str | None] = []
+    for header in headers:
+        key = _normalize(header)
+        mapping.append(by_name.get(key) or by_caption.get(key))
+    return mapping

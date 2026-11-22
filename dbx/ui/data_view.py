@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from PyQt6.QtCore import QTimer, Qt, pyqtSignal
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -28,9 +29,12 @@ from ..config import load_config, save_config
 from ..core import types as T
 from ..core.ddl import INTERNAL_ID
 from ..core.metadata import Table
+from ..core.search import SearchError, SearchRequest, build_where, replace_in_rowset
 from ..io.csv_io import CsvError, export_rowset
 from ..runtime.rowset import Rowset, RowsetError
 from . import design, icons
+from .find_dialog import FindDialog, ReplaceDialog
+from .import_wizard import ImportCsvDialog
 
 DEFAULT_OPTIONS = {
     "alternate": True,
@@ -132,6 +136,7 @@ class DataView(QWidget):
         self._loading = False
         self._restoring = False
         self._filter = ""
+        self._search = SearchRequest()
         config = load_config()
         self.options = dict(DEFAULT_OPTIONS)
         stored_options = config.get("browse_options")
@@ -170,8 +175,15 @@ class DataView(QWidget):
             icons.make_button("Aggiorna", "aggiorna", self.refresh, self, "Rileggi i record"),
         ):
             bar.addWidget(button)
+        bar.addSpacing(8)
+        for button in (
+            icons.make_button("Trova…", "cerca", self.open_find, self, "Ricerca guidata con più criteri"),
+            icons.make_button("Sostituisci…", "modifica", self.open_replace, self, "Sostituisci testo nei record visibili"),
+        ):
+            bar.addWidget(button)
         bar.addStretch(1)
         for button in (
+            icons.make_button("Importa CSV…", "importa", self.import_csv, self, "Importa un file CSV con anteprima e mappatura"),
             icons.make_button("Esporta CSV", "esporta", self.export_csv, self, "Esporta i record in CSV"),
             icons.make_button("Struttura…", "tabella", self.edit_structure, self, "Apri Table Structure"),
             icons.make_button("Opzioni…", "impostazioni", self.edit_options, self, "Editing Options"),
@@ -183,7 +195,7 @@ class DataView(QWidget):
         filter_row.addWidget(QLabel("Cerca:"))
         self.search_edit = QLineEdit()
         self.search_edit.setAccessibleName("Cerca nei record")
-        self.search_edit.setPlaceholderText("testo in qualsiasi campo")
+        self.search_edit.setPlaceholderText("Cerca rapido in qualsiasi campo")
         self.search_edit.returnPressed.connect(self.apply_filter)
         filter_row.addWidget(self.search_edit, 1)
         filter_row.addWidget(QLabel("Ordina:"))
@@ -219,6 +231,8 @@ class DataView(QWidget):
 
         self.status = QLabel("")
         layout.addWidget(self.status)
+        QShortcut(QKeySequence.StandardKey.Find, self, activated=self.open_find)
+        QShortcut(QKeySequence("Ctrl+H"), self, activated=self.open_replace)
 
     def _nav_button(self, glyph: str, tooltip: str, slot):
         button = icons.make_button("", glyph, slot, self, tooltip)
@@ -231,18 +245,24 @@ class DataView(QWidget):
 
     # ------------------------------------------------------------------ query
     def _where(self) -> tuple[str, tuple[Any, ...]]:
-        if not self._filter:
-            return "", ()
-        clauses = []
+        clauses: list[str] = []
         params: list[Any] = []
-        for field in self.table.fields:
-            if field.type in (T.TEXT, T.MEMO):
-                clauses.append(f'"{field.name}" LIKE ?')
+        if self._filter:
+            quick = []
+            for field in self.table.fields:
+                quick.append(f'CAST("{field.name}" AS TEXT) LIKE ?')
                 params.append(f"%{self._filter}%")
-            else:
-                clauses.append(f'CAST("{field.name}" AS TEXT) LIKE ?')
-                params.append(f"%{self._filter}%")
-        return "(" + " OR ".join(clauses) + ")", tuple(params)
+            clauses.append("(" + " OR ".join(quick) + ")")
+        if self._search:
+            try:
+                where, search_params = build_where(self.table, self._search)
+            except SearchError as exc:
+                QMessageBox.warning(self, "Ricerca non valida", str(exc))
+                where, search_params = "", ()
+            if where:
+                clauses.append(f"({where})")
+                params.extend(search_params)
+        return " AND ".join(clauses), tuple(params)
 
     def _order_field(self) -> str:
         return str(self.order_combo.currentData() or "")
@@ -373,6 +393,8 @@ class DataView(QWidget):
         parts = [f"Record {position} di {len(self.rowset)}"]
         if self._filter:
             parts.append(f"filtro: {self._filter}")
+        if self._search:
+            parts.append(f"ricerca: {len(self._search.criteria)} criteri ({self._search.match.upper()})")
         if self._order_field():
             parts.append(f"ordine: {self.order_combo.currentText()}")
         text = " · ".join(parts)
@@ -467,6 +489,62 @@ class DataView(QWidget):
             QMessageBox.warning(self, "Eliminazione non riuscita", str(exc))
             return
         self.refresh()
+
+    # ------------------------------------------------------------------ find
+    def open_find(self) -> None:
+        dialog = FindDialog(self.project, self.table, self._search, self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        self._search = SearchRequest() if dialog.was_cleared() else dialog.request()
+        self.refresh()
+        if self._search:
+            self.status.setText(f"{len(self.rowset)} record trovati")
+        else:
+            self.status.setText(f"Ricerca azzerata · {len(self.rowset)} record")
+
+    def clear_find(self) -> None:
+        self._search = SearchRequest()
+        self.refresh()
+
+    def open_replace(self) -> None:
+        dialog = ReplaceDialog(self.table, self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        values = dialog.values()
+        total = len(self.rowset)
+        if total == 0:
+            QMessageBox.information(self, "Sostituisci", "Nessun record visibile su cui operare.")
+            return
+        answer = QMessageBox.question(
+            self,
+            "Sostituisci",
+            f"Sostituire «{values['find']}» con «{values['replace']}» "
+            f"nei {total} record visibili?",
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            changed = replace_in_rowset(
+                self.rowset,
+                values["find"],
+                values["replace"],
+                field=values["field"],
+                match_case=values["match_case"],
+                whole_word=values["whole_word"],
+            )
+        except (SearchError, RowsetError) as exc:
+            QMessageBox.warning(self, "Sostituzione non riuscita", str(exc))
+            return
+        self.refresh()
+        self.status.setText(f"Sostituite {changed} celle in {total} record")
+        QMessageBox.information(self, "Sostituisci", f"Sostituite {changed} celle.")
+
+    def import_csv(self) -> None:
+        dialog = ImportCsvDialog(self.project, self.table.name, self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        self.reload_structure()
+        self.status.setText(f"Importati {dialog.imported} record da CSV")
 
     def export_csv(self) -> None:
         path, _ = QFileDialog.getSaveFileName(self, "Esporta CSV", f"{self.table.name}.csv", "CSV (*.csv)")

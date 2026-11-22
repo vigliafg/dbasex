@@ -63,6 +63,12 @@ def _esporta(painter: QPainter) -> None:
     painter.drawLine(QPointF(5, 19), QPointF(19, 19))
 
 
+def _importa(painter: QPainter) -> None:
+    painter.drawLine(QPointF(12, 5), QPointF(12, 16))
+    _poly(painter, (8, 12), (12, 16), (16, 12))
+    painter.drawLine(QPointF(5, 19), QPointF(19, 19))
+
+
 def _annulla(painter: QPainter) -> None:
     painter.drawLine(QPointF(7, 7), QPointF(17, 17))
     painter.drawLine(QPointF(17, 7), QPointF(7, 17))
@@ -347,6 +353,7 @@ _GLYPHS: dict[str, Callable[[QPainter], None]] = {
     "apri": _apri,
     "salva": _salva,
     "esporta": _esporta,
+    "importa": _importa,
     "annulla": _annulla,
     "ok": _ok,
     "elimina": _elimina,
