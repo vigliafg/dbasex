@@ -553,3 +553,25 @@
   form su query modificabili, RIGHT/FULL JOIN, Label Designer alternativo) da pianificare.
 - **RIPRESA:** piano 0.3.0 concluso con il Checkpoint C. La prima attività non completata è la
   definizione della prossima release; non ripartire da O0–O7 senza una nuova pianificazione.
+
+### 2026-11-22 — Ondata 0.4.0 — O0 Preparazione: esperti Paradox e passi script FileMaker
+- **Stato:** completata
+- **Branch/commit:** `main`; commit documentale O0.
+- **Obiettivo:** documentare le fonti e fissare le decisioni di trapianto per la 0.4.0
+  (esperti Paradox + QBE) e la 0.5.0 (passi script predefiniti in stile FileMaker).
+- **File toccati:** `PLAN.md`, `DIARIO.md`,
+  `docs/reference/inspirations/paradox-experts-qbe.md` (nuovo),
+  `docs/reference/inspirations/filemaker-script-steps.md` (nuovo).
+- **Scelte:**
+  - due release separate: 0.4.0 esperti + QBE, 0.5.0 azioni script;
+  - QBE in sola lettura, con modello additivo `QueryFilter.value2`/`group` e operatori
+    `between`/`like`/`ref`; example elements nella forma `_nome`;
+  - esperti come generatori di artefatti normali, poi aperti nei designer esistenti;
+  - catalogo `ACTIONS` categorizzato con descrizioni e Step Picker, senza nuovo linguaggio;
+  - scritture script immediate per passo, con log e `revert_record`;
+  - fuori scope: query di modifica, crosstab/CALC, parametri interattivi, trigger, account,
+    server, plugin, Label/Chart/Launcher Expert.
+- **Test:** `269 passed`; smoke headless OK. Nessuna modifica al codice.
+- **Screenshot:** nessuno; O0 è documentale.
+- **Problemi aperti:** nessuno.
+- **Prossimo passo:** O1 — shell esperti e Table Expert.

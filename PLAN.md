@@ -780,3 +780,153 @@ query, modifica del motore per la rinomina tabella, Interactive Tutor.
 - Form e report possono scegliere `table` o `query` come sorgente; i form su query sono read-only
   nella 0.3.
 - Export diagramma in PNG e SVG.
+
+---
+
+## 15. Piano 0.4.0 — Esperti e QBE, e 0.5.0 — Azioni script
+
+**Obiettivo 0.4.0:** trapiantare gli **Experts** di Paradox (procedure guidate per tabella, query,
+form, report) e la modalità **QBE** per le query, senza cambiare il motore read-only e senza
+introdurre un secondo modello dati.
+
+**Obiettivo 0.5.0:** trapiantare il modello dei **passi script predefiniti** di FileMaker: catalogo
+categorizzato, descrizioni, selettore visuale e un insieme core di azioni che operano su tabelle,
+record, finestre e variabili.
+
+**Documenti di riferimento:** `docs/reference/inspirations/paradox-experts-qbe.md`,
+`docs/reference/inspirations/filemaker-script-steps.md`.
+
+### Decisioni di 0.4.0 / 0.5.0
+
+| Decisione | Scelta |
+|---|---|
+| Rilascio | Due release: **0.4.0** (esperti + QBE), **0.5.0** (azioni script) |
+| Esperti | Generano artefatti normali (`Table`, `QuerySpec`, `ReportSpec`, `FormSpec`), poi aperti nei designer |
+| QBE | Solo ricerca in sola lettura: niente Insert/Delete/Set/ChangeTo, crosstab, CALC o parametri |
+| Modello QBE | Estensione additiva di `QueryFilter` con `value2` e `group`; default retrocompatibili |
+| Example elements | Sintassi `_nome`; stesso nome in due celle = uguaglianza `ref` tra campi |
+| Catalogo script | Dizionario `ACTIONS` con `category` e `description`, nessun framework |
+| Nuovi passi | Set core (~16) su controllo, navigazione, record, campi, dialoghi, file, script |
+| Form events | Restano un dispatcher di azioni/script; nessun linguaggio nuovo |
+| Scritture script | Immediate per passo, con log; `revert_record` per ricaricare |
+| Versioni | `0.4.0` a fine O4; `0.5.0` a fine O7 |
+
+### Ondate 0.4.0
+
+| Ondata | Scope | Checkpoint |
+|---|---|---|
+| O0 — Preparazione | Documenti fonti, decisioni, piano e diario | — |
+| O1 — Shell esperti e Table Expert | `expert_common.py`, `table_expert.py`, ingressi menu/Navigator, template, anteprima DDL | — |
+| O2 — Query Expert e Report Expert | `query_expert.py`, `report_expert.py`, riallineamento Form Expert | — |
+| O3 — Modello e motore QBE | `group`, `between`, `like`, `ref`, validazione, test | **A** |
+| O4 — UI QBE e release 0.4.0 | Toggle QBE/Guidato, query image, sincronizzazione, aiuto, screenshot, release | — |
+
+**Fuori scope 0.4.0:** query di modifica, crosstab, CALC, parametri interattivi, Label/Chart/Launcher
+Expert, script trigger, modifiche al motore per la rinomina tabella.
+
+### Ondate 0.5.0
+
+| Ondata | Scope | Checkpoint |
+|---|---|---|
+| O5 — Catalogo e Step Picker | Categorie, descrizioni, `StepPickerDialog`, Inspector, nessun cambio di comportamento | — |
+| O6 — Passi core e runtime | ~16 azioni, contesto tabella/record, forma testuale, validazione progetto, adattatore runtime form | **B** |
+| O7 — QA e release 0.5.0 | Test completi, screenshot, documentazione, versione `0.5.0` | **C** |
+
+**Fuori scope 0.5.0:** layout/portali, account e privilegi, server, plugin, script trigger,
+AppleScript/DDE, motore di calcolo completo, import/export nei formati FileMaker.
+
+### Modello QBE (additivo)
+
+```python
+@dataclass
+class QueryFilter:
+    field: str = ""
+    op: str = "eq"
+    value: str = ""
+    value2: str = ""   # secondo valore per "between"
+    group: int = 0     # stesso gruppo = AND; gruppi diversi = OR
+```
+
+Nuovi operatori: `between`, `like`, `ref`.
+
+- `between` → `BETWEEN ? AND ?`.
+- `like` → pattern QBE `*`/`?` tradotto in `%`/`_`, con escape dei caratteri letterali.
+- `ref` → confronto tra due campi già presenti nella query; è la traduzione degli example elements.
+
+La compilazione produce `WHERE (gruppo 0) OR (gruppo 1) ...`, con AND dentro ogni gruppo.
+I JSON 0.3 si caricano senza migrazione; i campi nuovi hanno default.
+
+### UI QBE
+
+- Toolbar con toggle **QBE | Guidato** e `QStackedWidget`; entrambe le viste modificano lo stesso
+  `QuerySpec`.
+- Per ogni tabella una “query image”: intestazione con tabella e join, riga `Includi` con checkbox,
+  tre righe `Criteri`, riga `Ordinamento` con indicatore e priorità.
+- Cella QBE non valida: evidenziata, non applicata, messaggio nella status line.
+- Pannello di aiuto con grammatica e collegamenti attivi.
+- La scheda `Filtri` mostra il gruppo per non perdere gli OR.
+- Avviso, non blocco, per OR su campi di tabelle `LEFT JOIN`.
+
+### Catalogo azioni (0.5.0)
+
+Categorie: `Controllo`, `Navigazione`, `Dati`, `Record`, `Ricerche`, `Interfaccia`, `Stampa/File`,
+`Script`, `Variabili`, `Avanzate`.
+
+Passi core: `comment`, `loop`, `exit_loop_if`, `exit_script`, `halt`, `select_table`, `go_record`,
+`set_field`, `new_record`, `duplicate_record`, `delete_record`, `commit_record`, `revert_record`,
+`open_query`, `open_report`, `custom_dialog`, `beep`; restano `message`, `status`, `ask`, `set`, `if`,
+`foreach`, `confirm`, `open_form`, `print_report`, `export_csv`, `sql`, `call`.
+
+`elseif` è zucchero sintattico: `ELSE IF` produce un `if` annidato in `else`.
+`import_csv` è un’estensione opzionale, separabile.
+
+### File previsti
+
+- `dbx/designers/expert_common.py`, `table_expert.py`, `query_expert.py`, `report_expert.py` (nuovi).
+- `dbx/designers/step_picker.py` (nuovo).
+- `dbx/core/query_model.py`, `dbx/core/query_engine.py`.
+- `dbx/designers/query_builder.py`, `dbx/designers/script_builder.py`, `dbx/designers/form_expert.py`.
+- `dbx/runtime/script_engine.py`, `dbx/runtime/form_runtime.py`.
+- `dbx/ui/main_window.py`, `dbx/ui/navigator.py`, `dbx/ui/widgets.py`, `dbx/ui/icons.py`.
+- `dbx/designers/project_builder.py`.
+- Test, `tools/capture_ui.py`, `docs/`, README, CHANGELOG.
+
+### Test e QA
+
+| Tipo | Comando |
+|---|---|
+| Unit test | `python -m pytest` |
+| Smoke | `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` |
+| UI headless | `python -m pytest tests/test_ui_*.py` |
+| Rendering | `python tools/capture_ui.py` e `--theme dark` |
+
+Test nuovi: esperti (tabella/query/report), modello e motore QBE, UI QBE, catalogo script, passi
+script, Step Picker, validazione, eventi form. Test di compatibilità sui JSON demo 0.3 e sugli script
+esistenti; andata/ritorno testuale per ogni azione.
+
+Rendering nuovi: `20-table-expert.png`, `21-query-expert.png`, `22-report-expert.png`,
+`23-qbe-mode.png`, `24-script-step-picker.png`; aggiornare `docs/ui-parity.md` e l’indice dei render.
+
+### Rischi
+
+| Rischio | Mitigazione |
+|---|---|
+| Parser QBE ambiguo o non reversibile | Grammatica esplicita, celle invalide non applicate, test di andata/ritorno |
+| OR su LEFT JOIN | Avviso in validazione e documentazione del limite |
+| Modifiche a `QuerySpec` | Campi additivi con default, test sui JSON 0.3 |
+| Scritture script parziali | Log per passo, `revert_record`, nessuna transazione implicita |
+| Scope creep verso FileMaker/Paradox | Catalogo chiuso e fuori scope espliciti |
+| Nomi/asset altrui | Solo idee e flussi; nessun asset, screenshot o chrome copiato |
+
+### Stato di avanzamento 0.4.0 / 0.5.0
+
+| Ondata | Stato | Checkpoint |
+|---|---|---|
+| 0.4.0 — O0 Preparazione | `[x]` completata (2026-11-22) | — |
+| 0.4.0 — O1 Shell esperti e Table Expert | `[ ]` da iniziare | — |
+| 0.4.0 — O2 Query Expert e Report Expert | `[ ]` da iniziare | — |
+| 0.4.0 — O3 Modello e motore QBE | `[ ]` da iniziare | **A** |
+| 0.4.0 — O4 UI QBE e release | `[ ]` da iniziare | — |
+| 0.5.0 — O5 Catalogo e Step Picker | `[ ]` da iniziare | — |
+| 0.5.0 — O6 Passi core e runtime | `[ ]` da iniziare | **B** |
+| 0.5.0 — O7 QA e release | `[ ]` da iniziare | **C** |
