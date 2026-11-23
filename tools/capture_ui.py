@@ -183,10 +183,9 @@ def run(theme: str = "aurora") -> int:
         captured.append(_capture(app, project_editor, "13-project-editor.png", (900, 640)))
 
         database_designer = DatabaseDesignerWidget(project)
-        database_designer.show_table_detail("clienti", "edit")
         widgets.append(database_designer)
         captured.append(
-            _capture(app, database_designer, "15-database-designer.png", (1180, 900))
+            _capture(app, database_designer, "15-database-designer.png", (1180, 760))
         )
 
         query_spec = QuerySpec.from_project(project, "fatture_clienti")

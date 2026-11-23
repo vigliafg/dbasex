@@ -182,23 +182,39 @@ def test_main_window_opens_database_in_one_tab(qapp, demo_project) -> None:
         window.close()
 
 
-def test_table_detail_has_edit_and_browse_tabs(qapp, demo_project) -> None:
-    from dbx.designers.table_builder import TableBuilderDialog
-    from dbx.ui.data_view import DataView
-
+def test_table_actions_emit_workspace_tabs(qapp, demo_project) -> None:
     designer = DatabaseDesignerWidget(demo_project)
+    opened: list[tuple[str, str]] = []
+    designer.open_table.connect(lambda name, mode: opened.append((name, mode)))
     try:
         assert designer.table_list.count() == 2
-        designer.show_table_detail("clienti", "edit")
-        assert designer.detail_box.isVisible() or designer.detail_box.isHidden() is False
-        assert designer.detail_tabs.count() == 2
-        assert designer.detail_tabs.tabText(0) == "Modifica"
-        assert designer.detail_tabs.tabText(1) == "Dati"
-        assert isinstance(designer.structure_editor, TableBuilderDialog)
-        assert designer.structure_editor.embedded is True
-        designer.show_table_detail("clienti", "browse")
-        assert designer.detail_tabs.currentIndex() == 1
-        assert isinstance(designer.browse_view, DataView)
-        assert designer.browse_view.rowset.count() == 3
+        designer.select_table("clienti")
+        designer.edit_table()
+        designer.open_data_for_selected()
+        assert opened == [("clienti", "edit"), ("clienti", "browse")]
     finally:
         designer.close()
+
+
+def test_main_window_opens_structure_and_browse_from_database(qapp, demo_project) -> None:
+    window = MainWindow(demo_project)
+    try:
+        window.show()
+        window.open_database_designer()
+        qapp.processEvents()
+        database = window.editors.find("database:designer")
+        assert database is not None
+        designer = database.widget()
+        designer.select_table("clienti")
+        designer.edit_table()
+        qapp.processEvents()
+        structure = window.editors.find("structure:clienti")
+        assert structure is not None
+        assert structure.widget().dialog.embedded is True
+        assert window.editors.find("database:designer") is not None
+        designer.open_data_for_selected()
+        qapp.processEvents()
+        assert window.editors.find("tables:clienti") is not None
+        assert len(window.editors.windows()) == 3
+    finally:
+        window.close()

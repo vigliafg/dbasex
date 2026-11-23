@@ -22,7 +22,7 @@ python tools/e2e_harness.py
 Al termine stampa una riga come:
 
 ```text
-ESITO: PASS · scenari 14/14 · controlli 301/301 · screenshot 32
+ESITO: PASS · scenari 14/14 · controlli 298/298 · screenshot 32
 Report: build/e2e/20261123-090000/report.json
 ```
 

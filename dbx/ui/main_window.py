@@ -50,7 +50,7 @@ from ..runtime.script_engine import ScriptEngine, ScriptError, script_parameters
 from . import design, icons
 from .command_window import CommandWindow
 from .data_view import DataView
-from .editor_host import EditorHost, editor_title, editor_widget
+from .editor_host import DialogEditor, EditorHost, editor_title, editor_widget
 from .label_preview import LabelPreviewDialog
 from .menu import DescriptiveMenu, add_entry, add_submenu_entry
 from .navigator import Navigator
@@ -1264,7 +1264,7 @@ class MainWindow(QMainWindow):
             designer = DatabaseDesignerWidget(self.project, self)
             designer.saved.connect(self._refresh_navigator)
             designer.tables_changed.connect(self._refresh_navigator)
-            designer.table_changed.connect(self._on_table_structure_changed)
+            designer.open_table.connect(self.open_table_from_database)
             designer.status_message.connect(
                 lambda text: self.statusBar().showMessage(text, 4000)
             )
@@ -1283,15 +1283,42 @@ class MainWindow(QMainWindow):
         elif table:
             designer.show_table_detail(table, "edit")
 
+    def open_table_from_database(self, name: str, mode: str) -> None:
+        if mode == "browse":
+            self.open_object("tables", name)
+        else:
+            self.open_table_structure(name)
+
     def open_table_structure(self, name: str) -> None:
-        """La struttura si modifica nel Database, non in una finestra separata."""
+        """Struttura e dati occupano una scheda intera del workspace."""
         if not self._require_project():
             return
         assert self.project is not None
-        if self.project.table(name) is None:
+        table = self.project.table(name)
+        if table is None:
             QMessageBox.warning(self, "Database", f"Tabella inesistente: {name}")
             return
-        self.open_database_designer(table=name)
+        key = f"structure:{name}"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.editors.activate(existing)
+            return
+        dialog = TableBuilderDialog(self.project, table, self, embedded=True)
+        page = DialogEditor(dialog, self)
+        page.setWindowTitle(f"Modifica — {name}")
+        dialog.table_changed.connect(
+            lambda new_name, target=page: self._on_structure_changed(new_name, target)
+        )
+        self.editors.open(
+            key,
+            f"Modifica — {name}",
+            page,
+            icon=icons.icon("modifica"),
+        )
+
+    def _on_structure_changed(self, name: str, page: DialogEditor) -> None:
+        self._on_table_structure_changed(name)
+        self.editors.set_title_for_widget(page, f"Modifica — {name}")
 
     def _on_table_structure_changed(self, name: str) -> None:
         self._refresh_navigator()

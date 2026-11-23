@@ -1440,3 +1440,32 @@
   modifiche non applicate passando a un'altra tabella.
 - **Prossimo passo:** mantenere una bozza per tabella o avvisare quando si cambia tabella con
   modifiche non applicate.
+
+### 2026-11-23 — Modifica e Dati come schede del workspace
+- **Stato:** completata
+- **Branch/commit:** `main`; commit dedicato all'apertura delle tabelle in schede intere.
+- **Obiettivo:** quando dal diagramma ER si sceglie «Modifica» o «Dati», la tabella deve occupare
+  tutto il viewport; il Database resta dietro, raggiungibile dalla propria scheda superiore.
+- **File toccati:** `dbx/designers/database_designer.py`, `dbx/ui/main_window.py`,
+  test del Database Designer e del Table Builder, `tools/capture_ui.py`, `tools/e2e_scenarios.py`,
+  README, `docs/e2e.md`, rendering, DIARIO.
+- **Scelte:**
+  - Rimossa l'area di dettaglio annidata nel Database Designer: le schede **Modifica** e **Dati**
+    diventano schede del workspace principale, con la stessa barra orizzontale delle altre finestre.
+  - Il Database Designer emette `open_table(nome, modo)`; `MainWindow` apre
+    `structure:<nome>` (TableBuilder incorporato, intero viewport) oppure `tables:<nome>` (Browse).
+  - La scheda **Database** resta aperta e selezionabile dietro le schede della tabella; il numero
+    di schede cresce senza sovrapposizioni e ogni finestra ha la propria etichetta superiore.
+  - L'elenco tabelle, il canvas ER e l'ispettore restano nel Database; la modifica strutturale
+    avviene nella scheda intera, non più in un pannello inferiore.
+  - Il TableBuilder incorporato usa l'intero spazio della scheda, con «Applica» e «Annulla» in
+    fondo; lo stato della shell riporta «Modifica — nome».
+- **Test:** `495 passed`; harness completo `PASS` con 14/14 scenari, 298/298 controlli e 32
+  screenshot; smoke headless verde. Aggiornati i test: apertura struttura/Browse dal Database,
+  permanenza della scheda Database, editor incorporato a piena finestra.
+- **Screenshot:** `15-database-designer.png` senza pannello annidato; cattura E2E
+  `e2e-database-actions.png`.
+- **Problemi aperti:** una rinomina aggiorna il titolo della scheda ma non la chiave interna; la
+  chiusura con modifiche non applicate chiede conferma solo alla chiusura della scheda.
+- **Prossimo passo:** riallineare chiavi e titoli dopo una rinomina e valutare una scheda «Dati»
+  collegata direttamente dalla scheda Modifica.

@@ -236,16 +236,13 @@ def test_structure_roundtrip_updates_open_browse(qapp, demo_project) -> None:
         before = view.grid.columnCount()
         view.edit_structure()
         qapp.processEvents()
-        tab = window.editors.find("database:designer")
+        tab = window.editors.find("structure:clienti")
         assert tab is not None
-        designer = tab.widget()
-        assert designer.selected_table == "clienti"
-        assert designer.detail_tabs.count() == 2
-        assert designer.detail_tabs.tabText(0) == "Modifica"
-        assert designer.detail_tabs.tabText(1) == "Dati"
-        dialog = designer.structure_editor
+        page = tab.widget()
+        dialog = page.dialog
         assert isinstance(dialog, TableBuilderDialog)
         assert dialog.embedded is True
+        assert window.editors.find("tables:clienti") is not None
         dialog._add_field_row(Field("extra", T.TEXT))
         dialog._apply()
         qapp.processEvents()
