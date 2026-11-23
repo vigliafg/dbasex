@@ -261,11 +261,17 @@ class TableBuilderDialog(QDialog):
             )
         layout.addLayout(toolbar)
 
-        splitter = QSplitter(Qt.Orientation.Vertical)
-        splitter.addWidget(self._build_fields_widget())
-        splitter.addWidget(self._build_tools_widget())
-        splitter.setSizes([420, 220])
-        layout.addWidget(splitter, 1)
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setObjectName("table_builder_splitter")
+        self.splitter.setChildrenCollapsible(False)
+        self.splitter.addWidget(self._build_fields_widget())
+        tools = self._build_tools_widget()
+        tools.setMinimumWidth(340)
+        self.splitter.addWidget(tools)
+        self.splitter.setStretchFactor(0, 3)
+        self.splitter.setStretchFactor(1, 2)
+        self.splitter.setSizes([690, 360])
+        layout.addWidget(self.splitter, 1)
 
         buttons = QDialogButtonBox()
         self.apply_button = buttons.addButton("Applica", QDialogButtonBox.ButtonRole.AcceptRole)
@@ -332,11 +338,14 @@ class TableBuilderDialog(QDialog):
     def _build_tools_widget(self) -> QWidget:
         self.tabs = QTabWidget()
         self.index_grid = QTableWidget(0, 3)
-        self.index_grid.setHorizontalHeaderLabels(["Nome", "Campi (separati da virgola)", "Univoco"])
-        self.index_grid.horizontalHeader().setStretchLastSection(True)
+        self.index_grid.setHorizontalHeaderLabels(["Nome", "Campi", "Univoco"])
+        index_header = self.index_grid.horizontalHeader()
+        index_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        index_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        index_header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
         self.index_grid.verticalHeader().setVisible(False)
-        self.index_grid.setColumnWidth(0, 160)
-        self.index_grid.setColumnWidth(1, 320)
+        self.index_grid.setColumnWidth(0, 110)
+        self.index_grid.setColumnWidth(2, 64)
         self.index_grid.itemChanged.connect(self._on_indexes_changed)
         index_page = QWidget()
         index_layout = QVBoxLayout(index_page)
@@ -354,13 +363,16 @@ class TableBuilderDialog(QDialog):
 
         self.relation_grid = QTableWidget(0, 4)
         self.relation_grid.setHorizontalHeaderLabels(
-            ["Campo", "Tabella riferita", "Campo riferito", "Su eliminazione"]
+            ["Campo", "Tabella", "Campo rif.", "Elimina"]
         )
-        self.relation_grid.horizontalHeader().setStretchLastSection(True)
+        relation_header = self.relation_grid.horizontalHeader()
+        relation_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        relation_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        relation_header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
+        relation_header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
         self.relation_grid.verticalHeader().setVisible(False)
-        self.relation_grid.setColumnWidth(0, 140)
-        self.relation_grid.setColumnWidth(1, 150)
-        self.relation_grid.setColumnWidth(2, 140)
+        self.relation_grid.setColumnWidth(0, 80)
+        self.relation_grid.setColumnWidth(2, 80)
         relation_page = QWidget()
         relation_layout = QVBoxLayout(relation_page)
         relation_layout.addWidget(self.relation_grid, 1)
@@ -382,7 +394,7 @@ class TableBuilderDialog(QDialog):
         self.ddl_view = QPlainTextEdit()
         self.ddl_view.setReadOnly(True)
         self.ddl_view.setFont(QFont(design.CODE_FONT.family, int(design.CODE_FONT.size_pt)))
-        self.tabs.addTab(self.ddl_view, "Anteprima DDL")
+        self.tabs.addTab(self.ddl_view, "DDL")
         return self.tabs
 
     def _build_properties_page(self) -> QWidget:

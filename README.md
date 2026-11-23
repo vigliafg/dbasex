@@ -37,7 +37,7 @@ nel progetto e transazioni esplicite con avvio, conferma e annullamento.
 | **Importa CSV** | Wizard con rilevamento di codifica e delimitatore, anteprima, mappatura colonne → campi, conversione tipi e opzione di svuotamento con backup |
 | **Manutenzione** | Rinomina tabella con aggiornamento dei riferimenti, duplicazione di oggetti (tabelle con dati), compattazione con backup e verifica integrità SQLite |
 | **Query come sorgente** | Form generati da query in sola lettura (campi calcolati, niente inserimento/modifica) e report a bande su colonne di query con gruppi, totali, filtro e ordinamento |
-| **Table Builder** | Struttura a griglia unica (`Field · Name · Type · Width · Decimal · Index`), tipi, obbligatorietà, default, didascalie, formati, regole, lookup, indici, relazioni, anteprima DDL, `Save As`, stampa, migrazioni con backup |
+| **Table Builder** | Struttura a griglia unica (`Field · Name · Type · Width · Decimal · Index`) affiancata da schede laterali per indici, relazioni, proprietà e DDL; tipi, obbligatorietà, default, didascalie, formati, regole, lookup, `Save As`, stampa, migrazioni con backup |
 | **Campi calcolati** | Formula valutata a ogni lettura, senza colonna fisica; auto-enter con espressione, serie automatica e data di creazione/modifica; valori visibili in sola lettura in Browse, form e report |
 | **Form Expert** | Wizard a cinque passi: assistito o vuoto, tabella, scelta campi, layout, font/colori/stile |
 | **Form Designer** | Palette `Controls` / `Field`, canvas con righelli e griglia 8 px, otto maniglie reali, selezione multipla, clipboard, undo/redo, allineamento, distribuzione, z-order, pagine a schede, Object Inspector ad albero, eventi e metodi |
@@ -131,7 +131,7 @@ Ogni ambiente segue lo schema generale di dBASE 5.5 (senza imitarne i colori Win
 - **Command Window** non modale in una scheda: riquadro `Command` sopra, `Command Results` sotto.
 - **Browse**: intestazione scura, colonna selettore, barra di navigazione, filtro, ordinamento.
 - **Table Structure**: nome e tipo in alto, metadati (campi, indici, relazioni, record), griglia
-  numerata dei campi, schede Indici / Relazioni / Proprietà / Anteprima DDL.
+  numerata dei campi a sinistra e schede Indici / Relazioni / Proprietà / DDL affiancate a destra.
 - **Database Designer**: diagramma ER con card delle tabelle, campi PK/FK, archi crow’s foot,
   cardinalità, pan/zoom, auto-layout e export PNG/SVG; creazione relazioni e modifica schema dal canvas.
 - **Query Designer**: albero tabelle/campi a sinistra, schede QBE / Campi / Filtri / Ordinamento / SQL /

@@ -1469,3 +1469,26 @@
   chiusura con modifiche non applicate chiede conferma solo alla chiusura della scheda.
 - **Prossimo passo:** riallineare chiavi e titoli dopo una rinomina e valutare una scheda «Dati»
   collegata direttamente dalla scheda Modifica.
+
+### 2026-11-23 — Strumenti del Table Structure affiancati ai campi
+- **Stato:** completata
+- **Branch/commit:** `main`; commit dedicato al layout del Table Structure.
+- **Obiettivo:** spostare Indici, Relazioni, Proprietà e DDL dalla parte inferiore dell'editor a un
+  pannello laterale destro, con alternanza a schede.
+- **File toccati:** `dbx/designers/table_builder.py`, test del Table Builder, README, rendering,
+  DIARIO.
+- **Scelte:**
+  - Il divisore interno è passato da verticale a orizzontale: griglia campi a sinistra, pannello
+    strumenti a destra con schede. Il pannello ha larghezza minima 340 px e conserva il rapporto
+    3:2 nel ridimensionamento.
+  - Le etichette sono state accorciate per stare nelle schede strette: **Indici**, **Relazioni**,
+    **Proprietà**, **DDL**. Le colonne di indici e relazioni ora usano stretch e intestazioni brevi,
+    evitando la barra orizzontale non necessaria.
+  - I pulsanti della toolbar restano come scorciatoie e selezionano la scheda corrispondente.
+- **Test:** `497 passed`; harness completo `PASS` con 14/14 scenari, 298/298 controlli e 32
+  screenshot; smoke headless verde. Nuovo test su orientamento, posizione e etichette delle schede.
+- **Screenshot:** `04-table-structure.png` rigenerato con il pannello affiancato.
+- **Problemi aperti:** su larghezze ridotte la griglia dei campi e le schede richiedono scorrimento
+  orizzontale; il pannello destro non ha una larghezza memorizzata tra sessioni.
+- **Prossimo passo:** rendere il rapporto del divisore persistente e valutare un ingrandimento del
+  pannello strumenti su richiesta.

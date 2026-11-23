@@ -250,3 +250,17 @@ def test_structure_roundtrip_updates_open_browse(qapp, demo_project) -> None:
         assert view.table.field("extra") is not None
     finally:
         window.close()
+
+
+def test_tools_are_side_tabs_next_to_fields(qapp, demo_project) -> None:
+    dialog = TableBuilderDialog(demo_project, demo_project.require_table("clienti"))
+    try:
+        assert dialog.splitter.orientation() == Qt.Orientation.Horizontal
+        assert dialog.splitter.widget(0) is not dialog.tabs
+        assert dialog.splitter.widget(1) is dialog.tabs
+        labels = [dialog.tabs.tabText(index) for index in range(dialog.tabs.count())]
+        assert labels == ["Indici", "Relazioni", "Proprietà", "DDL"]
+        dialog._show_tool(2)
+        assert dialog.tabs.currentIndex() == 2
+    finally:
+        dialog.close()
