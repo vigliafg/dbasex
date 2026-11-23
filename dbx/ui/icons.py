@@ -155,6 +155,15 @@ def _tabella(painter: QPainter) -> None:
     painter.drawLine(QPointF(4, 14.3), QPointF(20, 14.3))
 
 
+def _database(painter: QPainter) -> None:
+    """Cilindro del database: distinto dalla griglia della tabella."""
+    painter.drawEllipse(QRectF(4, 3.5, 16, 5))
+    painter.drawLine(QPointF(4, 6), QPointF(4, 18))
+    painter.drawLine(QPointF(20, 6), QPointF(20, 18))
+    painter.drawArc(QRectF(4, 6.5, 16, 5), 180 * 16, 180 * 16)
+    painter.drawEllipse(QRectF(4, 15.5, 16, 5))
+
+
 def _form(painter: QPainter) -> None:
     painter.drawRect(QRectF(4, 3, 16, 18))
     painter.drawLine(QPointF(4, 9), QPointF(20, 9))
@@ -373,6 +382,7 @@ _GLYPHS: dict[str, Callable[[QPainter], None]] = {
     "anteprima": _anteprima,
     "stampa": _stampa,
     "tabella": _tabella,
+    "database": _database,
     "form": _form,
     "report": _report,
     "etichetta": _etichetta,
@@ -426,14 +436,14 @@ def _color() -> str:
     return design.icon_color(_theme)
 
 
-def _pixmap(glyph: Callable[[QPainter], None], size: int) -> QPixmap:
+def _pixmap(glyph: Callable[[QPainter], None], size: int, color: str = "") -> QPixmap:
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.GlobalColor.transparent)
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
     painter.scale(size / 24.0, size / 24.0)
     pen = painter.pen()
-    pen.setColor(QColor(_color()))
+    pen.setColor(QColor(color or _color()))
     pen.setWidthF(1.7)
     pen.setCapStyle(Qt.PenCapStyle.RoundCap)
     pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
@@ -444,18 +454,18 @@ def _pixmap(glyph: Callable[[QPainter], None], size: int) -> QPixmap:
     return pixmap
 
 
-def icon(name: str) -> QIcon:
-    """Icona per nome; nomi sconosciuti ricadono sul simbolo «nuovo»."""
+def icon(name: str, color: str = "") -> QIcon:
+    """Icona per nome, con colore facoltativo; nomi ignoti ricadono su «nuovo»."""
     if QApplication.instance() is None:  # pragma: no cover - senza GUI
         return QIcon()
-    key = (name, _theme)
+    key = (name, color or _theme)
     cached = _cache.get(key)
     if cached is not None:
         return cached
     glyph = _GLYPHS.get(name) or _GLYPHS["nuovo"]
     result = QIcon()
     for size in (16, 20, 24, 32, 48):
-        result.addPixmap(_pixmap(glyph, size))
+        result.addPixmap(_pixmap(glyph, size, color))
     _cache[key] = result
     return result
 

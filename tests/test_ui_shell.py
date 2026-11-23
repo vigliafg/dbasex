@@ -40,6 +40,27 @@ def test_theme_aliases_and_qss() -> None:
         assert "qlineargradient" in sheet
 
 
+def test_main_window_fits_short_screen_with_dialog(qapp, demo_project) -> None:
+    """La shell non cresce oltre lo schermo e i dialoghi lunghi scorrono."""
+    window = MainWindow(demo_project)
+    try:
+        window.resize(1024, 600)
+        window.show()
+        qapp.processEvents()
+        assert window.height() == 600
+        assert window.centralWidget().geometry().bottom() < window.statusBar().geometry().top()
+        window.new_object("tables")
+        qapp.processEvents()
+        qapp.processEvents()
+        assert window.height() == 600
+        assert window.centralWidget().geometry().bottom() < window.statusBar().geometry().top()
+        sub = window.mdi.subWindowList()[0]
+        editor = sub.widget()
+        assert editor.scroll.verticalScrollBar().maximum() > 0
+    finally:
+        window.close()
+
+
 def test_main_window_basics(qapp, demo_project) -> None:
     window = MainWindow(demo_project)
     try:

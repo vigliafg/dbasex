@@ -23,9 +23,11 @@ from PyQt6.QtCore import QEvent, QObject, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QDialog,
+    QFrame,
     QMdiArea,
     QMdiSubWindow,
     QMessageBox,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -61,9 +63,18 @@ class DialogEditor(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+        # Il dialogo conserva la sua dimensione minima, ma se la sottofinestra
+        # è più piccola compaiono le barre di scorrimento: la shell non viene
+        # forzata a crescere oltre lo schermo.
+        self.scroll = QScrollArea(self)
+        self.scroll.setObjectName("dialog_editor_scroll")
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         dialog.setWindowFlags(Qt.WindowType.Widget)
-        dialog.setParent(self)
-        layout.addWidget(dialog)
+        self.scroll.setWidget(dialog)
+        layout.addWidget(self.scroll)
         dialog.accepted.connect(self._notify_finished)
         dialog.rejected.connect(self._notify_finished)
         dialog.windowTitleChanged.connect(self.setWindowTitle)
@@ -78,10 +89,6 @@ class DialogEditor(QWidget):
         if self._preferred.isValid():
             return self._preferred
         return super().sizeHint()
-
-    def minimumSizeHint(self) -> QSize:  # noqa: N802 - API Qt
-        hint = self.dialog.minimumSizeHint()
-        return hint if hint.isValid() else super().minimumSizeHint()
 
     def _notify_finished(self) -> None:
         if self._notified:

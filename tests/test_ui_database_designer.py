@@ -174,7 +174,7 @@ def test_main_window_opens_database_designer_in_mdi(qapp, demo_project) -> None:
         sub = window.editors.find("diagrams:schema")
         assert sub is not None
         assert isinstance(sub.widget(), DatabaseDesignerWidget)
-        assert window.mode_label.text().endswith("Schema")
+        assert window.mode_label.text().endswith("Database")
         window.new_object("diagrams")
         qapp.processEvents()
         assert len(window.editors.windows()) == 1

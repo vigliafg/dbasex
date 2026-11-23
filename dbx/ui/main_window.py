@@ -62,7 +62,7 @@ from .theme import apply_theme
 
 OBJECT_ICONS = {
     "tables": "tabella",
-    "diagrams": "tabella",
+    "diagrams": "database",
     "queries": "cerca",
     "forms": "form",
     "reports": "report",
@@ -74,7 +74,7 @@ OBJECT_ICONS = {
 MODES = {
     "DataView": "Sfoglia",
     "TableBuilderDialog": "Struttura",
-    "DatabaseDesignerWidget": "Schema",
+    "DatabaseDesignerWidget": "Database",
     "QueryDesignerWidget": "Query",
     "QueryResultsWidget": "Risultati",
     "FormDesignerWidget": "Design",
@@ -335,7 +335,7 @@ class MainWindow(QMainWindow):
         self.act_refresh.triggered.connect(self._refresh_navigator)
 
     def _build_object_actions(self) -> None:
-        self.act_diagram = icons.make_action("Database Designer…", "tabella", self)
+        self.act_diagram = icons.make_action("Database Designer…", "database", self)
         self.act_table = icons.make_action("Nuova tabella…", "tabella", self)
         self.act_table_expert = icons.make_action("Tabella con esperto…", "esperto", self)
         self.act_query = icons.make_action("Nuova query…", "cerca", self)
@@ -1271,7 +1271,7 @@ class MainWindow(QMainWindow):
             key,
             "Database Designer — Schema ER",
             designer,
-            icon=icons.icon("tabella"),
+            icon=icons.icon("database"),
             size=QSize(1180, 760),
         )
         designer.windowTitleChanged.connect(sub.setWindowTitle)

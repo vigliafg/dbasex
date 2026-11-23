@@ -69,6 +69,6 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
   categoria e descrizione nell'Inspector e nel dialogo dei parametri.
 - Le checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md`,
   `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md`, `docs/qa-0.6.md`, `docs/qa-0.7.md`, `docs/qa-0.8.md` e `docs/qa-0.9.md`.
-- Il Label Designer leggero è tornato nella 0.8: la categoria **Etichette** convive con **Schema** e
+- Il Label Designer leggero è tornato nella 0.8: la categoria **Etichette** convive con **Database** e
   produce etichette/mail merge; non è il designer a controlli liberi di dBASE.
 - Query Designer, Query Results e le query come sorgente di form/report sono parte della release 0.3.0.

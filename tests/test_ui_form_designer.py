@@ -192,6 +192,24 @@ def test_palette_places_dbase_button(qapp, demo_project) -> None:
         designer.close()
 
 
+def test_field_double_click_adds_one_control(qapp, demo_project) -> None:
+    """Il doppio clic emette entrambi i segnali: il campo va aggiunto una volta."""
+    designer = FormDesignerWidget(demo_project, _spec(demo_project))
+    try:
+        initial = len(designer.current_page().controls)
+        item = next(
+            designer.palette.fields.item(row)
+            for row in range(designer.palette.fields.count())
+            if designer.palette.fields.item(row).data(Qt.ItemDataRole.UserRole) == "nome"
+        )
+        designer.palette.fields.itemDoubleClicked.emit(item)
+        designer.palette.fields.itemActivated.emit(item)
+        assert len(designer.current_page().controls) == initial + 2
+        assert designer.current_page().controls[-1].field == "nome"
+    finally:
+        designer.close()
+
+
 def test_field_palette_adds_label_and_control(qapp, demo_project) -> None:
     designer = FormDesignerWidget(demo_project, _spec(demo_project))
     try:

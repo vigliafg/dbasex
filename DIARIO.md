@@ -1296,3 +1296,43 @@
   noti del harness (timeout per scenario senza `SIGALRM` su Windows, PyInstaller fuori scope).
 - **Prossimo passo:** usare `./tools/run_e2e.sh` come collaudo di accettazione prima di ogni
   release; aggiungere un workflow quando nasce un percorso utente nuovo.
+
+### 2026-11-23 — Correzione shell e Navigator: doppio clic, stato, nomi e icone
+- **Stato:** completata
+- **Branch/commit:** `main`; commit dedicato alle correzioni di shell e Navigator.
+- **Obiettivo:** correggere i difetti segnalati nell'uso reale: doppio clic che apriva due finestre,
+  barra di stato che copriva il fondo su schermi bassi, categoria «Schema» da rinominare e
+  distinguere da «Tabelle», pulsanti del Navigator troppo grandi e datati.
+- **File toccati:** `dbx/ui/navigator.py`, `dbx/ui/editor_host.py`, `dbx/ui/main_window.py`,
+  `dbx/ui/icons.py`, `dbx/ui/design.py`, `dbx/designers/form_builder.py`,
+  `dbx/designers/project_builder.py`, test UI, README, `docs/ui-parity.md`, rendering canonici,
+  DIARIO.
+- **Scelte:**
+  - **Doppio clic:** `itemActivated` copre già doppio clic e Invio; il collegamento aggiuntivo a
+    `itemDoubleClicked` faceva partire due volte `new_object` (due finestre Table Builder). Rimosso
+    in Navigator e nello stesso schema del Form Designer, dove aggiungeva due controlli.
+  - **Schermi bassi:** i 13 pulsanti categoria imponevano un'altezza minima di 634 px alla shell
+    (757 px col resto), oltre l'area utile di molti portatili. La colonna è ora in un `QScrollArea`
+    con barra sottile; il minimo della shell scende a 332 px. I `QDialog` legacy dentro l'MDI sono
+    ospitati in un `QScrollArea` (`DialogEditor`), quindi la finestra non cresce oltre lo schermo e
+    i dialoghi lunghi restano raggiungibili con lo scorrimento. Aggiunto un test a 1024×600 che
+    verifica che la barra di stato resti sotto l'area centrale.
+  - **Nome e ordine:** «Schema» diventa **Database**, sopra **Tabelle**, in Navigator, filtro file,
+    Project Editor e modalità della status bar.
+  - **Icone:** nuova icona a cilindro `database`, distinta dalla griglia `tabella`, usata per
+    categoria, oggetti, menu e finestra del Database Designer.
+  - **Stile:** pulsanti da 34 px con icona a sinistra e testo accanto, fondo piatto, hover tenue,
+    selezione con barra di accento e gradiente leggero. Icone delle categorie tinte con tre accenti
+    del tema (`nav_icon_1..3`), con varianti leggibili in Aurora, Silver e Dark.
+- **Test:** `490 passed`; harness completo `PASS` con 14/14 scenari, 295/295 controlli e 31
+  screenshot; smoke headless verde. Nuovi test per ordine/nome/icone del Navigator, scorrimento
+  della colonna, doppia attivazione e shell a 1024×600 con Table Builder.
+- **Screenshot:** rendering canonici rigenerati in Aurora (`01-desktop`, `02-navigator`,
+  `04-table-structure`, `10-desktop-mdi`, `13-project-editor`, `26-import-csv`,
+  `27-table-calculated`, `28-browse-calculated`); verifica visiva anche in Dark.
+- **Problemi aperti:** su schermi molto bassi il Table Builder richiede lo scorrimento per
+  raggiungere «Applica/Annulla»; la correzione strutturale del dialogo (contenuto comprimibile)
+  resta un miglioramento successivo. Il cambio tema a runtime non ridisegna le icone già create nel
+  Navigator.
+- **Prossimo passo:** valutare un layout responsive del Table Builder e il refresh delle icone al
+  cambio tema.

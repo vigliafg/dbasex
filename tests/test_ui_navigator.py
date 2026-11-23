@@ -34,6 +34,58 @@ def test_navigator_categories_and_list(qapp, demo_project) -> None:
         navigator.deleteLater()
 
 
+def test_navigator_database_precedes_tables(qapp, demo_project) -> None:
+    navigator = Navigator()
+    navigator.set_project(demo_project)
+    try:
+        assert list(navigator._buttons)[:3] == ["all", "diagrams", "tables"]
+        assert navigator._buttons["diagrams"].text() == "Database"
+        assert navigator._buttons["tables"].text() == "Tabelle"
+        assert (
+            navigator._buttons["diagrams"].icon().cacheKey()
+            != navigator._buttons["tables"].icon().cacheKey()
+        )
+        labels = [
+            navigator.filter_combo.itemText(index)
+            for index in range(navigator.filter_combo.count())
+        ]
+        assert labels.index("Database (*.diagram.json)") < labels.index("Tabelle (*.table.json)")
+    finally:
+        navigator.deleteLater()
+
+
+def test_navigator_categories_scroll_when_short(qapp, demo_project) -> None:
+    navigator = Navigator()
+    navigator.set_project(demo_project)
+    try:
+        navigator.resize(394, 260)
+        navigator.show()
+        qapp.processEvents()
+        assert navigator.category_scroll.verticalScrollBar().maximum() > 0
+    finally:
+        navigator.close()
+        navigator.deleteLater()
+
+
+def test_navigator_new_object_activates_once_on_double_click(qapp, demo_project) -> None:
+    """Il doppio clic emette sia itemDoubleClicked sia itemActivated: una sola azione."""
+    navigator = Navigator()
+    navigator.set_project(demo_project)
+    try:
+        item = next(
+            navigator.list.item(row)
+            for row in range(navigator.list.count())
+            if navigator.list.item(row).data(Qt.ItemDataRole.UserRole) == "new:tables"
+        )
+        opened: list[str] = []
+        navigator.new_object.connect(opened.append)
+        navigator.list.itemDoubleClicked.emit(item)
+        navigator.list.itemActivated.emit(item)
+        assert opened == ["tables"]
+    finally:
+        navigator.deleteLater()
+
+
 def test_navigator_unavailable_categories_are_visible_but_disabled(qapp) -> None:
     navigator = Navigator()
     try:

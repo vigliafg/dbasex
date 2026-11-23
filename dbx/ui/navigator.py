@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QScrollArea,
     QSizePolicy,
     QToolButton,
     QVBoxLayout,
@@ -21,7 +22,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ..core.project import CATEGORY_LABELS, Project
-from . import icons
+from . import design, icons
 from .menu import DescriptiveMenu, add_entry
 
 # Categorie nello stesso ordine del Navigator originale. L'ultimo campo indica
@@ -29,8 +30,8 @@ from .menu import DescriptiveMenu, add_entry
 # disabilitate, con tooltip esplicativo.
 NAV_CATEGORIES = [
     ("all", "Tutti", "elenco", True),
+    ("diagrams", "Database", "database", True),
     ("tables", "Tabelle", "tabella", True),
-    ("diagrams", "Schema", "tabella", True),
     ("queries", "Query", "cerca", True),
     ("forms", "Form", "form", True),
     ("reports", "Report", "report", True),
@@ -51,7 +52,7 @@ SELECTABLE_CATEGORIES = ["all", *AVAILABLE_CATEGORIES]
 
 CATEGORY_ICONS = {
     "tables": "tabella",
-    "diagrams": "tabella",
+    "diagrams": "database",
     "queries": "cerca",
     "forms": "form",
     "reports": "report",
@@ -62,8 +63,8 @@ CATEGORY_ICONS = {
 
 FILTERS = [
     ("Tutti i file (*.*)", "all"),
+    ("Database (*.diagram.json)", "diagrams"),
     ("Tabelle (*.table.json)", "tables"),
-    ("Schema (*.diagram.json)", "diagrams"),
     ("Query (*.query.json)", "queries"),
     ("Form (*.form.json)", "forms"),
     ("Report (*.report.json)", "reports"),
@@ -100,18 +101,34 @@ class Navigator(QWidget):
 
         column = QFrame()
         column.setObjectName("nav_categories")
-        column.setFixedWidth(122)
-        column_layout = QVBoxLayout(column)
+        column.setFixedWidth(132)
+        column_outer = QVBoxLayout(column)
+        column_outer.setContentsMargins(0, 0, 0, 0)
+        column_outer.setSpacing(0)
+        self.category_scroll = QScrollArea(column)
+        self.category_scroll.setObjectName("nav_categories_scroll")
+        self.category_scroll.setWidgetResizable(True)
+        self.category_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.category_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.category_scroll.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        category_body = QWidget()
+        category_body.setObjectName("nav_categories_body")
+        column_layout = QVBoxLayout(category_body)
         column_layout.setContentsMargins(4, 6, 4, 6)
         column_layout.setSpacing(2)
         for key, label, glyph, available in NAV_CATEGORIES:
             button = QToolButton(column)
             button.setText(label)
-            button.setIcon(icons.icon(glyph))
-            button.setIconSize(QSize(20, 20))
-            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+            color = design.category_color(key) if available else design.palette()["disabled"]
+            button.setIcon(icons.icon(glyph, color))
+            button.setIconSize(QSize(16, 16))
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
             button.setCheckable(True)
-            button.setFixedHeight(46)
+            button.setFixedHeight(34)
             button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             button.setProperty("nav_category", key)
             button.setAccessibleName(label)
@@ -126,6 +143,8 @@ class Navigator(QWidget):
             column_layout.addWidget(button)
             self._buttons[key] = button
         column_layout.addStretch(1)
+        self.category_scroll.setWidget(category_body)
+        column_outer.addWidget(self.category_scroll)
         outer.addWidget(column)
 
         ordered = [self._buttons[key] for key in SELECTABLE_CATEGORIES if key in self._buttons]
@@ -168,7 +187,8 @@ class Navigator(QWidget):
         self.list.setAlternatingRowColors(False)
         self.list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.list.customContextMenuRequested.connect(self._context_menu)
-        self.list.itemDoubleClicked.connect(self._activate)
+        # itemActivated copre già il doppio clic e Invio: collegare anche
+        # itemDoubleClicked farebbe partire due volte la stessa azione.
         self.list.itemActivated.connect(self._activate)
         self.list.setToolTip("Doppio clic per aprire, tasto destro per le azioni")
         right_layout.addWidget(self.list, 1)
@@ -226,14 +246,20 @@ class Navigator(QWidget):
         for category in categories:
             if category not in CATEGORY_ICONS:
                 continue
-            untitled = QListWidgetItem(icons.icon(CATEGORY_ICONS[category]), "[Untitled]")
+            untitled = QListWidgetItem(
+                icons.icon(CATEGORY_ICONS[category], design.category_color(category)),
+                "[Untitled]",
+            )
             untitled.setData(Qt.ItemDataRole.UserRole, f"new:{category}")
             untitled.setToolTip(
                 f"Nuovo oggetto — {NAV_LABELS.get(category, CATEGORY_LABELS.get(category, category))}"
             )
             self.list.addItem(untitled)
             for name in self.project.names(category):
-                item = QListWidgetItem(icons.icon(CATEGORY_ICONS[category]), name)
+                item = QListWidgetItem(
+                    icons.icon(CATEGORY_ICONS[category], design.category_color(category)),
+                    name,
+                )
                 item.setData(Qt.ItemDataRole.UserRole, f"{category}:{name}")
                 item.setToolTip(
                     f"{NAV_LABELS.get(category, category)} — doppio clic per aprire"

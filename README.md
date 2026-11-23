@@ -26,7 +26,7 @@ nel progetto e transazioni esplicite con avvio, conferma e annullamento.
 | Strumento | Cosa fa |
 |---|---|
 | **Desktop MDI** | Finestre documento dentro `QMdiArea`, menu `Progetto · Modifica · Visualizza · Oggetto · Procedure · Proprietà · Finestra · ?`, SpeedBar a icone raggruppate, barra di stato con coordinate, oggetto, record e modalità |
-| **Navigator** | Categorie con icona, `[Untitled]` in cima, filtro file, directory corrente, azioni contestuali, categorie **Schema**, **Query** ed **Etichette** con Database Designer, Query Designer, Query Results e Label Designer; Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
+| **Navigator** | Categorie con icona, `[Untitled]` in cima, filtro file, directory corrente, azioni contestuali, categorie **Database**, **Tabelle**, **Query** ed **Etichette** con Database Designer, Query Designer, Query Results e Label Designer; Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
 | **Command Window** | Riquadri `Command` / `Command Results` nell'MDI, cronologia con ↑/↓, comandi `HELP`, `TABELLE`, `USE`, `RECORD`, `CLEAR` ed espressioni |
 | **Browse / Vista Dati** | Griglia editabile, selettore di record, barra di navigazione, filtro, ordinamento, nuovo/elimina, export/import CSV, Find mode, campi calcolati in sola lettura, opzioni di editing e larghezze colonna persistenti |
 | **Database Designer ER** | Diagramma entità-relazione delle tabelle reali, card con campi e PK/FK, archi con cardinalità e `ON DELETE`, pan/zoom, auto-layout, export PNG/SVG, creazione relazioni e modifica schema con backup |

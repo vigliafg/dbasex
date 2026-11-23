@@ -58,6 +58,19 @@ CHART_COLORS = (
     "#4f9e94",
 )
 
+# Tinta delle icone del Navigator: tre accenti del tema, alternati per categoria.
+NAV_CATEGORY_ACCENTS = {
+    "all": "nav_icon_1",
+    "database": "nav_icon_3",
+    "tables": "nav_icon_2",
+    "queries": "nav_icon_1",
+    "forms": "nav_icon_3",
+    "reports": "nav_icon_2",
+    "labels": "nav_icon_1",
+    "menus": "nav_icon_3",
+    "scripts": "nav_icon_2",
+}
+
 FONTS = {
     "ui": UI_FONT,
     "report": REPORT_FONT,
@@ -162,6 +175,9 @@ AURORA: Palette = {
     "nav_button_border": "#a5b4fc",
     "nav_button_hover": "#fdf2f8",
     "nav_button_text": "#312e81",
+    "nav_icon_1": "#7c3aed",
+    "nav_icon_2": "#ec4899",
+    "nav_icon_3": "#0891b2",
     "mdi_bg": "#eef2ff",
     "mdi_bg_alt": "#ecfeff",
     "command_bg": "#f8fafc",
@@ -284,6 +300,9 @@ SILVER: Palette = {
     "nav_button_border": "#808080",
     "nav_button_hover": "#d0d0d0",
     "nav_button_text": "#000000",
+    "nav_icon_1": "#000080",
+    "nav_icon_2": "#8b0000",
+    "nav_icon_3": "#006666",
     "mdi_bg": "#c0c0c0",
     "mdi_bg_alt": "#d4d4d4",
     "command_bg": "#c0c0c0",
@@ -406,6 +425,9 @@ SILVER_DARK: Palette = {
     "nav_button_border": "#555555",
     "nav_button_hover": "#3d3d3d",
     "nav_button_text": "#e8e8e8",
+    "nav_icon_1": "#8ab4f8",
+    "nav_icon_2": "#f48fb1",
+    "nav_icon_3": "#4dd0e1",
     "mdi_bg": "#242424",
     "mdi_bg_alt": "#2b2b2b",
     "command_bg": "#2b2b2b",
@@ -463,6 +485,13 @@ def brand(name: str | None = None) -> tuple[str, str]:
     return current["accent"], current["accent_text"]
 
 
+def category_color(category: str, name: str | None = None) -> str:
+    """Colore dell'icona di una categoria del Navigator, coerente col tema."""
+    current = palette(name)
+    token = NAV_CATEGORY_ACCENTS.get(category, "nav_icon_1")
+    return current.get(token, current["accent"])
+
+
 # ------------------------------------------------------------------------- QSS
 _QSS = Template(
     """
@@ -504,17 +533,53 @@ QFrame#nav_categories {
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 $nav_bg, stop:1 $nav_bg_alt);
     border-right: 2px solid $panel_shadow;
 }
+QScrollArea#nav_categories_scroll, QWidget#nav_categories_body,
+QScrollArea#dialog_editor_scroll,
+QScrollArea#nav_categories_scroll > QWidget#qt_scrollarea_viewport,
+QScrollArea#dialog_editor_scroll > QWidget#qt_scrollarea_viewport {
+    background: transparent; border: 0;
+}
 QToolButton[nav_category] {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 $nav_button_bg, stop:1 $nav_button_bg_alt);
-    border: 1px solid $nav_button_border; border-radius: 10px;
-    color: $nav_button_text; padding: 3px; margin: 1px;
+    background: transparent;
+    border: 0;
+    border-left: 3px solid transparent;
+    border-radius: 7px;
+    color: $nav_button_text;
+    padding: 4px 8px;
+    margin: 1px 3px;
+    text-align: left;
 }
-QToolButton[nav_category]:hover { background: $nav_button_hover; border-color: $accent2; }
+QToolButton[nav_category]:hover {
+    background: $nav_button_hover;
+    border-left-color: $nav_icon_3;
+}
 QToolButton[nav_category]:checked {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 $accent, stop:1 $accent2);
-    color: $accent_text; border: 1px solid $accent;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 $nav_button_bg, stop:1 $nav_button_bg_alt);
+    border-left-color: $nav_icon_1;
+    color: $nav_button_text;
+    font-weight: 700;
 }
-QToolButton[nav_category]:disabled { color: $disabled; background: $panel_alt; border-color: $panel_shadow; }
+QToolButton[nav_category]:disabled {
+    color: $disabled;
+    background: transparent;
+    border-left-color: transparent;
+}
+QScrollArea#nav_categories_scroll QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+    margin: 2px 1px;
+}
+QScrollArea#nav_categories_scroll QScrollBar::handle:vertical {
+    background: $nav_button_border;
+    border-radius: 3px;
+    min-height: 24px;
+}
+QScrollArea#nav_categories_scroll QScrollBar::add-line:vertical,
+QScrollArea#nav_categories_scroll QScrollBar::sub-line:vertical,
+QScrollArea#nav_categories_scroll QScrollBar::add-page:vertical,
+QScrollArea#nav_categories_scroll QScrollBar::sub-page:vertical {
+    background: transparent; border: 0; height: 0;
+}
 QMdiArea {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 $mdi_bg, stop:1 $mdi_bg_alt);
     border-top: 1px solid $panel_shadow;

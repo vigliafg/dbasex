@@ -735,12 +735,11 @@ class PalettePanel(QWidget):
         self.fields.setIconSize(icons.ICON_SIZE)
         self.fields.setDragEnabled(True)
         self.fields.setDragDropMode(QAbstractItemView.DragDropMode.DragOnly)
-        self.fields.itemDoubleClicked.connect(
-            lambda item: self.field_activated.emit(str(item.data(Qt.ItemDataRole.UserRole)))
-        )
         self.fields.itemActivated.connect(
             lambda item: self.field_activated.emit(str(item.data(Qt.ItemDataRole.UserRole)))
         )
+        # itemActivated copre già il doppio clic: un secondo collegamento a
+        # itemDoubleClicked aggiungerebbe il campo due volte.
         field_layout.addWidget(self.fields, 1)
         hint = QLabel("Doppio clic o trascina un campo sul form.")
         hint.setObjectName("nav_hint")
