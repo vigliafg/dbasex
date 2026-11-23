@@ -1262,3 +1262,37 @@
 - **Problemi aperti:** il timeout per scenario su Windows non usa `SIGALRM`; i tempi dipendono dalla
   macchina; PyInstaller resta un test opzionale non incluso nel harness.
 - **Prossimo passo:** lanciare `./tools/run_e2e.sh` domani e conservare `build/e2e/<timestamp>/`.
+
+### 2026-11-23 — Workflow E2E realistici
+- **Stato:** completata
+- **Branch/commit:** `main`; commit dedicato ai workflow E2E.
+- **Obiettivo:** aggiungere al harness scenari che simulino percorsi di lavoro reali, non singole
+  funzionalità: stato che passa dall'interfaccia al database, artefatti prodotti e verifica dopo un
+  riavvio del progetto.
+- **File toccati:** `tools/e2e_scenarios.py`, `tests/test_e2e_harness.py`, `docs/e2e.md`, `README.md`,
+  DIARIO.
+- **Scelte:**
+  - Quattro workflow narrativi, ognuno su un progetto temporaneo isolato:
+    `workflow_nuova_applicazione` (da progetto vuoto a build distribuita e riaperta),
+    `workflow_sportello` (ricerca, riattivazione cliente, nuova fattura e incasso dalla griglia,
+    riepilogo, etichette e report, verifica dopo riavvio),
+    `workflow_import_bonifica` (import CSV con mappatura automatica, normalizzazione città,
+    eliminazione di inattivi e duplicati, ricerca salvata, export pulito, mailing e report),
+    `workflow_chiusura_mensile` (script parametrizzato lanciato dal menu runtime, tabella chiusure,
+    solleciti su query con join, PDF, backup, compattazione e riapertura).
+  - I workflow usano le superfici reali: `DataView` e dialogo «Nuovo record», form runtime,
+    `ImportCsvDialog`, `ProjectRunner`, anteprima report, build ZIP. Solo i dialoghi modali sono
+    neutralizzati, come per gli altri scenari.
+  - Aggiunte due utility condivise (`_typed_record`, `_reopen`) e la verifica dei totali dopo il
+    riavvio; nessuna modifica al motore o al comportamento dell'applicazione.
+  - `tests/test_e2e_harness.py` elenca i nuovi scenari e ne esegue quattro in isolamento; la suite
+    pytest resta quindi a copertura del harness stesso.
+- **Test:** `485 passed`; harness completo `PASS` con 14/14 scenari, 295/295 controlli e 31
+  screenshot; smoke headless verde. Esecuzioni mirate dei quattro workflow verdi.
+- **Screenshot:** nuovi `e2e-wf-new-app-*`, `e2e-wf-sportello-*`, `e2e-wf-import-*`,
+  `e2e-wf-chiusura-*` in `build/e2e/<timestamp>/screenshots/`; la galleria canonica resta invariata.
+- **Problemi aperti:** i workflow dipendono dai dati del progetto demo e dai formati italiani di
+  numeri/date; un cambio di demo richiede l'aggiornamento dei valori attesi. Restano i limiti già
+  noti del harness (timeout per scenario senza `SIGALRM` su Windows, PyInstaller fuori scope).
+- **Prossimo passo:** usare `./tools/run_e2e.sh` come collaudo di accettazione prima di ogni
+  release; aggiungere un workflow quando nasce un percorso utente nuovo.

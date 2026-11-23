@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field as dc_field
 from datetime import date
@@ -35,12 +36,15 @@ from dbx import __version__
 from dbx.core import types as T
 from dbx.core.crosstab import build_crosstab
 from dbx.core.form_model import FormSpec
+from dbx.core.label_model import LabelSpec
 from dbx.core.metadata import Field, ForeignKey, Index, Table
 from dbx.core.project import Project
-from dbx.core.query_engine import run_query
+from dbx.core.query_engine import query_table, run_query
 from dbx.core.query_model import (
     QueryAggregate,
     QueryField,
+    QueryFilter,
+    QueryJoin,
     QuerySort,
     QuerySpec,
 )
@@ -1236,7 +1240,6 @@ def scenario_runner_build(ctx: HarnessContext) -> None:
     ctx.check(base.exists(), "cartella di build")
     archive = built
     ctx.check(archive.stat().st_size > 1000, "archivio di build non vuoto")
-    import zipfile
 
     with zipfile.ZipFile(archive) as zf:
         names = zf.namelist()
@@ -1253,6 +1256,715 @@ def scenario_runner_build(ctx: HarnessContext) -> None:
         ctx.check("principale" in reopened.names("menus"), "menu nella build")
     finally:
         reopened.close()
+
+
+# --------------------------------------------------------------------------- #
+# Workflow realistici
+# --------------------------------------------------------------------------- #
+@contextmanager
+def _typed_record(values: dict[str, Any]):
+    """Simula la compilazione del dialogo «Nuovo record» del Browse."""
+    from dbx.ui.data_view import RecordDialog
+
+    with (
+        mock.patch.object(RecordDialog, "exec", lambda self: QDialog.DialogCode.Accepted),
+        mock.patch.object(RecordDialog, "values", lambda self: dict(values)),
+    ):
+        yield
+
+
+def _table_rows(project: Project, table_name: str, order: str = "") -> list[dict[str, Any]]:
+    rowset = Rowset(project.db, project.require_table(table_name))
+    rowset.open(order=order)
+    return rowset.rows()
+
+
+def _grid_row(view: Any, column: int, text: str) -> int:
+    for row in range(view.grid.rowCount()):
+        item = view.grid.item(row, column)
+        if item is not None and item.text() == text:
+            return row
+    return -1
+
+
+def _select_grid_row(view: Any, column: int, text: str) -> bool:
+    row = _grid_row(view, column, text)
+    if row < 0:
+        return False
+    view.grid.setCurrentCell(row, column)
+    view.grid.selectRow(row)
+    return True
+
+
+def _reopen(ctx: HarnessContext, project: Project) -> Project:
+    """Chiude e riapre il progetto come farebbe un riavvio dell'applicazione."""
+    path = project.path
+    project.close()
+    reopened = Project.open(path)
+    ctx.projects.append(reopened)
+    return reopened
+
+
+def scenario_workflow_nuova_applicazione(ctx: HarnessContext) -> None:
+    """Workflow: un consulente crea, collauda e distribuisce una piccola applicazione."""
+    project = ctx.new_project("Gestionale")
+    clienti, fatture = _e2e_tables(project)
+    project.settings["title"] = "Gestionale dBX"
+    project.settings["main_form"] = "form_clienti"
+
+    from dbx.ui.data_view import DataView
+
+    clienti_view = DataView(project, "clienti")
+    try:
+        for record in (
+            {"codice": "K001", "nome": "Rossi Impianti", "anni": 12, "saldo": 750.0, "attivo": True},
+            {"codice": "K002", "nome": "Bianchi Servizi", "anni": 5, "saldo": 0.0, "attivo": True},
+            {"codice": "K003", "nome": "Neri Costruzioni", "anni": 20, "saldo": -120.0, "attivo": False},
+        ):
+            with _typed_record(record):
+                clienti_view.new_record()
+        ctx.check(clienti_view.grid.rowCount() == 3, "tre clienti inseriti dal Browse")
+        calculated = [field.name for field in clienti_view.table.fields].index("nome_maiuscolo")
+        ctx.check(
+            clienti_view.grid.item(0, calculated).text() == "ROSSI IMPIANTI",
+            "campo calcolato visibile in griglia",
+        )
+        ctx.capture(clienti_view, "e2e-wf-new-app-browse", (1000, 620))
+    finally:
+        clienti_view.deleteLater()
+
+    fatture_view = DataView(project, "fatture")
+    try:
+        for record in (
+            {"numero": 1, "cliente": "K001", "data": "2026-01-10", "importo": 100.0, "pagata": True},
+            {"numero": 2, "cliente": "K001", "data": "2026-02-10", "importo": 200.0, "pagata": False},
+            {"numero": 3, "cliente": "K002", "data": "2026-03-10", "importo": 300.0, "pagata": False},
+        ):
+            with _typed_record(record):
+                fatture_view.new_record()
+        ctx.check(fatture_view.grid.rowCount() == 3, "tre fatture inserite dal Browse")
+    finally:
+        fatture_view.deleteLater()
+
+    aperte = QuerySpec(
+        name="fatture_aperte",
+        caption="Fatture aperte",
+        base="fatture",
+        fields=[
+            QueryField("fatture", "numero"),
+            QueryField("fatture", "cliente"),
+            QueryField("fatture", "data"),
+            QueryField("fatture", "importo"),
+        ],
+        filters=[QueryFilter("fatture.pagata", "eq", "0")],
+        sorts=[QuerySort("fatture.importo", "desc")],
+    )
+    project.add_object("queries", aperte.to_dict())
+    result = run_query(project, aperte)
+    ctx.check(len(result) == 2, "query delle fatture aperte")
+    ctx.check(result.rows[0]["importo"] == 300.0, "query ordinata per importo")
+
+    form = FormSpec.create_from_query(
+        query_table(project, "fatture_aperte"), "fatture_aperte", name="form_fatture_aperte"
+    )
+    form.caption = "Fatture aperte"
+    project.add_object("forms", form.to_dict())
+    clienti_form = FormSpec.create(clienti, name="form_clienti")
+    clienti_form.caption = "Clienti"
+    project.add_object("forms", clienti_form.to_dict())
+
+    label = LabelSpec.create(
+        "etichette_clienti", "clienti", ["codice", "nome", "anni"], "Etichette clienti"
+    )
+    label.template = "[nome]\n[anni] anni"
+    label.filter = "attivo = 1"
+    project.add_object("labels", label.to_dict())
+
+    report = ReportSpec.create_for_query(
+        "report_fatture_aperte",
+        "fatture_aperte",
+        [field.name for field in query_table(project, "fatture_aperte").fields],
+        "Fatture aperte",
+    )
+    report.order = "importo desc"
+    report.bands["summary"].append(
+        Control(
+            id="totale_aperto",
+            kind="total",
+            x=110,
+            y=2,
+            w=60,
+            h=8,
+            expr="[importo]",
+            func="sum",
+            label="Totale aperto: ",
+            bold=True,
+            align="right",
+        )
+    )
+    project.add_object("reports", report.to_dict())
+
+    riepilogo = [
+        new_step("status", text="Riepilogo dell'applicazione"),
+        new_step("set", variable="conteggio", expr="0"),
+        new_step("set", variable="totale", expr="0"),
+    ]
+    loop = new_step("foreach", table="fatture", filter="pagata = 0")
+    loop["steps"].append(new_step("set", variable="conteggio", expr=":conteggio + 1"))
+    loop["steps"].append(new_step("set", variable="totale", expr=":totale + [importo]"))
+    riepilogo.extend(
+        [
+            loop,
+            new_step("set_global", variable="fatture_aperte", expr=":conteggio"),
+            new_step("set_global", variable="totale_aperto", expr=":totale"),
+            new_step("message", text="Aperte: :conteggio — totale: :totale"),
+        ]
+    )
+    project.put_object("scripts", {"name": "riepilogo", "steps": riepilogo})
+    project.put_object(
+        "menus",
+        {
+            "name": "principale",
+            "items": [
+                {"label": "Clienti", "action": "open_form", "target": "form_clienti"},
+                {"label": "Fatture aperte", "action": "open_form", "target": "form_fatture_aperte"},
+                {"label": "Report fatture aperte", "action": "open_report", "target": "report_fatture_aperte"},
+                {"label": "Riepilogo", "action": "run_script", "target": "riepilogo"},
+            ],
+        },
+    )
+    project.save()
+    ctx.check(validate_project(project) == [], "progetto valido prima del collaudo")
+
+    from dbx.ui.main_window import MainWindow
+
+    window = MainWindow(project)
+    try:
+        with ctx.quiet_qt():
+            window.show()
+            ctx.qapp.processEvents()
+        for category, name in (
+            ("tables", "clienti"),
+            ("queries", "fatture_aperte"),
+            ("forms", "form_fatture_aperte"),
+            ("reports", "report_fatture_aperte"),
+            ("labels", "etichette_clienti"),
+            ("scripts", "riepilogo"),
+        ):
+            window.open_object(category, name)
+            ctx.qapp.processEvents()
+            ctx.check(
+                window.editors.find(f"{category}:{name}") is not None,
+                f"apertura di {category}:{name} dalla shell",
+            )
+        window.mdi.tileSubWindows()
+        ctx.qapp.processEvents()
+        ctx.capture(window, "e2e-wf-new-app-shell", (1280, 800))
+    finally:
+        window.close()
+
+    from dbx.ui.project_runner import ProjectRunner
+
+    runner = ProjectRunner(project, form_name="form_clienti", menu_name="principale")
+    try:
+        ctx.check(runner.current is not None, "runtime apre il form principale")
+        runner._dispatch("open_form", "form_fatture_aperte")
+        ctx.check(
+            runner.current is not None and runner.current.read_only,
+            "runtime apre il form su query in sola lettura",
+        )
+        with mock.patch.object(
+            ReportPreviewDialog, "exec", lambda self: QDialog.DialogCode.Accepted
+        ):
+            runner._dispatch("open_report", "report_fatture_aperte")
+        ctx.check(True, "runtime apre l'anteprima del report")
+        runner._dispatch("run_script", "riepilogo")
+        ctx.check(int(project.globals.get("fatture_aperte", 0)) == 2, "script conta le fatture aperte")
+        ctx.check(
+            float(project.globals.get("totale_aperto", 0)) == 500.0,
+            "script somma gli importi aperti",
+        )
+        ctx.capture(runner, "e2e-wf-new-app-runner", (980, 720))
+    finally:
+        runner.close()
+
+    dist = ctx.work / "dist"
+    archive = build_project(project, dist)
+    base = dist / project.name
+    ctx.check(archive.exists() and archive.suffix == ".zip", "build ZIP dell'applicazione")
+    with zipfile.ZipFile(archive) as zf:
+        names = zf.namelist()
+    ctx.check(any("objects/forms/" in name for name in names), "form nella build")
+    ctx.check(any(name.endswith(".sqlite") for name in names), "database nella build")
+
+    reopened = _reopen(ctx, project)
+    ctx.check(validate_project(reopened) == [], "progetto riaperto valido")
+    ctx.check(
+        len(_table_rows(reopened, "clienti")) == 3
+        and len(_table_rows(reopened, "fatture")) == 3,
+        "i dati sopravvivono al riavvio",
+    )
+    ctx.check(
+        int(reopened.globals.get("fatture_aperte", 0)) == 2,
+        "variabili globali persistite",
+    )
+    from dbx.core.project import Project as BuiltProject
+
+    built = BuiltProject.open(base, force=True)
+    try:
+        ctx.check(
+            run_query(built, QuerySpec.from_project(built, "fatture_aperte")).rows[0]["importo"] == 300.0,
+            "la copia distribuita interroga gli stessi dati",
+        )
+        ctx.check(validate_project(built) == [], "copia distribuita valida")
+    finally:
+        built.close()
+
+
+def scenario_workflow_sportello(ctx: HarnessContext) -> None:
+    """Workflow: una giornata allo sportello tra ricerca, modifica, incasso e stampa."""
+    project = ctx.demo_project("Sportello")
+    from dbx.ui.data_view import DataView
+    from dbx.ui.main_window import MainWindow
+    from dbx.runtime.form_runtime import FormRuntime
+
+    window = MainWindow(project)
+    try:
+        with ctx.quiet_qt():
+            window.show()
+            ctx.qapp.processEvents()
+        window.open_object("tables", "clienti")
+        ctx.qapp.processEvents()
+        ctx.check(window.editors.find("tables:clienti") is not None, "apertura Browse clienti")
+        ctx.capture(window, "e2e-wf-sportello-shell", (1280, 800))
+    finally:
+        window.close()
+
+    view = DataView(project, "clienti")
+    try:
+        view._search = SearchRequest([SearchCriterion("citta", "eq", "Roma")])
+        view.refresh()
+        ctx.check(view.grid.rowCount() == 1, "ricerca del cliente per città")
+        ctx.check(view.grid.item(0, 0).text() == "C003", "la ricerca isola il cliente giusto")
+        ctx.capture(view, "e2e-wf-sportello-find", (1000, 620))
+        view.clear_find()
+        ctx.check(view.grid.rowCount() == 3, "azzeramento della ricerca")
+    finally:
+        view.deleteLater()
+
+    runtime = FormRuntime(project, FormSpec.from_dict(project.artifact("forms", "form_clienti")))
+    try:
+        ctx.check(runtime.rowset.find("codice", "C003") is not None, "cliente trovato nel form")
+        runtime.load_current()
+        binders = {binder.control.field: binder for binder in runtime.binders}
+        binders["attivo"].widget.setChecked(True)
+        binders["telefono"].widget.setText("06 998877")
+        ctx.check(runtime.save() is True, "riattivazione del cliente salvata")
+        runtime.rowset.find("codice", "C003")
+        runtime.load_current()
+        ctx.check(binders["attivo"].widget.isChecked(), "cliente attivo dopo il salvataggio")
+        ctx.capture(runtime, "e2e-wf-sportello-form", (860, 660))
+    finally:
+        runtime.deleteLater()
+
+    fatture_view = DataView(project, "fatture")
+    try:
+        with _typed_record(
+            {
+                "numero": 6,
+                "cliente": "C003",
+                "data": "2026-04-02",
+                "descrizione": "Manutenzione sito",
+                "importo": 600.0,
+                "pagata": False,
+            }
+        ):
+            fatture_view.new_record()
+        ctx.check(fatture_view.grid.rowCount() == 6, "nuova fattura registrata allo sportello")
+        ctx.check(_select_grid_row(fatture_view, 0, "6"), "fattura visibile nel Browse")
+        columns = [field.name for field in fatture_view.table.fields]
+        column = columns.index("pagata")
+        row = _grid_row(fatture_view, 0, "6")
+        fatture_view.grid.item(row, column).setText("Sì")
+        ctx.check(
+            any(
+                record["numero"] == 6 and record["pagata"] == 1
+                for record in _table_rows(project, "fatture")
+            ),
+            "incasso registrato modificando la griglia",
+        )
+        ctx.capture(fatture_view, "e2e-wf-sportello-incasso", (1000, 620))
+    finally:
+        fatture_view.deleteLater()
+
+    engine = ScriptEngine(project)
+    result = engine.run_named("riepilogo_fatture")
+    ctx.check(result.error is None, "script di fine giornata", result.error or "")
+    ctx.check(any("Fattura 2" in line for line in result.log), "lo script elenca le fatture aperte")
+    ctx.check(
+        not any("Fattura 6" in line for line in result.log),
+        "la fattura incassata non è più nel riepilogo",
+    )
+
+    label = LabelSpec.create(
+        "etichette_attivi", "clienti", ["codice", "nome", "telefono"], "Clienti attivi"
+    )
+    label.template = "[nome]\n[telefono]"
+    label.filter = "attivo = 1"
+    label.order = "nome"
+    pages = render_labels_for_project(project, label)
+    text = " ".join(op.text for page in pages for op in page.ops if op.kind == "text")
+    ctx.check("Gamma snc" in text, "mail merge include il cliente riattivato")
+    ctx.check("Beta Studio" in text and "Alfa Srl" in text, "mail merge degli altri clienti attivi")
+    label_pdf = export_pdf(pages, ctx.work / "etichette.pdf", "Clienti attivi")
+    ctx.check(label_pdf.stat().st_size > 1000, "PDF delle etichette di sportello")
+
+    preview = ReportPreviewDialog(project, "fatture_per_cliente")
+    try:
+        ctx.check(preview.pages, "anteprima del report di fine giornata")
+        preview_text = " ".join(op.text for page in preview.pages for op in page.ops)
+        ctx.check("Totale generale: 6.500,50" in preview_text, "totale aggiornato dopo l'incasso")
+        ctx.capture(preview, "e2e-wf-sportello-report", (940, 800))
+    finally:
+        preview.close()
+
+    project.save()
+    reopened = _reopen(ctx, project)
+    clients = {row["codice"]: row for row in _table_rows(reopened, "clienti")}
+    invoices = {row["numero"]: row for row in _table_rows(reopened, "fatture")}
+    ctx.check(clients["C003"]["attivo"] == 1, "riattivazione persistita al riavvio")
+    ctx.check(clients["C003"]["telefono"] == "06 998877", "recapito aggiornato persistito")
+    ctx.check(invoices[6]["pagata"] == 1, "incasso persistito al riavvio")
+    ctx.check(len(invoices) == 6, "conteggio fatture stabile al riavvio")
+
+
+def scenario_workflow_import_bonifica(ctx: HarnessContext) -> None:
+    """Workflow: import di un archivio sporco, bonifica e mailing."""
+    project = ctx.new_project("Anagrafica")
+    contatti = Table(
+        name="contatti",
+        caption="Contatti",
+        fields=[
+            Field("codice", T.TEXT, size=8, required=True, pk=True),
+            Field("nome", T.TEXT, size=60, required=True),
+            Field("email", T.TEXT, size=80),
+            Field("citta", T.TEXT, size=40),
+            Field("attivo", T.BOOLEAN, default="1"),
+            Field("note", T.MEMO),
+            Field("nome_maiuscolo", T.TEXT, calculated="UPPER([nome])"),
+        ],
+        indexes=[Index(fields=["codice"], unique=True)],
+    )
+    project.apply_table(contatti)
+
+    csv_path = ctx.work / "contatti.csv"
+    csv_path.write_text(
+        "codice;nome;email;citta;attivo\n"
+        "K001;Rossi Marco;marco@example.it;milano;1\n"
+        "K002;Bianchi Anna;anna@example.it;MILANO;1\n"
+        "K003;Verdi Luca;luca@example.it;Milano;0\n"
+        "K004;Bianchi Anna;anna@example.it;Torino;1\n"
+        "K005;Neri Sara;;Roma;1\n"
+        "K006;Gialli Edo;;milano;1\n",
+        encoding="utf-8",
+    )
+
+    from dbx.ui.import_wizard import ImportCsvDialog
+    from dbx.ui.data_view import DataView
+
+    importer = ImportCsvDialog(project, "contatti")
+    try:
+        importer.path_edit.setText(str(csv_path))
+        importer.delimiter_combo.setCurrentIndex(
+            max(0, importer.delimiter_combo.findData(";"))
+        )
+        importer.reload_preview()
+        ctx.check(len(importer._rows) == 7, "anteprima CSV con intestazione")
+        ctx.check(importer.current_mapping()[:5] == ["codice", "nome", "email", "citta", "attivo"], "mappatura automatica delle colonne")
+        importer.run_import()
+        ctx.check(importer.imported == 6, "sei contatti importati")
+        ctx.capture(importer, "e2e-wf-import-wizard", (900, 680))
+    finally:
+        importer.close()
+    ctx.check(len(_table_rows(project, "contatti")) == 6, "tabella popolata dall'import")
+    ctx.check(
+        all(row["nome_maiuscolo"] == row["nome"].upper() for row in _table_rows(project, "contatti")),
+        "campo calcolato valorizzato sui record importati",
+    )
+
+    view = DataView(project, "contatti")
+    try:
+        rowset = view.rowset
+        changed = replace_in_rowset(rowset, "milano", "Milano", field="citta")
+        ctx.check(changed == 3, "bonifica delle varianti di città", f"{changed} celle")
+        view.refresh()
+        ctx.check(
+            [row["citta"] for row in _table_rows(project, "contatti", order="codice")]
+            == ["Milano", "Milano", "Milano", "Torino", "Roma", "Milano"],
+            "città normalizzate",
+        )
+
+        duplicate = SearchRequest([SearchCriterion("email", "eq", "anna@example.it")])
+        ctx.check(count_matches(project.db, contatti, duplicate) == 2, "duplicato individuato")
+
+        ctx.check(_select_grid_row(view, 0, "K003"), "riga del contatto inattivo selezionata")
+        view.delete_record()
+        ctx.check(view.grid.rowCount() == 5, "contatto inattivo eliminato dalla griglia")
+
+        ctx.check(_select_grid_row(view, 0, "K004"), "duplicato selezionato")
+        view.delete_record()
+        ctx.check(view.grid.rowCount() == 4, "anagrafica duplicata eliminata")
+
+        missing = SearchRequest([SearchCriterion("email", "blank")])
+        ctx.check(count_matches(project.db, contatti, missing) == 2, "contatti senza email")
+        save_find(project, "contatti", "senza email", missing)
+        ctx.check("senza email" in saved_finds(project, "contatti"), "ricerca salvata per il controllo")
+        view._search = SearchRequest()
+        view.refresh()
+        ctx.check(view.grid.rowCount() == 4, "archivio bonificato")
+        ctx.capture(view, "e2e-wf-import-clean", (1000, 620))
+    finally:
+        view.deleteLater()
+
+    export_path = ctx.work / "contatti_puliti.csv"
+    with mock.patch.object(
+        QFileDialog, "getSaveFileName", lambda *a, **k: (str(export_path), "")
+    ):
+        view = DataView(project, "contatti")
+        try:
+            view.export_csv()
+        finally:
+            view.deleteLater()
+    content = export_path.read_text(encoding="utf-8-sig")
+    ctx.check(content.startswith("codice"), "export con intestazione")
+    ctx.check(len(content.strip().splitlines()) == 5, "export dei soli contatti bonificati")
+    ctx.check("ROSSI MARCO" in content, "export con campo calcolato")
+
+    label = LabelSpec.create(
+        "mailing", "contatti", ["codice", "nome", "email", "citta"], "Mailing contatti"
+    )
+    label.template = "[nome]\n[citta]"
+    label.filter = "attivo = 1"
+    label.order = "nome"
+    label_pages = render_labels_for_project(project, label)
+    label_text = " ".join(op.text for page in label_pages for op in page.ops if op.kind == "text")
+    ctx.check("Neri Sara" in label_text and "Gialli Edo" in label_text, "mailing dei contatti attivi")
+    ctx.check("Verdi Luca" not in label_text, "mailing esclude i disattivati")
+    label_pdf = export_pdf(label_pages, ctx.work / "mailing.pdf", "Mailing")
+    ctx.check(label_pdf.stat().st_size > 1000, "PDF del mailing")
+
+    report = ReportSpec.create("report_contatti", "contatti", "Contatti attivi")
+    report.filter = "attivo = 1"
+    report.order = "nome"
+    report.bands["detail"] = [
+        Control(id="riga", kind="field", x=0, y=0, w=120, h=6, expr="nome", font_size=10),
+        Control(id="citta", kind="field", x=122, y=0, w=48, h=6, expr="citta", font_size=10),
+    ]
+    project.add_object("labels", label.to_dict())
+    project.add_object("reports", report.to_dict())
+    project.save()
+    ctx.check(validate_project(project) == [], "progetto valido dopo la bonifica")
+
+    from dbx.ui.report_preview import build_pages
+
+    pages = build_pages(project, report)
+    page_text = " ".join(op.text for page in pages for op in page.ops)
+    ctx.check("Rossi Marco" in page_text, "report sui contatti bonificati")
+    ctx.check(validate_project(project) == [], "report e mailing validi")
+
+    reopened = _reopen(ctx, project)
+    ctx.check(len(_table_rows(reopened, "contatti")) == 4, "archivio bonificato persistito")
+    ctx.check("senza email" in saved_finds(reopened, "contatti"), "ricerca salvata persistita")
+
+
+def scenario_workflow_chiusura_mensile(ctx: HarnessContext) -> None:
+    """Workflow: chiusura mensile, solleciti, stampa e riapertura."""
+    project = ctx.demo_project("Chiusura")
+    chiusure = Table(
+        name="chiusure",
+        caption="Chiusure mensili",
+        fields=[
+            Field("data", T.TEXT, size=10),
+            Field("totale", T.DECIMAL, default="0"),
+            Field("numero", T.INTEGER, default="0"),
+            Field("nota", T.TEXT, size=80),
+        ],
+    )
+    project.apply_table(chiusure)
+
+    steps: list[dict[str, Any]] = [
+        new_step("status", text="Chiusura del :data_chiusura"),
+        new_step("set", variable="totale", expr="0"),
+        new_step("set", variable="numero", expr="0"),
+    ]
+    loop = new_step("foreach", table="fatture", filter="pagata = 0")
+    loop["steps"].append(new_step("set", variable="totale", expr=":totale + [importo]"))
+    loop["steps"].append(new_step("set", variable="numero", expr=":numero + 1"))
+    steps.extend(
+        [
+            loop,
+            new_step("select_table", table="chiusure"),
+            new_step("new_record"),
+            new_step("set_field", field="data", expr=":data_chiusura"),
+            new_step("set_field", field="totale", expr=":totale"),
+            new_step("set_field", field="numero", expr=":numero"),
+            new_step("set_field", field="nota", expr='"Chiusura mensile"'),
+            new_step("commit_record"),
+            new_step("set_global", variable="ultima_chiusura", expr=":data_chiusura"),
+            new_step("set_global", variable="ultimo_totale", expr=":totale"),
+            new_step("status", text="Chiusura :data_chiusura: :numero fatture, totale :totale"),
+        ]
+    )
+    project.put_object(
+        "scripts",
+        {
+            "name": "chiusura_mensile",
+            "params": [
+                {"name": "data_chiusura", "label": "Data di chiusura", "default": "2026-03-31"}
+            ],
+            "steps": steps,
+        },
+    )
+
+    solleciti = QuerySpec(
+        name="solleciti",
+        caption="Solleciti",
+        base="fatture",
+        fields=[
+            QueryField("fatture", "numero"),
+            QueryField("clienti", "nome", alias="cliente_nome"),
+            QueryField("fatture", "importo"),
+        ],
+        joins=[
+            QueryJoin(
+                kind="inner",
+                table="clienti",
+                left="fatture.cliente",
+                right="clienti.codice",
+            )
+        ],
+        filters=[QueryFilter("fatture.pagata", "eq", "0")],
+        sorts=[QuerySort("fatture.importo", "desc")],
+    )
+    project.add_object("queries", solleciti.to_dict())
+    ctx.check(len(run_query(project, solleciti)) == 3, "query dei solleciti")
+
+    report = ReportSpec.create("solleciti_report", "fatture", "Solleciti")
+    report.filter = "pagata = 0"
+    report.order = "importo desc"
+    report.bands["detail"] = [
+        Control(id="numero", kind="field", x=0, y=0, w=20, h=6, expr="numero", font_size=10),
+        Control(id="data", kind="field", x=24, y=0, w=28, h=6, expr="data", font_size=10, fmt="DD/MM/YYYY"),
+        Control(id="descrizione", kind="field", x=56, y=0, w=70, h=6, expr="descrizione", font_size=10),
+        Control(id="importo", kind="field", x=128, y=0, w=42, h=6, expr="importo", font_size=10, align="right"),
+    ]
+    report.bands["summary"] = [
+        Control(
+            id="totale_solleciti",
+            kind="total",
+            x=100,
+            y=2,
+            w=70,
+            h=9,
+            expr="[importo]",
+            func="sum",
+            label="Totale da sollecitare: ",
+            bold=True,
+            align="right",
+        )
+    ]
+    project.add_object("reports", report.to_dict())
+
+    label = LabelSpec.create_for_query(
+        "etichette_solleciti",
+        "solleciti",
+        ["numero", "cliente_nome", "importo"],
+        "Etichette solleciti",
+    )
+    label.template = "[cliente_nome]\nFattura [numero] — € [importo]"
+    label.order = "cliente_nome"
+    project.add_object("labels", label.to_dict())
+    project.save()
+    ctx.check(validate_project(project) == [], "progetto valido prima della chiusura")
+
+    from dbx.ui.project_runner import ProjectRunner
+
+    project.settings["main_form"] = "form_clienti"
+    runner = ProjectRunner(project, form_name="form_clienti", menu_name="principale")
+    try:
+        with (
+            mock.patch.object(
+                ReportPreviewDialog, "exec", lambda self: QDialog.DialogCode.Accepted
+            ),
+            mock.patch(
+                "dbx.ui.project_runner.ScriptArgumentsDialog.exec",
+                lambda self: QDialog.DialogCode.Accepted,
+            ),
+            mock.patch(
+                "dbx.ui.project_runner.ScriptArgumentsDialog.values",
+                lambda self: {"data_chiusura": "2026-03-31"},
+            ),
+        ):
+            runner._dispatch("run_script", "chiusura_mensile")
+        ctx.check(
+            int(project.globals.get("ultimo_totale", 0)) == 3900,
+            "chiusura avviata dal menu runtime",
+        )
+        ctx.capture(runner, "e2e-wf-chiusura-runner", (980, 720))
+    finally:
+        runner.close()
+
+    second = ScriptEngine(project).run_named(
+        "chiusura_mensile", params={"data_chiusura": "2026-04-30"}
+    )
+    ctx.check(second.error is None, "seconda chiusura mensile", second.error or "")
+    project.save()
+
+    closures = _table_rows(project, "chiusure", order="data")
+    ctx.check(len(closures) == 2, "due chiusure registrate")
+    ctx.check(
+        [row["totale"] for row in closures] == [3900.5, 3900.5],
+        "totali delle chiusure",
+    )
+    ctx.check([row["numero"] for row in closures] == [3, 3], "fatture conteggiate per chiusura")
+
+    from dbx.ui.report_preview import build_pages
+
+    pages = build_pages(project, report)
+    text = " ".join(op.text for page in pages for op in page.ops)
+    ctx.check("Totale da sollecitare: 3.900,50" in text, "totale dei solleciti nel report")
+    ctx.check(text.count("Manutenzione") >= 1, "dettaglio dei solleciti")
+    pdf = export_pdf(pages, ctx.work / "solleciti.pdf", "Solleciti")
+    ctx.check(pdf.stat().st_size > 1000, "PDF dei solleciti")
+
+    label_pages = render_labels_for_project(project, label)
+    label_text = " ".join(op.text for page in label_pages for op in page.ops if op.kind == "text")
+    for name in ("Alfa Srl", "Beta Studio"):
+        ctx.check(name in label_text, f"sollecito per {name}")
+    ctx.check("Gamma snc" not in label_text, "nessun sollecito per il cliente in regola")
+    label_pdf = export_pdf(label_pages, ctx.work / "etichette_solleciti.pdf", "Solleciti")
+    ctx.check(label_pdf.stat().st_size > 1000, "PDF delle etichette di sollecito")
+
+    preview = ReportPreviewDialog(project, report)
+    try:
+        ctx.check(preview.pages, "anteprima del report solleciti")
+        ctx.capture(preview, "e2e-wf-chiusura-preview", (940, 800))
+    finally:
+        preview.close()
+
+    project.backup(reason="chiusura-mensile")
+    backup = compact_database(project)
+    ctx.check(backup is not None and Path(backup).exists(), "backup e compattazione dopo la chiusura")
+    ctx.check(check_database(project) == "ok", "database integro dopo la compattazione")
+
+    reopened = _reopen(ctx, project)
+    ctx.check(len(_table_rows(reopened, "chiusure")) == 2, "chiusure persistite al riavvio")
+    ctx.check(reopened.globals.get("ultima_chiusura") == "2026-04-30", "ultima chiusura persistita")
+    ctx.check(
+        len(run_query(reopened, QuerySpec.from_project(reopened, "solleciti"))) == 3,
+        "query solleciti disponibile dopo il riavvio",
+    )
+    ctx.check(validate_project(reopened) == [], "progetto chiuso in modo valido")
 
 
 @dataclass(frozen=True)
@@ -1273,6 +1985,26 @@ SCENARIOS: list[ScenarioDefinition] = [
     ScenarioDefinition("maintenance", "Rinomina, duplicazione, backup e compattazione", scenario_maintenance),
     ScenarioDefinition("ui_designers", "Shell MDI, Navigator, designer, esperti e temi", scenario_ui_designers),
     ScenarioDefinition("runner_build", "Menu runtime, Project Runner e build", scenario_runner_build),
+    ScenarioDefinition(
+        "workflow_nuova_applicazione",
+        "Workflow: dalla tabella vuota alla distribuzione",
+        scenario_workflow_nuova_applicazione,
+    ),
+    ScenarioDefinition(
+        "workflow_sportello",
+        "Workflow: giornata allo sportello tra ricerca, incasso e stampa",
+        scenario_workflow_sportello,
+    ),
+    ScenarioDefinition(
+        "workflow_import_bonifica",
+        "Workflow: import archivio, bonifica e mailing",
+        scenario_workflow_import_bonifica,
+    ),
+    ScenarioDefinition(
+        "workflow_chiusura_mensile",
+        "Workflow: chiusura mensile, solleciti e riapertura",
+        scenario_workflow_chiusura_mensile,
+    ),
 ]
 
 

@@ -4,7 +4,8 @@
 
 1. la **suite pytest** completa;
 2. lo **smoke headless** (`python -m dbx --smoke`);
-3. dieci **scenari E2E** su progetti temporanei isolati, con interfaccia Qt offscreen.
+3. dieci **scenari E2E** funzionali e quattro **workflow realistici** su progetti temporanei
+   isolati, con interfaccia Qt offscreen.
 
 Non usa pytest per gli scenari: ogni controllo ha un nome, un esito e un tempo, e il risultato
 finale è disponibile in JSON e Markdown. I dialoghi modali sono neutralizzati, quindi il harness non
@@ -21,7 +22,7 @@ python tools/e2e_harness.py
 Al termine stampa una riga come:
 
 ```text
-ESITO: PASS · scenari 10/10 · controlli 201/201 · screenshot 19
+ESITO: PASS · scenari 14/14 · controlli 295/295 · screenshot 31
 Report: build/e2e/20261123-090000/report.json
 ```
 
@@ -48,6 +49,28 @@ python tools/e2e_harness.py --only project_tables,queries_crosstab --no-screensh
 | `maintenance` | Backup, rinomina con riferimenti, duplicazione, integrità, compattazione |
 | `ui_designers` | Shell MDI, Navigator, tutti i designer, esperti, temi Aurora/Silver/Dark |
 | `runner_build` | Menu runtime, Project Runner, validazione, build ZIP e riapertura |
+
+### Workflow realistici
+
+I quattro scenari `workflow_*` non collaudano una singola area: percorrono una giornata di lavoro
+completa, con stato che passa dall'interfaccia alla persistenza e sopravvive a un riavvio del
+progetto. Ogni workflow usa le stesse superfici dell'utente (Browse, form runtime, designer,
+import wizard, Project Runner, report preview) e verifica il risultato nel database e nei file
+prodotti.
+
+| Nome | Racconto e copertura |
+|---|---|
+| `workflow_nuova_applicazione` | Un consulente parte da un progetto vuoto, inserisce clienti e fatture dal Browse, crea query, form, report, etichette, menu e script, collauda la shell e il runtime, esporta la build ZIP e riapre la copia distribuita |
+| `workflow_sportello` | Una giornata allo sportello: ricerca per città, riattivazione di un cliente, registrazione e incasso di una fattura direttamente dalla griglia, riepilogo di fine giornata, etichette e report, con verifica dopo il riavvio |
+| `workflow_import_bonifica` | Import di un CSV sporco con mappatura automatica, normalizzazione delle città, eliminazione di inattivi e duplicati, ricerca salvata «senza email», export del file pulito, mailing e report |
+| `workflow_chiusura_mensile` | Chiusura mensile lanciata dal menu runtime con parametro data, registrazione delle chiusure, solleciti su query con join, PDF, etichette, backup, compattazione e riapertura |
+
+Per eseguirli da soli:
+
+```bash
+python tools/e2e_harness.py --only workflow_sportello
+python tools/e2e_harness.py --only workflow_nuova_applicazione,workflow_chiusura_mensile --no-screenshots
+```
 
 ## Opzioni
 

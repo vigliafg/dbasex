@@ -229,10 +229,12 @@ accessibilità, HiDPI e prestazioni (apertura demo < 2 s, form con 100 controlli
 La CI GitHub Actions esegue i test headless su Linux, Windows e macOS (Python 3.11/3.12), lo smoke
 e, su Linux, cattura e pubblica gli screenshot come artifact.
 
-Il **harness E2E** (`docs/e2e.md`) esegue la suite, lo smoke e dieci scenari completi su progetti
-temporanei: tabelle, ricerca/CSV, query e Crosstab, form e portali, report/grafici/etichette,
-script e automazione, manutenzione, designer e build. Produce `report.json`, `report.md`, log,
-JUnit e screenshot in `build/e2e/<timestamp>/`.
+Il **harness E2E** (`docs/e2e.md`) esegue la suite, lo smoke e dieci scenari funzionali più
+quattro workflow realistici su progetti temporanei: tabelle, ricerca/CSV, query e Crosstab, form e
+portali, report/grafici/etichette, script e automazione, manutenzione, designer e build. I workflow
+seguono un percorso completo (nuova applicazione, sportello, import/bonifica, chiusura mensile) e
+verificano anche la persistenza dopo il riavvio. Produce `report.json`, `report.md`, log, JUnit e
+screenshot in `build/e2e/<timestamp>/`.
 
 ## Riferimenti visivi dBASE 5.5
 
