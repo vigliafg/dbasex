@@ -1159,7 +1159,25 @@ def scenario_ui_designers(ctx: HarnessContext) -> None:
 
     database_designer = DatabaseDesignerWidget(project)
     try:
+        from dbx.ui.data_view import DataView
+
         ctx.check(len(database_designer.graph.nodes) == 2, "Database Designer ER")
+        ctx.check(database_designer.table_list.count() == 2, "Database: elenco tabelle")
+        database_designer.show_table_detail("clienti", "browse")
+        ctx.check(database_designer.detail_tabs.count() == 2, "Database: due schede per tabella")
+        ctx.check(
+            database_designer.detail_tabs.tabText(0) == "Modifica"
+            and database_designer.detail_tabs.tabText(1) == "Dati",
+            "Database: etichette Modifica e Dati",
+        )
+        ctx.check(
+            isinstance(database_designer.browse_view, DataView)
+            and database_designer.browse_view.rowset.count() == 3,
+            "Database: scheda Dati con i record",
+        )
+        database_designer.show_table_detail("clienti", "edit")
+        ctx.check(database_designer.detail_tabs.currentIndex() == 0, "Database: scheda Modifica")
+        ctx.capture(database_designer, "e2e-database-tabs", (1180, 900))
     finally:
         database_designer.close()
 

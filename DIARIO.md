@@ -1405,3 +1405,38 @@
   icone usa i tooltip per le etichette. Il rapporto 1:4 viene riapplicato a ogni resize, quindi il
   trascinamento manuale del divisore non persiste.
 - **Prossimo passo:** valutare un pannello oggetti espandibile e una scorciatoia per il Database.
+
+### 2026-11-23 — Schede Modifica/Dati per la tabella nel Database
+- **Stato:** completata
+- **Branch/commit:** `main`; commit dedicato al dettaglio tabellare nel Database Designer.
+- **Obiettivo:** associare a ogni tabella del diagramma ER due schede integrate: modifica della
+  struttura e consultazione/modifica dei dati, evitando finestre separate e il flusso centrato solo
+  sul diagramma.
+- **File toccati:** `dbx/designers/database_designer.py`, `dbx/designers/table_builder.py`,
+  `dbx/ui/main_window.py`, `dbx/smoke.py`, test del Database Designer e del Table Builder,
+  `tools/capture_ui.py`, `tools/e2e_scenarios.py`, documentazione, rendering, DIARIO.
+- **Scelte:**
+  - Il Database Designer ora ha tre ingressi coordinati: **elenco tabelle** a sinistra,
+    **diagramma ER** al centro e **ispettore** a destra; in basso compare l'area di dettaglio della
+    tabella selezionata.
+  - L'area di dettaglio contiene due schede: **Modifica** (TableBuilderDialog incorporato, non più
+    modale) e **Dati** (DataView con editing tabellare). I pulsanti «Modifica» e «Dati» della
+    toolbar selezionano la scheda; il doppio clic sulla card o sull'elenco apre il dettaglio.
+  - `TableBuilderDialog` accetta un parametro `embedded`: «Applica» salva senza chiudere,
+    «Annulla» ricarica la tabella dal progetto. In questo modo la struttura resta modificabile
+    dentro il Database.
+  - Le modifiche strutturali aggiornano ER, ispettore, elenco e scheda Dati; una rinomina ricrea il
+    dettaglio con il nuovo nome ed emette `table_changed` verso la shell per ricaricare eventuali
+    Browse aperti.
+  - La tabella selezionata resta visibile contemporaneamente in elenco, canvas, ispettore e schede:
+    non è più necessario passare esclusivamente dal diagramma.
+- **Test:** `495 passed`; harness completo `PASS` con 14/14 scenari, 301/301 controlli e 32
+  screenshot; smoke headless verde. Nuovo test per le due schede, l'elenco tabelle e la struttura
+  incorporata; aggiornato il round-trip struttura → Browse.
+- **Screenshot:** `15-database-designer.png` rigenerato con elenco tabelle e schede Modifica/Dati;
+  nuovo `e2e-database-tabs.png` nel harness.
+- **Problemi aperti:** la scheda Modifica incorpora un editor alto e su finestre basse richiede
+  scorrimento; l'area di dettaglio ricrea gli editor quando cambia tabella, quindi non conserva
+  modifiche non applicate passando a un'altra tabella.
+- **Prossimo passo:** mantenere una bozza per tabella o avvisare quando si cambia tabella con
+  modifiche non applicate.

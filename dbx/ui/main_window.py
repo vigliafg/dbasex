@@ -1265,7 +1265,6 @@ class MainWindow(QMainWindow):
             designer.saved.connect(self._refresh_navigator)
             designer.tables_changed.connect(self._refresh_navigator)
             designer.table_changed.connect(self._on_table_structure_changed)
-            designer.open_data.connect(lambda name: self.open_object("tables", name))
             designer.status_message.connect(
                 lambda text: self.statusBar().showMessage(text, 4000)
             )
@@ -1282,7 +1281,7 @@ class MainWindow(QMainWindow):
         if new_table:
             designer.new_table()
         elif table:
-            designer.select_table(table)
+            designer.show_table_detail(table, "edit")
 
     def open_table_structure(self, name: str) -> None:
         """La struttura si modifica nel Database, non in una finestra separata."""

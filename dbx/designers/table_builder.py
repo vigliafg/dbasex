@@ -156,9 +156,16 @@ class TableBuilderDialog(QDialog):
     table_created = pyqtSignal(str)
     table_changed = pyqtSignal(str)
 
-    def __init__(self, project: Project, table: Table | None = None, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        project: Project,
+        table: Table | None = None,
+        parent: QWidget | None = None,
+        embedded: bool = False,
+    ) -> None:
         super().__init__(parent)
         self.project = project
+        self.embedded = embedded
         self.original = table
         self.table = table.copy() if table else Table(name="", fields=[Field("nome", T.TEXT)])
         self._meta: dict[str, dict[str, Any]] = {}
@@ -266,7 +273,7 @@ class TableBuilderDialog(QDialog):
         icons.style_button_box(buttons)
         self.apply_button.setDefault(True)
         buttons.accepted.connect(self._apply)
-        buttons.rejected.connect(self.reject)
+        buttons.rejected.connect(self._cancel)
         layout.addWidget(buttons)
 
     def _build_fields_widget(self) -> QWidget:
@@ -1202,6 +1209,21 @@ class TableBuilderDialog(QDialog):
         document.setPlainText(self.ddl_view.toPlainText())
         document.print(printer)
 
+    def _cancel(self) -> None:
+        if not self.embedded:
+            self.reject()
+            return
+        if self.original is not None:
+            reloaded = self.project.table(self.original.name)
+            if reloaded is not None:
+                self.table = reloaded.copy()
+                self.original = reloaded
+                self._original_names = {field.id: field.name for field in self.table.fields}
+                self._index_touched.clear()
+                self._load()
+                self._update_preview()
+                self._refresh_stats()
+
     def _apply(self) -> None:
         table = self.current_table()
         try:
@@ -1244,4 +1266,5 @@ class TableBuilderDialog(QDialog):
         self._index_touched.clear()
         self._refresh_stats()
         self.table_changed.emit(table.name)
-        self.accept()
+        if not self.embedded:
+            self.accept()

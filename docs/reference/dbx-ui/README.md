@@ -26,7 +26,7 @@ l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `do
 | `12-menu-designer.png` | Menu Designer |
 | `13-project-editor.png` | Project Editor |
 | `14-menu-progetto.png` | Menu Progetto con icona + descrizione |
-| `15-database-designer.png` | Database Designer ER con tabelle e relazioni |
+| `15-database-designer.png` | Database con elenco tabelle, diagramma ER e schede Modifica/Dati |
 | `16-query-designer.png` | Query Designer con campi, join e risultato |
 | `17-query-results.png` | Query Results in sola lettura con export CSV |
 | `18-form-query.png` | Form runtime alimentato da una query, sola lettura |

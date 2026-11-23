@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PyQt6.QtCore import QPoint, QPointF, QRectF, QSize, Qt, pyqtSignal
+from PyQt6.QtCore import QPoint, QPointF, QRectF, QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import (
     QColor,
     QFont,
@@ -28,9 +28,12 @@ from PyQt6.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
     QLabel,
+    QListWidget,
+    QListWidgetItem,
     QMessageBox,
     QScrollArea,
     QSplitter,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -41,6 +44,8 @@ from ..core.metadata import ForeignKey, MetadataError, Table
 from ..core.project import Project, ProjectError
 from ..core.schema_graph import SchemaEdge, SchemaGraph
 from ..ui import design, icons
+from ..ui.data_view import DataView
+from ..ui.editor_host import DialogEditor
 from ..ui.widgets import PropertyInspector
 from .table_builder import TableBuilderDialog
 
@@ -549,7 +554,6 @@ class DatabaseDesignerWidget(QWidget):
 
     saved = pyqtSignal(str)
     status_message = pyqtSignal(str)
-    open_data = pyqtSignal(str)
     tables_changed = pyqtSignal()
     table_changed = pyqtSignal(str)
 
@@ -577,7 +581,7 @@ class DatabaseDesignerWidget(QWidget):
         toolbar.setSpacing(2)
         self.new_table_button = icons.make_button("Nuova tabella", "nuovo", self.new_table, self, "Crea una tabella")
         self.edit_table_button = icons.make_button("Modifica", "modifica", self.edit_table, self, "Modifica la tabella selezionata")
-        self.open_data_button = icons.make_button("Dati", "tabella", self.open_data_for_selected, self, "Apri i dati della tabella selezionata nel Browse")
+        self.open_data_button = icons.make_button("Dati", "tabella", self.open_data_for_selected, self, "Mostra i dati della tabella selezionata nella scheda Dati")
         self.delete_table_button = icons.make_button("Elimina", "elimina", self.delete_table, self, "Elimina la tabella selezionata")
         self.relation_button = icons.make_button("Relazione", "tabella", self.new_relationship, self, "Crea una relazione")
         self.delete_relation_button = icons.make_button("Elimina relazione", "elimina", self.delete_relationship, self, "Elimina la relazione selezionata")
@@ -611,6 +615,26 @@ class DatabaseDesignerWidget(QWidget):
         layout.addLayout(toolbar)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.setObjectName("database_horizontal")
+
+        left = QWidget()
+        left_layout = QVBoxLayout(left)
+        left_layout.setContentsMargins(0, 0, 4, 0)
+        left_layout.setSpacing(4)
+        tables_header = QLabel("Tabelle")
+        tables_header.setObjectName("browse_header")
+        left_layout.addWidget(tables_header)
+        self.table_list = QListWidget()
+        self.table_list.setObjectName("database_tables")
+        self.table_list.setMinimumWidth(170)
+        self.table_list.setMaximumWidth(280)
+        self.table_list.currentItemChanged.connect(self._on_table_list_changed)
+        self.table_list.itemDoubleClicked.connect(
+            lambda item: self.show_table_detail(str(item.data(Qt.ItemDataRole.UserRole)), "edit")
+        )
+        left_layout.addWidget(self.table_list, 1)
+        splitter.addWidget(left)
+
         self.canvas = DatabaseCanvas()
         self.canvas.selection_changed.connect(self._on_selection)
         self.canvas.changed.connect(self._on_changed)
@@ -635,8 +659,32 @@ class DatabaseDesignerWidget(QWidget):
         self.inspector.property_changed.connect(self._on_property_changed)
         right_layout.addWidget(self.inspector, 1)
         splitter.addWidget(right)
-        splitter.setSizes([850, 330])
-        layout.addWidget(splitter, 1)
+        splitter.setSizes([190, 650, 330])
+
+        self.detail_box = QWidget()
+        self.detail_box.setObjectName("database_detail")
+        detail_layout = QVBoxLayout(self.detail_box)
+        detail_layout.setContentsMargins(0, 4, 0, 0)
+        detail_layout.setSpacing(3)
+        self.detail_title = QLabel("Tabella: —")
+        self.detail_title.setObjectName("browse_header")
+        detail_layout.addWidget(self.detail_title)
+        self.detail_tabs = QTabWidget()
+        self.detail_tabs.setObjectName("database_detail_tabs")
+        self.detail_tabs.setDocumentMode(True)
+        detail_layout.addWidget(self.detail_tabs, 1)
+        self.detail_box.hide()
+        self._detail_table: str | None = None
+        self.structure_editor: TableBuilderDialog | None = None
+        self.browse_view: DataView | None = None
+
+        self.vertical_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.vertical_splitter.setObjectName("database_vertical")
+        self.vertical_splitter.setChildrenCollapsible(False)
+        self.vertical_splitter.addWidget(splitter)
+        self.vertical_splitter.addWidget(self.detail_box)
+        self.vertical_splitter.setSizes([520, 260])
+        layout.addWidget(self.vertical_splitter, 1)
 
         self.status_label = QLabel("")
         self.status_label.setObjectName("nav_hint")
@@ -646,6 +694,7 @@ class DatabaseDesignerWidget(QWidget):
 
     def _load(self) -> None:
         self.canvas.load(self.graph, self.diagram)
+        self._sync_table_list()
         self._sync_zoom_combo()
         self._refresh_status()
 
@@ -698,6 +747,7 @@ class DatabaseDesignerWidget(QWidget):
             self._show_edge(self.selected_edge)
         else:
             self._show_diagram_properties()
+        self._sync_table_list()
         self._refresh_buttons()
         self._refresh_status()
 
@@ -833,6 +883,9 @@ class DatabaseDesignerWidget(QWidget):
         )
         self.canvas.selected_table = self.selected_table
         self.canvas.selected_edge = self.selected_edge
+        self._sync_table_list()
+        if self._detail_table and self.project.table(self._detail_table) is None:
+            self._clear_detail()
         self._sync_zoom_combo()
         if self.selected_table:
             table = self.graph.table(self.selected_table)
@@ -845,9 +898,82 @@ class DatabaseDesignerWidget(QWidget):
         self._refresh_buttons()
         self._refresh_status()
 
+    def _sync_table_list(self) -> None:
+        if not hasattr(self, "table_list"):
+            return
+        self.table_list.blockSignals(True)
+        self.table_list.clear()
+        for name in self.project.names("tables"):
+            item = QListWidgetItem(
+                icons.icon("database", design.category_color("tables")), name
+            )
+            item.setData(Qt.ItemDataRole.UserRole, name)
+            self.table_list.addItem(item)
+            if name == self.selected_table:
+                self.table_list.setCurrentItem(item)
+        if not self.selected_table:
+            self.table_list.clearSelection()
+            self.table_list.setCurrentRow(-1)
+        self.table_list.blockSignals(False)
+
+    def _on_table_list_changed(self, current, _previous) -> None:
+        if current is not None:
+            self.select_table(str(current.data(Qt.ItemDataRole.UserRole)))
+
+    def _clear_detail(self) -> None:
+        while self.detail_tabs.count():
+            page = self.detail_tabs.widget(0)
+            self.detail_tabs.removeTab(0)
+            if page is not None:
+                page.deleteLater()
+        self.structure_editor = None
+        self.browse_view = None
+        self._detail_table = None
+        self.detail_box.hide()
+
+    def _build_detail(self, name: str) -> None:
+        table = self.project.table(name)
+        if table is None:
+            return
+        self._clear_detail()
+        self.structure_editor = TableBuilderDialog(
+            self.project, table, self, embedded=True
+        )
+        self.structure_editor.table_changed.connect(self._on_detail_table_changed)
+        structure_page = DialogEditor(self.structure_editor, self.detail_tabs)
+        self.browse_view = DataView(self.project, name)
+        self.detail_tabs.addTab(structure_page, icons.icon("modifica"), "Modifica")
+        self.detail_tabs.addTab(self.browse_view, icons.icon("tabella"), "Dati")
+        self._detail_table = name
+        self.detail_title.setText(f"Tabella: {name}")
+
+    def show_table_detail(self, name: str, mode: str = "edit") -> None:
+        """Mostra la tabella selezionata con le schede Modifica e Dati."""
+        if self.project.table(name) is None:
+            return
+        self.select_table(name)
+        if self._detail_table != name or self.structure_editor is None:
+            self._build_detail(name)
+        self.detail_box.show()
+        self.detail_tabs.setCurrentIndex(0 if mode == "edit" else 1)
+        total = self.vertical_splitter.height() or self.height()
+        height = max(300, total - 330)
+        self.vertical_splitter.setSizes([height, 330])
+
+    def _on_detail_table_changed(self, name: str) -> None:
+        self._refresh_schema(keep_selection=True)
+        self.table_changed.emit(name)
+        if name != self._detail_table:
+            self._clear_detail()
+            QTimer.singleShot(0, lambda: self.show_table_detail(name, "edit"))
+            return
+        self.detail_title.setText(f"Tabella: {name}")
+        if self.browse_view is not None:
+            self.browse_view.reload_structure()
+
     def open_data_for_selected(self) -> None:
         if self.selected_table:
-            self.open_data.emit(self.selected_table)
+            self.show_table_detail(self.selected_table, "browse")
 
     def new_table(self) -> None:
         dialog = TableBuilderDialog(self.project, None, self)
@@ -855,11 +981,10 @@ class DatabaseDesignerWidget(QWidget):
             return
         table = dialog.current_table()
         self._refresh_schema()
-        self.selected_table = table.name
-        self.canvas.selected_table = table.name
         self._on_selection(("table", table.name))
         self._on_changed()
         self.tables_changed.emit()
+        self.show_table_detail(table.name, "edit")
         self.status_message.emit(f"Tabella {table.name} creata")
 
     def select_table(self, name: str) -> None:
@@ -873,25 +998,16 @@ class DatabaseDesignerWidget(QWidget):
         table = self.graph.table(name)
         if table is not None:
             self._show_table(table)
+        self._sync_table_list()
         self._refresh_buttons()
         self._refresh_status()
 
     def edit_table(self) -> None:
         if self.selected_table:
-            self.edit_table_by_name(self.selected_table)
+            self.show_table_detail(self.selected_table, "edit")
 
     def edit_table_by_name(self, name: str) -> None:
-        table = self.project.table(name)
-        if table is None:
-            return
-        dialog = TableBuilderDialog(self.project, table, self)
-        if dialog.exec() != QDialog.DialogCode.Accepted:
-            return
-        self._refresh_schema(keep_selection=True)
-        self._on_changed()
-        self.tables_changed.emit()
-        self.table_changed.emit(name)
-        self.status_message.emit(f"Tabella {name} aggiornata")
+        self.show_table_detail(name, "edit")
 
     def delete_table(self) -> None:
         if not self.selected_table:

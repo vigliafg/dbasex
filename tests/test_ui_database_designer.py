@@ -180,3 +180,25 @@ def test_main_window_opens_database_in_one_tab(qapp, demo_project) -> None:
         assert len(window.editors.windows()) == 1
     finally:
         window.close()
+
+
+def test_table_detail_has_edit_and_browse_tabs(qapp, demo_project) -> None:
+    from dbx.designers.table_builder import TableBuilderDialog
+    from dbx.ui.data_view import DataView
+
+    designer = DatabaseDesignerWidget(demo_project)
+    try:
+        assert designer.table_list.count() == 2
+        designer.show_table_detail("clienti", "edit")
+        assert designer.detail_box.isVisible() or designer.detail_box.isHidden() is False
+        assert designer.detail_tabs.count() == 2
+        assert designer.detail_tabs.tabText(0) == "Modifica"
+        assert designer.detail_tabs.tabText(1) == "Dati"
+        assert isinstance(designer.structure_editor, TableBuilderDialog)
+        assert designer.structure_editor.embedded is True
+        designer.show_table_detail("clienti", "browse")
+        assert designer.detail_tabs.currentIndex() == 1
+        assert isinstance(designer.browse_view, DataView)
+        assert designer.browse_view.rowset.count() == 3
+    finally:
+        designer.close()
