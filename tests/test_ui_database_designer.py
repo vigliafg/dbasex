@@ -165,17 +165,17 @@ def test_export_png_and_svg(qapp, demo_project, tmp_path, monkeypatch) -> None:
         designer.close()
 
 
-def test_main_window_opens_database_designer_in_mdi(qapp, demo_project) -> None:
+def test_main_window_opens_database_in_one_tab(qapp, demo_project) -> None:
     window = MainWindow(demo_project)
     try:
         window.show()
-        window.open_object("diagrams", "schema")
+        window.open_database_designer()
         qapp.processEvents()
-        sub = window.editors.find("diagrams:schema")
-        assert sub is not None
-        assert isinstance(sub.widget(), DatabaseDesignerWidget)
+        tab = window.editors.find("database:designer")
+        assert tab is not None
+        assert isinstance(tab.widget(), DatabaseDesignerWidget)
         assert window.mode_label.text().endswith("Database")
-        window.new_object("diagrams")
+        window.open_database_designer()
         qapp.processEvents()
         assert len(window.editors.windows()) == 1
     finally:

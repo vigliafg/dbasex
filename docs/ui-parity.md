@@ -37,7 +37,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - Lo stato si riferisce alla struttura e al chrome, non al pixel-perfect. Il tema predefinito è Aurora; Silver resta selezionabile con `--theme silver`.
 - Rendering canonici: `docs/reference/dbx-ui/renders/01-desktop.png` … `14-menu-progetto.png`;
   indice in `docs/reference/dbx-ui/README.md`.
-- `10-desktop-mdi.png` mostra Browse e Form Designer nell'area MDI.
+- `10-desktop-tabs.png` mostra Browse e Form Designer in due schede affiancate.
 - `11-script-editor.png`, `12-menu-designer.png` e `13-project-editor.png` coprono gli strumenti O6.
 - `15-database-designer.png`, `16-query-designer.png`, `17-query-results.png` coprono Database
   Designer, Query Designer e Query Results.

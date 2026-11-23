@@ -1,8 +1,8 @@
-"""Test dell'host MDI e dell'adapter per i QDialog legacy."""
+"""Test dell'host a schede e dell'adapter per i QDialog legacy."""
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QDialog, QLabel, QMdiArea, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
 
 from dbx.ui.editor_host import DialogEditor, EditorHost, editor_dirty
 
@@ -25,9 +25,8 @@ def test_editor_dirty_detection(qapp) -> None:
 
 
 def test_editor_host_open_find_and_close(qapp) -> None:
-    area = QMdiArea()
-    area.show()
-    host = EditorHost(area)
+    host = EditorHost()
+    host.show()
     first = _Editor("Primo")
     second = _Editor("Secondo")
     try:
@@ -39,19 +38,18 @@ def test_editor_host_open_find_and_close(qapp) -> None:
         assert sub.widget() is first
         assert host.open("a", "Primo", second) is sub
         assert host.windows() == [sub]
-        host.close(sub)
+        host.close_tab(sub)
         qapp.processEvents()
         assert host.find("a") is None
         assert host.windows() == []
     finally:
-        area.close()
-        area.deleteLater()
+        host.close()
+        host.deleteLater()
 
 
 def test_dialog_editor_embeds_and_closes(qapp) -> None:
-    area = QMdiArea()
-    area.show()
-    host = EditorHost(area)
+    host = EditorHost()
+    host.show()
     dialog = QDialog()
     dialog.setWindowTitle("Legacy")
     QVBoxLayout(dialog).addWidget(QLabel("contenuto"))
@@ -67,5 +65,5 @@ def test_dialog_editor_embeds_and_closes(qapp) -> None:
         qapp.processEvents()
         assert host.find("legacy") is None
     finally:
-        area.close()
-        area.deleteLater()
+        host.close()
+        host.deleteLater()

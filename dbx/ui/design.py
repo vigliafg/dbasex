@@ -60,9 +60,9 @@ CHART_COLORS = (
 
 # Tinta delle icone del Navigator: tre accenti del tema, alternati per categoria.
 NAV_CATEGORY_ACCENTS = {
-    "all": "nav_icon_1",
-    "database": "nav_icon_3",
-    "tables": "nav_icon_2",
+    "all": "nav_icon_3",
+    "database": "nav_icon_1",
+    "tables": "nav_icon_1",
     "queries": "nav_icon_1",
     "forms": "nav_icon_3",
     "reports": "nav_icon_2",

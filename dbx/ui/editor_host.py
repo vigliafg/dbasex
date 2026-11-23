@@ -1,57 +1,32 @@
-"""Host dei documenti MDI di dBX.
+"""Area documenti di dBX: schede orizzontali al posto delle sottofinestre MDI.
 
-Il desktop usa un :class:`QMdiArea`: ogni documento è una
-:class:`QMdiSubWindow`. I widget nativi vengono ospitati direttamente; i
-``QDialog`` non ancora convertiti passano da :class:`DialogEditor`, un adapter
-sottile che li rende figli di una sottofinestra.
-
-L'interfaccia riconosciuta dagli editor è volutamente minima:
-
-``windowTitle()``
-    titolo della sottofinestra;
-``is_dirty()`` oppure ``dirty``
-    eventuali modifiche non salvate, usate alla chiusura;
-``save()``, ``print_pages()``, ``set_zoom()``, ``align_selection()``
-    metodi contestuali invocati dai comandi globali quando presenti.
+Ogni editor occupa tutta l'area a destra del Navigator. Le schede mostrano
+icona, titolo e pulsante di chiusura; l'attivazione avviene con un clic
+sull'etichetta o dal menu Finestra. I ``QDialog`` legacy passano da
+:class:`DialogEditor`, che li rende contenuti scorrevoli di una scheda.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from PyQt6.QtCore import QEvent, QObject, QSize, Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QDialog,
     QFrame,
-    QMdiArea,
-    QMdiSubWindow,
     QMessageBox,
     QScrollArea,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from . import icons
 
-MIN_EDITOR_SIZE = QSize(480, 320)
-
-
-class EditorSubWindow(QMdiSubWindow):
-    """Sottofinestra MDI con una dimensione preferita stabile."""
-
-    def __init__(self, preferred: QSize, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self._preferred = QSize(preferred)
-
-    def sizeHint(self) -> QSize:  # noqa: N802 - API Qt
-        if self._preferred.isValid():
-            return self._preferred
-        return super().sizeHint()
-
 
 class DialogEditor(QWidget):
-    """Adapter che ospita un ``QDialog`` legacy dentro una sottofinestra MDI."""
+    """Adapter che ospita un ``QDialog`` legacy dentro una scheda."""
 
     finished = pyqtSignal()
 
@@ -60,12 +35,10 @@ class DialogEditor(QWidget):
         self.dialog = dialog
         self._preferred = QSize()
         self._notified = False
+        self.setObjectName("dialog_editor")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        # Il dialogo conserva la sua dimensione minima, ma se la sottofinestra
-        # è più piccola compaiono le barre di scorrimento: la shell non viene
-        # forzata a crescere oltre lo schermo.
         self.scroll = QScrollArea(self)
         self.scroll.setObjectName("dialog_editor_scroll")
         self.scroll.setWidgetResizable(True)
@@ -77,18 +50,26 @@ class DialogEditor(QWidget):
         layout.addWidget(self.scroll)
         dialog.accepted.connect(self._notify_finished)
         dialog.rejected.connect(self._notify_finished)
-        dialog.windowTitleChanged.connect(self.setWindowTitle)
+        dialog.windowTitleChanged.connect(self._on_dialog_title)
         self.setWindowTitle(dialog.windowTitle())
 
-    def set_preferred_size(self, size: QSize) -> None:
-        """Dimensione richiesta alla sottofinestra MDI (usata come sizeHint)."""
-        self._preferred = QSize(size)
-        self.updateGeometry()
+    def _on_dialog_title(self, title: str) -> None:
+        self.setWindowTitle(title)
+        host = self.parentWidget()
+        while host is not None and not isinstance(host, EditorHost):
+            host = host.parentWidget()
+        if host is not None:
+            host.set_title_for_widget(self, title)
 
     def sizeHint(self) -> QSize:  # noqa: N802 - API Qt
         if self._preferred.isValid():
             return self._preferred
         return super().sizeHint()
+
+    def set_preferred_size(self, size: QSize) -> None:
+        """Dimensione richiesta dal dialogo, usata solo come suggerimento."""
+        self._preferred = QSize(size)
+        self.updateGeometry()
 
     def _notify_finished(self) -> None:
         if self._notified:
@@ -135,61 +116,84 @@ def editor_title(widget: QWidget | None, fallback: str = "") -> str:
     return target.windowTitle() or fallback
 
 
-class EditorHost(QObject):
-    """Gestisce l'apertura, l'attivazione e la chiusura dei documenti MDI."""
+class EditorTab:
+    """Handle di una scheda: mantiene l'API usata dai chiamanti."""
+
+    def __init__(self, host: "EditorHost", key: str, title: str, widget: QWidget) -> None:
+        self.host = host
+        self._key = key
+        self._title = title
+        self._widget = widget
+
+    def property(self, name: str) -> Any:
+        return self._key if name == "dbx_key" else self._widget.property(name)
+
+    def setProperty(self, name: str, value: Any) -> None:  # noqa: N802 - API Qt
+        if name == "dbx_key":
+            self._key = str(value)
+        self._widget.setProperty(name, value)
+
+    def widget(self) -> QWidget:
+        return self._widget
+
+    def windowTitle(self) -> str:  # noqa: N802 - API Qt
+        return self._title
+
+    def setWindowTitle(self, title: str) -> None:  # noqa: N802 - API Qt
+        self._title = title
+        self.host.set_title_for_widget(self._widget, title)
+
+    def close(self) -> bool:
+        return self.host.close_tab(self)
+
+    def isMaximized(self) -> bool:  # noqa: N802 - API Qt
+        return False
+
+    def isMinimized(self) -> bool:  # noqa: N802 - API Qt
+        return False
+
+
+class EditorHost(QWidget):
+    """Gestisce le schede dei documenti, la loro attivazione e la chiusura."""
 
     activated = pyqtSignal(object)
     closed = pyqtSignal()
     opened = pyqtSignal(object)
 
-    def __init__(self, area: QMdiArea, parent: QObject | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.area = area
-        self.area.subWindowActivated.connect(self._on_activated)
-        self.area.installEventFilter(self)
-        self.area.viewport().installEventFilter(self)
-        self._fit_timer = QTimer(self)
-        self._fit_timer.setSingleShot(True)
-        self._fit_timer.setInterval(0)
-        self._fit_timer.timeout.connect(self.fit_windows)
+        self.setObjectName("editor_host")
+        self._items: list[EditorTab] = []
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        self.tabs = QTabWidget(self)
+        self.tabs.setObjectName("editor_tabs")
+        self.tabs.setDocumentMode(True)
+        self.tabs.setMovable(True)
+        self.tabs.setTabsClosable(True)
+        self.tabs.setElideMode(Qt.TextElideMode.ElideRight)
+        self.tabs.setUsesScrollButtons(True)
+        self.tabs.tabCloseRequested.connect(self._on_tab_close_requested)
+        self.tabs.currentChanged.connect(self._on_current_changed)
+        layout.addWidget(self.tabs)
 
     # ------------------------------------------------------------------ lettura
-    def windows(self) -> list[QMdiSubWindow]:
-        return [sub for sub in self.area.subWindowList() if sub.widget() is not None]
+    def windows(self) -> list[EditorTab]:
+        return list(self._items)
 
-    def fit_windows(self) -> None:
-        """Mantiene le sottofinestre dentro l'area MDI quando la shell cambia."""
-        available = self.area.viewport().size()
-        if not available.isValid():
-            return
-        max_width = max(240, available.width() - 24)
-        max_height = max(160, available.height() - 24)
-        for sub in self.windows():
-            if sub.isMaximized() or sub.isMinimized():
-                continue
-            width = min(sub.width(), max_width)
-            height = min(sub.height(), max_height)
-            if (width, height) != (sub.width(), sub.height()):
-                sub.resize(width, height)
-            x = min(max(sub.x(), 0), max(0, available.width() - sub.width()))
-            y = min(max(sub.y(), 0), max(0, available.height() - sub.height()))
-            if (x, y) != (sub.x(), sub.y()):
-                sub.move(x, y)
+    def find(self, key: str) -> EditorTab | None:
+        return next((item for item in self._items if item._key == key), None)
 
-    def find(self, key: str) -> QMdiSubWindow | None:
-        for sub in self.windows():
-            if sub.property("dbx_key") == key:
-                return sub
-        return None
-
-    def current(self) -> QMdiSubWindow | None:
-        return self.area.activeSubWindow()
+    def current(self) -> EditorTab | None:
+        widget = self.tabs.currentWidget()
+        if widget is None:
+            return None
+        return next((item for item in self._items if item.widget() is widget), None)
 
     def current_editor(self) -> QWidget | None:
-        sub = self.current()
-        if sub is None:
-            return None
-        return editor_widget(sub.widget())
+        tab = self.current()
+        return tab.widget() if tab is not None else None
 
     # ------------------------------------------------------------------ apertura
     def open(
@@ -200,40 +204,26 @@ class EditorHost(QObject):
         *,
         icon: QIcon | None = None,
         size: QSize | None = None,
-    ) -> QMdiSubWindow:
-        """Apre ``widget`` in una sottofinestra, oppure attiva quella esistente."""
+    ) -> EditorTab:
+        """Apre ``widget`` in una scheda, oppure attiva quella esistente."""
         existing = self.find(key)
         if existing is not None:
-            self.area.setActiveSubWindow(existing)
+            self.activate(existing)
             return existing
         widget.setProperty("dbx_key", key)
-        proposed = (size or widget.size()).expandedTo(MIN_EDITOR_SIZE)
-        available = self.area.viewport().size()
-        if available.isValid():
-            proposed.setWidth(
-                min(proposed.width(), max(240, available.width() - 24))
-            )
-            proposed.setHeight(
-                min(proposed.height(), max(160, available.height() - 24))
-            )
-        setter = getattr(widget, "set_preferred_size", None)
-        if callable(setter):
-            setter(proposed)
-        sub = EditorSubWindow(proposed, self.area)
-        sub.setObjectName("editor_subwindow")
-        sub.setWidget(widget)
-        sub.setProperty("dbx_key", key)
-        sub.setWindowTitle(title)
-        sub.setWindowIcon(icon if icon is not None else icons.icon("finestra"))
-        sub.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
-        sub.installEventFilter(self)
-        sub.destroyed.connect(self._on_destroyed)
-        self.area.addSubWindow(sub)
-        sub.show()
-        sub.resize(proposed)
-        self.area.setActiveSubWindow(sub)
-        self.opened.emit(sub)
-        return sub
+        if not widget.windowTitle():
+            widget.setWindowTitle(title)
+        tab = EditorTab(self, key, title, widget)
+        self._items.append(tab)
+        index = self.tabs.addTab(
+            widget,
+            icon if icon is not None else icons.icon("finestra"),
+            title,
+        )
+        self.tabs.setTabToolTip(index, title)
+        self.tabs.setCurrentIndex(index)
+        self.opened.emit(tab)
+        return tab
 
     def open_dialog(
         self,
@@ -243,68 +233,84 @@ class EditorHost(QObject):
         title: str | None = None,
         icon: QIcon | None = None,
         size: QSize | None = None,
-    ) -> QMdiSubWindow:
+    ) -> EditorTab:
         """Apre un ``QDialog`` legacy attraverso :class:`DialogEditor`."""
-        page = DialogEditor(dialog, self.area)
-        sub = self.open(key, title or dialog.windowTitle() or "Finestra", page, icon=icon, size=size)
-        page.finished.connect(lambda: self._close_if_open(sub))
-        return sub
+        page = DialogEditor(dialog, self)
+        tab = self.open(key, title or dialog.windowTitle() or "Finestra", page, icon=icon, size=size)
+        page.finished.connect(lambda: self.remove(key))
+        return tab
 
-    # ------------------------------------------------------------------ chiusura
-    def close(self, sub: QMdiSubWindow | None) -> None:
-        if sub is not None:
-            sub.close()
+    # ------------------------------------------------------------------ comandi
+    def activate(self, tab: EditorTab) -> None:
+        if tab in self._items:
+            self.tabs.setCurrentWidget(tab.widget())
+
+    def set_title_for_widget(self, widget: QWidget, title: str) -> None:
+        index = self.tabs.indexOf(widget)
+        if index >= 0:
+            self.tabs.setTabText(index, title)
+            self.tabs.setTabToolTip(index, title)
+        for item in self._items:
+            if item.widget() is widget:
+                item._title = title
+
+    def close_tab(self, tab: EditorTab | None) -> bool:
+        if tab is None or tab not in self._items:
+            return False
+        if not self._confirm_close(tab):
+            return False
+        return self._remove(tab)
 
     def remove(self, key: str) -> None:
-        """Rimuove subito il documento con quella chiave, senza attendere deleteLater."""
-        sub = self.find(key)
-        if sub is None:
-            return
-        self.area.removeSubWindow(sub)
-        sub.close()
-        sub.deleteLater()
+        tab = self.find(key)
+        if tab is not None:
+            self._remove(tab)
 
     def close_current(self) -> None:
-        self.area.closeActiveSubWindow()
+        self.close_tab(self.current())
 
     def close_all(self) -> None:
-        for sub in list(self.windows()):
-            sub.close()
+        for tab in list(self._items):
+            if not self.close_tab(tab):
+                continue
 
-    def cascade(self) -> None:
-        self.area.cascadeSubWindows()
+    # ------------------------------------------------------------------ interni
+    def _confirm_close(self, tab: EditorTab) -> bool:
+        if not editor_dirty(tab.widget()):
+            return True
+        answer = QMessageBox.question(
+            self,
+            "Modifiche non salvate",
+            f"«{tab.windowTitle()}» contiene modifiche non salvate.\nChiudere comunque?",
+        )
+        return answer == QMessageBox.StandardButton.Yes
 
-    def tile(self) -> None:
-        self.area.tileSubWindows()
-
-    # --------------------------------------------------------------------- eventi
-    def _close_if_open(self, sub: QMdiSubWindow | None) -> None:
-        if sub is not None and sub.isVisible():
-            sub.close()
-
-    def _on_activated(self, sub: QMdiSubWindow | None) -> None:
-        self.activated.emit(sub.widget() if sub is not None else None)
-
-    def _on_destroyed(self, *_args: Any) -> None:
-        self.closed.emit()
-
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # noqa: N802 - API Qt
-        if (
-            event.type() == QEvent.Type.Resize
-            and (obj is self.area or obj is self.area.viewport())
-        ):
-            # Il viewport aggiorna la geometria dopo il resize della shell.
-            self._fit_timer.start()
+    def _remove(self, tab: EditorTab) -> bool:
+        if tab not in self._items:
             return False
-        if isinstance(obj, QMdiSubWindow) and event.type() == QEvent.Type.Close:
-            widget = obj.widget()
-            if widget is not None and editor_dirty(widget):
-                answer = QMessageBox.question(
-                    obj,
-                    "Modifiche non salvate",
-                    f"«{obj.windowTitle()}» contiene modifiche non salvate.\nChiudere comunque?",
-                )
-                if answer != QMessageBox.StandardButton.Yes:
-                    event.ignore()
-                    return True
-        return super().eventFilter(obj, event)
+        index = self.tabs.indexOf(tab.widget())
+        if index >= 0:
+            self.tabs.removeTab(index)
+        self._items.remove(tab)
+        tab.widget().deleteLater()
+        self.closed.emit()
+        return True
+
+    def _on_tab_close_requested(self, index: int) -> None:
+        widget = self.tabs.widget(index)
+        tab = next((item for item in self._items if item.widget() is widget), None)
+        self.close(tab)
+
+    def _on_current_changed(self, _index: int) -> None:
+        tab = self.current()
+        self.activated.emit(tab.widget() if tab is not None else None)
+
+
+__all__ = [
+    "DialogEditor",
+    "EditorHost",
+    "EditorTab",
+    "editor_dirty",
+    "editor_title",
+    "editor_widget",
+]

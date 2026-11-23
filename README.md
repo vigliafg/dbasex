@@ -10,7 +10,7 @@ La 0.7 ha aggiunto il **calcolo** ai dati: campi calcolati virtuali, auto-enter 
 automatiche, aggregati `GROUP BY` nelle query e tabella incrociata read-only. Restano le
 **operazioni quotidiane** della 0.6 (Find mode, sostituzione, import CSV, manutenzione), gli
 **Esperti**, la modalità **QBE** e il catalogo delle **azioni script** della 0.4–0.5. Il target
-resta il **clone strutturale + chrome dBASE** concordato nel piano: desktop MDI, Navigator a
+resta il **clone strutturale + chrome dBASE** concordato nel piano: area documenti a schede, Navigator a
 categorie, Table Structure a griglia unica, Form Designer a tre zone, Report Designer a bande
 impilate, Program Editor, Menu Designer e Project Editor. Non è un clone pixel-perfect di Win16.
 
@@ -25,9 +25,9 @@ nel progetto e transazioni esplicite con avvio, conferma e annullamento.
 
 | Strumento | Cosa fa |
 |---|---|
-| **Desktop MDI** | Finestre documento dentro `QMdiArea`, menu `Progetto · Modifica · Visualizza · Oggetto · Procedure · Proprietà · Finestra · ?`, SpeedBar a icone raggruppate, barra di stato con coordinate, oggetto, record e modalità |
-| **Navigator** | Categorie con icona, `[Untitled]` in cima, filtro file, directory corrente, azioni contestuali, categorie **Database**, **Tabelle**, **Query** ed **Etichette** con Database Designer, Query Designer, Query Results e Label Designer; Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
-| **Command Window** | Riquadri `Command` / `Command Results` nell'MDI, cronologia con ↑/↓, comandi `HELP`, `TABELLE`, `USE`, `RECORD`, `CLEAR` ed espressioni |
+| **Area documenti** | Navigator nel quinto sinistro con barra verticale a icone, quattro quinti alle schede dei documenti; menu `Progetto · Modifica · Visualizza · Oggetto · Procedure · Proprietà · Finestra · ?`, SpeedBar a icone raggruppate, barra di stato con coordinate, oggetto, record e modalità |
+| **Navigator** | Barra verticale a icone nel quinto sinistro, elenco oggetti con `[Untitled]`, filtro file, cartella corrente e azioni contestuali; categoria unica **Database** per tabelle e struttura, più **Query**, **Form**, **Report**, **Etichette**, **Menu** e **Programmi**; Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
+| **Command Window** | Riquadri `Command` / `Command Results` in una scheda, cronologia con ↑/↓, comandi `HELP`, `TABELLE`, `USE`, `RECORD`, `CLEAR` ed espressioni |
 | **Browse / Vista Dati** | Griglia editabile, selettore di record, barra di navigazione, filtro, ordinamento, nuovo/elimina, export/import CSV, Find mode, campi calcolati in sola lettura, opzioni di editing e larghezze colonna persistenti |
 | **Database Designer ER** | Diagramma entità-relazione delle tabelle reali, card con campi e PK/FK, archi con cardinalità e `ON DELETE`, pan/zoom, auto-layout, export PNG/SVG, creazione relazioni e modifica schema con backup |
 | **Query Designer** | Tabelle e campi con spunta, INNER/LEFT JOIN suggeriti dalle foreign key, filtri AND, ordinamento multiplo, `GROUP BY` con SUM/COUNT/AVG/MIN/MAX, anteprima SQL parametrizzata e risultato tipizzato in sola lettura; modalità **QBE** con query image, example elements, intervalli, pattern e righe OR |
@@ -128,7 +128,7 @@ Ogni ambiente segue lo schema generale di dBASE 5.5 (senza imitarne i colori Win
   SpeedBar a gruppi con icona e barra di stato con oggetto, record e modalità.
 - **Navigator**: colonna di categorie con icona a sinistra, directory corrente, filtro file e voce
   `[Untitled]` in cima all'elenco; doppio clic per aprire, tasto destro per le azioni.
-- **Command Window** non modale dentro l'MDI: riquadro `Command` sopra, `Command Results` sotto.
+- **Command Window** non modale in una scheda: riquadro `Command` sopra, `Command Results` sotto.
 - **Browse**: intestazione scura, colonna selettore, barra di navigazione, filtro, ordinamento.
 - **Table Structure**: nome e tipo in alto, metadati (campi, indici, relazioni, record), griglia
   numerata dei campi, schede Indici / Relazioni / Proprietà / Anteprima DDL.
@@ -185,11 +185,11 @@ le scorciatoie principali.
   campi → Inspector → canvas nei designer.
 - Icone multi-risoluzione (16–48 px) e politica di scala `PassThrough`; righelli e griglie restano
   coerenti a 125% e 150%.
-- Tema **Aurora** predefinito: menu bar, toolbar, Navigator, area MDI, schede, tabelle, status bar e
+- Tema **Aurora** predefinito: menu bar, toolbar, Navigator, area documenti, schede, tabelle, status bar e
   pannelli dei designer usano gradienti e accenti vivaci; niente sfondo grigio.
 - Menu con **icona + descrizione** su due righe, scorciatoia a destra e navigazione da tastiera.
 - Temi **Silver** (storico dBASE) e **Dark** selezionabili con `--theme`; i canvas leggono sempre i
-  token del tema attivo e lo sfondo MDI segue il tema anche dopo un cambio a runtime.
+  token del tema attivo e l'area documenti segue il tema anche dopo un cambio a runtime.
 
 ## Architettura
 
@@ -224,7 +224,7 @@ python tools/capture_ui.py --theme dark    # Dark
 ./tools/run_e2e.sh                         # harness completo: pytest + smoke + E2E
 ```
 
-La suite copre DDL, migrazioni, espressioni, rowset, report, script, form, designer, shell MDI,
+La suite copre DDL, migrazioni, espressioni, rowset, report, script, form, designer, shell a schede,
 accessibilità, HiDPI e prestazioni (apertura demo < 2 s, form con 100 controlli < 2 s).
 La CI GitHub Actions esegue i test headless su Linux, Windows e macOS (Python 3.11/3.12), lo smoke
 e, su Linux, cattura e pubblica gli screenshot come artifact.

@@ -47,7 +47,7 @@ def test_dialog_is_kept_inside_screen(qapp) -> None:
         dialog.deleteLater()
 
 
-def test_mdi_subwindow_follows_shell_size(qapp, demo_project) -> None:
+def test_workspace_keeps_fifth_split_and_tab_fill(qapp, demo_project) -> None:
     window = MainWindow(demo_project)
     try:
         window.resize(1024, 600)
@@ -55,16 +55,16 @@ def test_mdi_subwindow_follows_shell_size(qapp, demo_project) -> None:
         qapp.processEvents()
         window.open_object("tables", "clienti")
         qapp.processEvents()
-        sub = window.editors.find("tables:clienti")
-        assert sub is not None
-        viewport = window.mdi.viewport().size()
-        assert sub.width() <= viewport.width()
-        assert sub.height() <= viewport.height()
+        tab = window.editors.find("tables:clienti")
+        assert tab is not None
+        left, right = window.workspace_splitter.sizes()
+        assert left <= max(240, window.workspace_splitter.width() // 5) + 4
+        assert right > left
         window.resize(760, 480)
         qapp.processEvents()
-        viewport = window.mdi.viewport().size()
-        assert sub.width() <= viewport.width()
-        assert sub.height() <= viewport.height()
-        assert sub.x() >= 0 and sub.y() >= 0
+        left, right = window.workspace_splitter.sizes()
+        assert left <= max(240, window.workspace_splitter.width() // 5) + 4
+        assert tab.widget().width() <= window.editors.width()
+        assert tab.widget().height() <= window.editors.height()
     finally:
         window.close()

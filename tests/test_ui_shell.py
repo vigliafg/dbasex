@@ -49,13 +49,15 @@ def test_main_window_fits_short_screen_with_dialog(qapp, demo_project) -> None:
         qapp.processEvents()
         assert window.height() == 600
         assert window.centralWidget().geometry().bottom() < window.statusBar().geometry().top()
-        window.new_object("tables")
+        from dbx.designers.table_builder import TableBuilderDialog
+
+        dialog = TableBuilderDialog(demo_project, demo_project.require_table("clienti"))
+        window.editors.open_dialog("test:structure", dialog)
         qapp.processEvents()
         qapp.processEvents()
         assert window.height() == 600
         assert window.centralWidget().geometry().bottom() < window.statusBar().geometry().top()
-        sub = window.mdi.subWindowList()[0]
-        editor = sub.widget()
+        editor = window.editors.find("test:structure").widget()
         assert editor.scroll.verticalScrollBar().maximum() > 0
     finally:
         window.close()
@@ -66,7 +68,7 @@ def test_main_window_basics(qapp, demo_project) -> None:
     try:
         assert window.project is demo_project
         assert window.navigator is not None
-        assert window.mdi.subWindowList() == []
+        assert window.editors.windows() == []
         assert window.project_label.text().startswith(demo_project.name)
         titles = [action.text() for action in window.menuBar().actions()]
         assert titles == [
@@ -93,7 +95,7 @@ def test_main_window_basics(qapp, demo_project) -> None:
         window.close()
 
 
-def test_mdi_opens_two_documents_and_dedupes(qapp, demo_project) -> None:
+def test_tabs_open_two_documents_and_dedupe(qapp, demo_project) -> None:
     window = MainWindow(demo_project)
     try:
         window.show()
@@ -101,7 +103,7 @@ def test_mdi_opens_two_documents_and_dedupes(qapp, demo_project) -> None:
         window.open_object("forms", "form_clienti")
         qapp.processEvents()
         assert len(window.editors.windows()) == 2
-        keys = {sub.property("dbx_key") for sub in window.editors.windows()}
+        keys = {tab.property("dbx_key") for tab in window.editors.windows()}
         assert keys == {"tables:clienti", "forms:form_clienti"}
         assert window.object_label.text().startswith("Oggetto: Form Designer")
         assert window.mode_label.text().endswith("Design")
@@ -110,8 +112,6 @@ def test_mdi_opens_two_documents_and_dedupes(qapp, demo_project) -> None:
         qapp.processEvents()
         assert len(window.editors.windows()) == 2
 
-        window.editors.cascade()
-        window.editors.tile()
         window.act_close_window.trigger()
         qapp.processEvents()
         assert len(window.editors.windows()) == 1
@@ -130,23 +130,26 @@ def test_window_menu_lists_documents(qapp, demo_project) -> None:
         window.open_object("tables", "clienti")
         qapp.processEvents()
         labels = [action.text() for action in window._window_menu.actions()]
-        assert "Sovrapponi" in labels
-        assert "Affianca" in labels
+        assert "Chiudi scheda" in labels
+        assert "Chiudi tutte le schede" in labels
         assert any(label.startswith("Browse") for label in labels)
     finally:
         window.close()
 
 
-def test_mdi_replaces_tabs(qapp, demo_project) -> None:
+def test_workspace_uses_navigator_and_tabs(qapp, demo_project) -> None:
     window = MainWindow(demo_project)
     try:
-        assert not hasattr(window, "tabs")
-        assert window.centralWidget() is window.mdi
+        assert not hasattr(window, "mdi")
+        assert window.centralWidget() is window.workspace_splitter
+        assert window.workspace_splitter.widget(0) is window.navigator
+        assert window.workspace_splitter.widget(1) is window.editors
+        assert window.workspace_splitter.count() == 2
     finally:
         window.close()
 
 
-def test_command_window_opens_in_mdi_once(qapp, demo_project) -> None:
+def test_command_window_opens_in_one_tab(qapp, demo_project) -> None:
     window = MainWindow(demo_project)
     try:
         window.show()
@@ -190,7 +193,7 @@ def test_accessible_names_on_shell_and_navigator(qapp, demo_project) -> None:
     try:
         assert window.navigator.list.accessibleName() == "Oggetti del progetto"
         assert window.navigator.filter_combo.accessibleName() == "Filtro dei file"
-        assert window.navigator._buttons["tables"].accessibleName() == "Tabelle"
+        assert window.navigator._buttons["tables"].accessibleName() == "Database"
         window.open_command_window()
         qapp.processEvents()
         command = window.editors.current_editor()

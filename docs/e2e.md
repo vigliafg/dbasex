@@ -22,7 +22,7 @@ python tools/e2e_harness.py
 Al termine stampa una riga come:
 
 ```text
-ESITO: PASS · scenari 14/14 · controlli 295/295 · screenshot 31
+ESITO: PASS · scenari 14/14 · controlli 296/296 · screenshot 31
 Report: build/e2e/20261123-090000/report.json
 ```
 
@@ -47,7 +47,7 @@ python tools/e2e_harness.py --only project_tables,queries_crosstab --no-screensh
 | `reports_labels` | Report a bande, totali, grafici, PDF, anteprima, etichette e mail merge |
 | `scripts_automation` | Azioni core, parametri, variabili globali, transazioni, Program Editor |
 | `maintenance` | Backup, rinomina con riferimenti, duplicazione, integrità, compattazione |
-| `ui_designers` | Shell MDI, Navigator, tutti i designer, esperti, temi Aurora/Silver/Dark |
+| `ui_designers` | Shell a schede, Navigator, tutti i designer, esperti, temi Aurora/Silver/Dark |
 | `runner_build` | Menu runtime, Project Runner, validazione, build ZIP e riapertura |
 
 ### Workflow realistici

@@ -13,8 +13,9 @@ def test_project_editor_tree_and_settings(qapp, demo_project) -> None:
     opened: list[tuple[str, str]] = []
     editor.open_object.connect(lambda category, name: opened.append((category, name)))
     try:
-        assert editor.tree.topLevelItemCount() == 8
+        assert editor.tree.topLevelItemCount() == 7
         root = editor.tree.topLevelItem(0)
+        assert root.text(0).startswith("Database")
         child = root.child(0)
         editor._activate(child, 0)
         assert opened and opened[0][1]

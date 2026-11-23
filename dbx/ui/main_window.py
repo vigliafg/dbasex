@@ -1,17 +1,16 @@
-"""Finestra principale di dBX: shell MDI, menu, SpeedBar e status bar (A4, G1–G6)."""
+"""Finestra principale di dBX: Navigator a sinistra, schede a destra, menu e status bar."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 from PyQt6.QtCore import QEvent, QSize, Qt
-from PyQt6.QtGui import QAction, QBrush, QColor, QKeyEvent, QKeySequence, QLinearGradient
+from PyQt6.QtGui import QAction, QKeyEvent, QKeySequence
 from PyQt6.QtWidgets import (
     QApplication,
     QComboBox,
     QDialog,
     QDialogButtonBox,
-    QDockWidget,
     QFileDialog,
     QFormLayout,
     QInputDialog,
@@ -19,7 +18,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QMessageBox,
-    QMdiArea,
+    QSplitter,
     QToolBar,
     QVBoxLayout,
     QWidget,
@@ -156,35 +155,27 @@ class MainWindow(QMainWindow):
         if not self._screen_fitted:
             self._screen_fitted = True
             fit_to_available(self)
+        self._apply_workspace_ratio()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 - API Qt
+        super().resizeEvent(event)
+        if hasattr(self, "workspace_splitter"):
+            self._apply_workspace_ratio()
+
+    def _apply_workspace_ratio(self) -> None:
+        """Una quinta parte al Navigator, quattro quinti alle finestre."""
+        total = self.workspace_splitter.width()
+        if total <= 0:
+            return
+        left = max(240, total // 5)
+        self.workspace_splitter.setSizes([left, total - left])
 
     def _build_ui(self) -> None:
-        self._build_mdi()
-        self._build_navigator()
+        self._build_workspace()
         self._build_statusbar()
         self._install_position_filter()
 
-    def _build_mdi(self) -> None:
-        self.mdi = QMdiArea(self)
-        self.mdi.setObjectName("mdi_area")
-        self.mdi.setViewMode(QMdiArea.ViewMode.SubWindowView)
-        self.mdi.setOption(QMdiArea.AreaOption.DontMaximizeSubWindowOnActivation, True)
-        self.setCentralWidget(self.mdi)
-        self.editors = EditorHost(self.mdi, self)
-        self._sync_mdi_background()
-        self.editors.activated.connect(self._on_editor_activated)
-        self.editors.closed.connect(self._on_editor_closed)
-        self.editors.opened.connect(self._on_editor_opened)
-
-    def _sync_mdi_background(self) -> None:
-        app = QApplication.instance()
-        name = app.property("dbx_theme") if app is not None else None
-        palette = design.palette(name if isinstance(name, str) else None)
-        gradient = QLinearGradient(0, 0, 1600, 1000)
-        gradient.setColorAt(0.0, QColor(palette["mdi_bg"]))
-        gradient.setColorAt(1.0, QColor(palette["mdi_bg_alt"]))
-        self.mdi.setBackground(QBrush(gradient))
-
-    def _build_navigator(self) -> None:
+    def _build_workspace(self) -> None:
         self.navigator = Navigator()
         self.navigator.open_object.connect(self.open_object)
         self.navigator.run_object.connect(self.run_object)
@@ -193,14 +184,21 @@ class MainWindow(QMainWindow):
         self.navigator.delete_object.connect(self.delete_object)
         self.navigator.duplicate_object.connect(self.duplicate_project_object)
         self.navigator.structure_object.connect(self.open_table_structure)
-        dock = QWidget()
-        layout = QVBoxLayout(dock)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.navigator)
-        self.nav_dock = QDockWidget("Navigator", self)
-        self.nav_dock.setObjectName("navigator")
-        self.nav_dock.setWidget(dock)
-        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.nav_dock)
+
+        self.editors = EditorHost(self)
+        self.editors.activated.connect(self._on_editor_activated)
+        self.editors.closed.connect(self._on_editor_closed)
+        self.editors.opened.connect(self._on_editor_opened)
+
+        self.workspace_splitter = QSplitter(Qt.Orientation.Horizontal, self)
+        self.workspace_splitter.setObjectName("main_splitter")
+        self.workspace_splitter.setChildrenCollapsible(False)
+        self.workspace_splitter.setHandleWidth(3)
+        self.workspace_splitter.addWidget(self.navigator)
+        self.workspace_splitter.addWidget(self.editors)
+        self.workspace_splitter.setStretchFactor(0, 1)
+        self.workspace_splitter.setStretchFactor(1, 4)
+        self.setCentralWidget(self.workspace_splitter)
 
     def _build_statusbar(self) -> None:
         bar = self.statusBar()
@@ -343,8 +341,7 @@ class MainWindow(QMainWindow):
         self.act_refresh.triggered.connect(self._refresh_navigator)
 
     def _build_object_actions(self) -> None:
-        self.act_diagram = icons.make_action("Database Designer…", "database", self)
-        self.act_table = icons.make_action("Nuova tabella…", "tabella", self)
+        self.act_diagram = icons.make_action("Database…", "database", self)
         self.act_table_expert = icons.make_action("Tabella con esperto…", "esperto", self)
         self.act_query = icons.make_action("Nuova query…", "cerca", self)
         self.act_query_expert = icons.make_action("Query con esperto…", "esperto", self)
@@ -356,7 +353,6 @@ class MainWindow(QMainWindow):
         self.act_script = icons.make_action("Nuovo script…", "script", self)
         self.act_menu = icons.make_action("Nuovo menu…", "menu", self)
         self.act_diagram.triggered.connect(self.open_database_designer)
-        self.act_table.triggered.connect(lambda: self.new_object("tables"))
         self.act_table_expert.triggered.connect(self.new_table_expert)
         self.act_query.triggered.connect(lambda: self.new_object("queries"))
         self.act_query_expert.triggered.connect(self.new_query_expert)
@@ -387,14 +383,10 @@ class MainWindow(QMainWindow):
         self.act_project.triggered.connect(self.open_project_editor)
 
     def _build_window_actions(self) -> None:
-        self.act_cascade = icons.make_action("Sovrapponi", "cascata", self)
-        self.act_tile = icons.make_action("Affianca", "affianca", self)
         self.act_close_window = icons.make_action(
-            "Chiudi finestra", "chiudi", self, QKeySequence.StandardKey.Close
+            "Chiudi scheda", "chiudi", self, QKeySequence.StandardKey.Close
         )
-        self.act_close_all = icons.make_action("Chiudi tutte le finestre", "annulla", self)
-        self.act_cascade.triggered.connect(self.editors.cascade)
-        self.act_tile.triggered.connect(self.editors.tile)
+        self.act_close_all = icons.make_action("Chiudi tutte le schede", "annulla", self)
         self.act_close_window.triggered.connect(self.editors.close_current)
         self.act_close_all.triggered.connect(self.editors.close_all)
 
@@ -457,8 +449,7 @@ class MainWindow(QMainWindow):
 
         objects_menu = DescriptiveMenu("&Oggetto", menu)
         menu.addMenu(objects_menu)
-        add(objects_menu, self.act_diagram, "Apri il diagramma ER e modifica lo schema del database")
-        add(objects_menu, self.act_table, "Crea una nuova tabella con campi e relazioni")
+        add(objects_menu, self.act_diagram, "Apri il database: tabelle, campi, relazioni e dati")
         expert_menu = DescriptiveMenu("Nuovo con esperto", objects_menu)
         objects_menu.addMenu(expert_menu)
         add(expert_menu, self.act_table_expert, "Crea una tabella da un template guidato")
@@ -507,7 +498,7 @@ class MainWindow(QMainWindow):
             (self.act_new, self.act_open, self.act_save, self.act_print),
             (self.act_cut, self.act_copy, self.act_paste),
             (self.act_undo, self.act_redo),
-            (self.act_table, self.act_query, self.act_form, self.act_report, self.act_script, self.act_menu),
+            (self.act_diagram, self.act_query, self.act_form, self.act_report, self.act_script, self.act_menu),
             (self.act_align, self.act_distribute),
             (self.act_run,),
             (self.act_command,),
@@ -670,9 +661,7 @@ class MainWindow(QMainWindow):
             self.new_query_wizard()
             return
         if category == "tables":
-            dialog = TableBuilderDialog(self.project, None, self)
-            dialog.accepted.connect(lambda: self._after_new_table(dialog))
-            self._open_designer(f"tables:new:{id(dialog)}", dialog, "tables")
+            self.open_database_designer(new_table=True)
             return
         if category == "labels":
             sources = self.project.names("tables") + self.project.names("queries")
@@ -944,7 +933,7 @@ class MainWindow(QMainWindow):
         key = f"queries:{name}"
         existing = self.editors.find(key)
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         spec = QuerySpec.from_dict(artifact)
         designer = QueryDesignerWidget(self.project, spec, self)
@@ -973,7 +962,7 @@ class MainWindow(QMainWindow):
         key = f"results:queries:{name}"
         existing = self.editors.find(key)
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         spec = QuerySpec.from_dict(artifact)
         try:
@@ -1000,7 +989,7 @@ class MainWindow(QMainWindow):
         key = f"forms:{name}"
         existing = self.editors.find(key)
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         designer = FormDesignerWidget(self.project, FormSpec.from_dict(artifact), self)
         designer.preview_handler = self.preview_form
@@ -1043,7 +1032,7 @@ class MainWindow(QMainWindow):
         key = f"preview:reports:{name}" if name else "preview:reports"
         existing = self.editors.find(key)
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         self.editors.open_dialog(key, dialog, icon=icons.icon("report"), size=QSize(940, 800))
 
@@ -1067,7 +1056,7 @@ class MainWindow(QMainWindow):
         key = f"reports:{name}"
         existing = self.editors.find(key)
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         designer = ReportDesignerWidget(self.project, ReportSpec.from_dict(artifact), self)
         self._wire_report_designer(designer)
@@ -1108,7 +1097,7 @@ class MainWindow(QMainWindow):
         key = f"preview:labels:{name}" if name else "preview:labels"
         existing = self.editors.find(key)
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         self.editors.open_dialog(
             key, dialog, icon=icons.icon("etichetta"), size=QSize(940, 800)
@@ -1134,7 +1123,7 @@ class MainWindow(QMainWindow):
         key = f"labels:{name}"
         existing = self.editors.find(key)
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         designer = LabelDesignerWidget(self.project, LabelSpec.from_dict(artifact), self)
         self._wire_label_designer(designer)
@@ -1189,7 +1178,7 @@ class MainWindow(QMainWindow):
         key = f"scripts:{name}"
         existing = self.editors.find(key)
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         designer = None
         try:
@@ -1224,7 +1213,7 @@ class MainWindow(QMainWindow):
         key = f"menus:{name}"
         existing = self.editors.find(key)
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         designer = MenuBuilderWidget(self.project, artifact, self)
         self._wire_menu_designer(designer)
@@ -1244,7 +1233,7 @@ class MainWindow(QMainWindow):
         key = "project:editor"
         existing = self.editors.find(key)
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         editor = ProjectEditorWidget(self.project, self)
         editor.open_object.connect(self.open_object)
@@ -1261,52 +1250,49 @@ class MainWindow(QMainWindow):
         )
         editor.windowTitleChanged.connect(sub.setWindowTitle)
 
-    def open_database_designer(self) -> None:
+    def open_database_designer(self, new_table: bool = False, table: str = "") -> None:
+        """Apre l'unica superficie di progettazione: tabelle, relazioni e dati."""
         if not self._require_project():
             return
         assert self.project is not None
-        key = "diagrams:schema"
-        existing = self.editors.find(key)
-        if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+        key = "database:designer"
+        sub = self.editors.find(key)
+        designer = editor_widget(sub.widget()) if sub is not None else None
+        if sub is not None:
+            self.editors.activate(sub)
+        else:
+            designer = DatabaseDesignerWidget(self.project, self)
+            designer.saved.connect(self._refresh_navigator)
+            designer.tables_changed.connect(self._refresh_navigator)
+            designer.table_changed.connect(self._on_table_structure_changed)
+            designer.open_data.connect(lambda name: self.open_object("tables", name))
+            designer.status_message.connect(
+                lambda text: self.statusBar().showMessage(text, 4000)
+            )
+            sub = self.editors.open(
+                key,
+                "Database — schema e tabelle",
+                designer,
+                icon=icons.icon("database"),
+                size=QSize(1180, 760),
+            )
+            designer.windowTitleChanged.connect(sub.setWindowTitle)
+        if not isinstance(designer, DatabaseDesignerWidget):
             return
-        designer = DatabaseDesignerWidget(self.project, self)
-        designer.saved.connect(self._refresh_navigator)
-        designer.status_message.connect(
-            lambda text: self.statusBar().showMessage(text, 4000)
-        )
-        sub = self.editors.open(
-            key,
-            "Database Designer — Schema ER",
-            designer,
-            icon=icons.icon("database"),
-            size=QSize(1180, 760),
-        )
-        designer.windowTitleChanged.connect(sub.setWindowTitle)
+        if new_table:
+            designer.new_table()
+        elif table:
+            designer.select_table(table)
 
     def open_table_structure(self, name: str) -> None:
+        """La struttura si modifica nel Database, non in una finestra separata."""
         if not self._require_project():
             return
         assert self.project is not None
-        key = f"structure:{name}"
-        existing = self.editors.find(key)
-        if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+        if self.project.table(name) is None:
+            QMessageBox.warning(self, "Database", f"Tabella inesistente: {name}")
             return
-        table = self.project.table(name)
-        if table is None:
-            QMessageBox.warning(self, "Struttura", f"Tabella inesistente: {name}")
-            return
-        dialog = TableBuilderDialog(self.project, table, self)
-        dialog.table_changed.connect(self._on_table_structure_changed)
-        dialog.table_created.connect(self._refresh_navigator)
-        dialog.accepted.connect(self._refresh_navigator)
-        self.editors.open_dialog(
-            key,
-            dialog,
-            icon=icons.icon("tabella"),
-            size=QSize(1040, 720),
-        )
+        self.open_database_designer(table=name)
 
     def _on_table_structure_changed(self, name: str) -> None:
         self._refresh_navigator()
@@ -1325,7 +1311,7 @@ class MainWindow(QMainWindow):
             if category == "tables":
                 existing = self.editors.find(key)
                 if existing is not None:
-                    self.mdi.setActiveSubWindow(existing)
+                    self.editors.activate(existing)
                     return
                 view = DataView(self.project, name)
                 view.status_changed.connect(self.record_label.setText)
@@ -1346,7 +1332,7 @@ class MainWindow(QMainWindow):
                 return
             existing = self.editors.find(key)
             if existing is not None:
-                self.mdi.setActiveSubWindow(existing)
+                self.editors.activate(existing)
                 return
             if category == "diagrams":
                 self.open_database_designer()
@@ -1511,34 +1497,31 @@ class MainWindow(QMainWindow):
     # --------------------------------------------------------------- finestre
     def _refresh_window_menu(self) -> None:
         self._window_menu.clear()
-        add_entry(self._window_menu, self.act_cascade, "Sovrapponi le finestre documento")
-        add_entry(self._window_menu, self.act_tile, "Affianca le finestre documento")
-        self._window_menu.addSeparator()
-        add_entry(self._window_menu, self.act_close_window, "Chiudi la finestra documento attiva")
-        add_entry(self._window_menu, self.act_close_all, "Chiudi tutte le finestre documento")
+        add_entry(self._window_menu, self.act_close_window, "Chiudi la scheda attiva")
+        add_entry(self._window_menu, self.act_close_all, "Chiudi tutte le schede")
         self._window_menu.addSeparator()
         self._window_actions = []
         windows = self.editors.windows()
         if not windows:
-            empty = icons.make_action("(nessuna finestra aperta)", "finestra", self)
+            empty = icons.make_action("(nessuna scheda aperta)", "finestra", self)
             empty.setEnabled(False)
-            add_entry(self._window_menu, empty, "Apri un oggetto dal Navigator per creare una finestra")
+            add_entry(self._window_menu, empty, "Apri un oggetto dal Navigator per creare una scheda")
             return
         current = self.editors.current()
-        for sub in windows:
-            action = icons.make_action(sub.windowTitle(), "finestra", self)
+        for tab in windows:
+            action = icons.make_action(tab.windowTitle(), "finestra", self)
             action.setCheckable(True)
-            action.setChecked(sub is current)
+            action.setChecked(tab is current)
             action.triggered.connect(
-                lambda _checked=False, target=sub: self.mdi.setActiveSubWindow(target)
+                lambda _checked=False, target=tab: self.editors.activate(target)
             )
-            add_entry(self._window_menu, action, "Passa a questa finestra documento")
-            self._window_actions.append((sub, action))
+            add_entry(self._window_menu, action, "Passa a questa scheda")
+            self._window_actions.append((tab, action))
 
     def _sync_window_menu(self) -> None:
         current = self.editors.current()
-        for sub, action in self._window_actions:
-            action.setChecked(sub is current)
+        for tab, action in self._window_actions:
+            action.setChecked(tab is current)
 
     def _on_editor_activated(self, widget: QWidget | None) -> None:
         self._sync_window_menu()
@@ -1708,7 +1691,7 @@ class MainWindow(QMainWindow):
         assert self.project is not None
         existing = self.editors.find("command")
         if existing is not None:
-            self.mdi.setActiveSubWindow(existing)
+            self.editors.activate(existing)
             return
         self.editors.open(
             "command",
@@ -1738,7 +1721,6 @@ class MainWindow(QMainWindow):
         app = QApplication.instance()
         if app is not None:
             apply_theme(app, theme)
-        self._sync_mdi_background()
         self._update_actions()
 
     def show_help(self) -> None:
@@ -1817,7 +1799,7 @@ class MainWindow(QMainWindow):
             )
         if getattr(self, "act_close_window", None) is not None:
             has_windows = bool(self.editors.windows()) if hasattr(self, "editors") else False
-            for action in (self.act_close_window, self.act_close_all, self.act_cascade, self.act_tile):
+            for action in (self.act_close_window, self.act_close_all):
                 action.setEnabled(has_windows)
         self._update_edit_actions()
 

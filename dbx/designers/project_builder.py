@@ -269,8 +269,7 @@ def package_with_pyinstaller(project: Project, target: Path) -> Path:
 # Project Editor (O6)
 # --------------------------------------------------------------------------- #
 CATEGORY_LABELS = {
-    "diagrams": "Database",
-    "tables": "Tabelle",
+    "tables": "Database",
     "queries": "Query",
     "forms": "Form",
     "reports": "Report",

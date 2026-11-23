@@ -549,6 +549,9 @@ class DatabaseDesignerWidget(QWidget):
 
     saved = pyqtSignal(str)
     status_message = pyqtSignal(str)
+    open_data = pyqtSignal(str)
+    tables_changed = pyqtSignal()
+    table_changed = pyqtSignal(str)
 
     def __init__(self, project: Project, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -559,7 +562,7 @@ class DatabaseDesignerWidget(QWidget):
         self.selected_table: str | None = None
         self.selected_edge: SchemaEdge | None = None
         self._saved_state = self.diagram.to_dict()
-        self.setWindowTitle("Database Designer — Schema ER")
+        self.setWindowTitle("Database — schema e tabelle")
         self.resize(1180, 760)
         self._build_ui()
         self._load()
@@ -574,12 +577,14 @@ class DatabaseDesignerWidget(QWidget):
         toolbar.setSpacing(2)
         self.new_table_button = icons.make_button("Nuova tabella", "nuovo", self.new_table, self, "Crea una tabella")
         self.edit_table_button = icons.make_button("Modifica", "modifica", self.edit_table, self, "Modifica la tabella selezionata")
+        self.open_data_button = icons.make_button("Dati", "tabella", self.open_data_for_selected, self, "Apri i dati della tabella selezionata nel Browse")
         self.delete_table_button = icons.make_button("Elimina", "elimina", self.delete_table, self, "Elimina la tabella selezionata")
         self.relation_button = icons.make_button("Relazione", "tabella", self.new_relationship, self, "Crea una relazione")
         self.delete_relation_button = icons.make_button("Elimina relazione", "elimina", self.delete_relationship, self, "Elimina la relazione selezionata")
         for button in (
             self.new_table_button,
             self.edit_table_button,
+            self.open_data_button,
             self.delete_table_button,
             self.relation_button,
             self.delete_relation_button,
@@ -671,6 +676,7 @@ class DatabaseDesignerWidget(QWidget):
         has_edge = self.selected_edge is not None
         if hasattr(self, "edit_table_button"):
             self.edit_table_button.setEnabled(has_table)
+            self.open_data_button.setEnabled(has_table)
             self.delete_table_button.setEnabled(has_table)
             self.delete_relation_button.setEnabled(has_edge)
 
@@ -839,6 +845,10 @@ class DatabaseDesignerWidget(QWidget):
         self._refresh_buttons()
         self._refresh_status()
 
+    def open_data_for_selected(self) -> None:
+        if self.selected_table:
+            self.open_data.emit(self.selected_table)
+
     def new_table(self) -> None:
         dialog = TableBuilderDialog(self.project, None, self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
@@ -849,7 +859,22 @@ class DatabaseDesignerWidget(QWidget):
         self.canvas.selected_table = table.name
         self._on_selection(("table", table.name))
         self._on_changed()
+        self.tables_changed.emit()
         self.status_message.emit(f"Tabella {table.name} creata")
+
+    def select_table(self, name: str) -> None:
+        """Seleziona una tabella senza aprire l'editor della struttura."""
+        if name not in self.diagram.nodes and self.project.table(name) is None:
+            return
+        self.selected_table = name
+        self.selected_edge = None
+        self.canvas.selected_table = name
+        self.canvas.selected_edge = None
+        table = self.graph.table(name)
+        if table is not None:
+            self._show_table(table)
+        self._refresh_buttons()
+        self._refresh_status()
 
     def edit_table(self) -> None:
         if self.selected_table:
@@ -864,6 +889,8 @@ class DatabaseDesignerWidget(QWidget):
             return
         self._refresh_schema(keep_selection=True)
         self._on_changed()
+        self.tables_changed.emit()
+        self.table_changed.emit(name)
         self.status_message.emit(f"Tabella {name} aggiornata")
 
     def delete_table(self) -> None:
@@ -896,6 +923,7 @@ class DatabaseDesignerWidget(QWidget):
         self.canvas.selected_table = None
         self._refresh_schema()
         self._on_changed()
+        self.tables_changed.emit()
         self.status_message.emit(f"Tabella {name} eliminata")
 
     def new_relationship(self) -> None:

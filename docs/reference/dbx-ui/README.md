@@ -21,7 +21,7 @@ l'unica fonte di verità per README, `docs/ui-parity.md`, `docs/qa-0.2.md` e `do
 | `07-report-designer.png` | Report Designer a bande impilate |
 | `08-report-preview.png` | Preview del report |
 | `09-command-window.png` | Command Window |
-| `10-desktop-mdi.png` | Desktop MDI con Browse e Form Designer |
+| `10-desktop-tabs.png` | Desktop a schede con Browse e Form Designer |
 | `11-script-editor.png` | Program Editor MiniScript |
 | `12-menu-designer.png` | Menu Designer |
 | `13-project-editor.png` | Project Editor |

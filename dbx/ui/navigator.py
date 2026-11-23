@@ -30,8 +30,7 @@ from .menu import DescriptiveMenu, add_entry
 # disabilitate, con tooltip esplicativo.
 NAV_CATEGORIES = [
     ("all", "Tutti", "elenco", True),
-    ("diagrams", "Database", "database", True),
-    ("tables", "Tabelle", "tabella", True),
+    ("tables", "Database", "database", True),
     ("queries", "Query", "cerca", True),
     ("forms", "Form", "form", True),
     ("reports", "Report", "report", True),
@@ -51,8 +50,7 @@ AVAILABLE_CATEGORIES = [
 SELECTABLE_CATEGORIES = ["all", *AVAILABLE_CATEGORIES]
 
 CATEGORY_ICONS = {
-    "tables": "tabella",
-    "diagrams": "database",
+    "tables": "database",
     "queries": "cerca",
     "forms": "form",
     "reports": "report",
@@ -63,8 +61,7 @@ CATEGORY_ICONS = {
 
 FILTERS = [
     ("Tutti i file (*.*)", "all"),
-    ("Database (*.diagram.json)", "diagrams"),
-    ("Tabelle (*.table.json)", "tables"),
+    ("Database (*.table.json)", "tables"),
     ("Query (*.query.json)", "queries"),
     ("Form (*.form.json)", "forms"),
     ("Report (*.report.json)", "reports"),
@@ -101,7 +98,7 @@ class Navigator(QWidget):
 
         column = QFrame()
         column.setObjectName("nav_categories")
-        column.setFixedWidth(132)
+        column.setFixedWidth(64)
         column_outer = QVBoxLayout(column)
         column_outer.setContentsMargins(0, 0, 0, 0)
         column_outer.setSpacing(0)
@@ -122,18 +119,17 @@ class Navigator(QWidget):
         column_layout.setSpacing(2)
         for key, label, glyph, available in NAV_CATEGORIES:
             button = QToolButton(column)
-            button.setText(label)
             color = design.category_color(key) if available else design.palette()["disabled"]
             button.setIcon(icons.icon(glyph, color))
-            button.setIconSize(QSize(16, 16))
-            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            button.setIconSize(QSize(22, 22))
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             button.setCheckable(True)
-            button.setFixedHeight(34)
+            button.setFixedHeight(38)
             button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             button.setProperty("nav_category", key)
             button.setAccessibleName(label)
             if available:
-                button.setToolTip(f"Mostra {label.lower()}")
+                button.setToolTip(f"Mostra {label}")
                 button.clicked.connect(
                     lambda _checked=False, k=key: self.set_category(k)
                 )
@@ -153,12 +149,13 @@ class Navigator(QWidget):
 
         right = QWidget()
         right_layout = QVBoxLayout(right)
-        right_layout.setContentsMargins(8, 8, 8, 8)
-        right_layout.setSpacing(6)
+        right_layout.setContentsMargins(6, 6, 6, 6)
+        right_layout.setSpacing(4)
 
         directory_row = QHBoxLayout()
-        directory_row.addWidget(QLabel("Directory corrente"))
+        directory_row.addWidget(QLabel("Dir."))
         self.directory_edit = QLineEdit()
+        self.directory_edit.setMinimumWidth(40)
         self.directory_edit.setReadOnly(True)
         self.directory_edit.setPlaceholderText("(nessun progetto)")
         self.directory_edit.setToolTip("Cartella del progetto corrente")
@@ -172,17 +169,20 @@ class Navigator(QWidget):
         right_layout.addLayout(directory_row)
 
         self.filter_combo = QComboBox()
+        self.filter_combo.setMinimumWidth(70)
         self.filter_combo.setAccessibleName("Filtro dei file")
         for text, data in FILTERS:
             self.filter_combo.addItem(text, data)
         self.filter_combo.currentIndexChanged.connect(self._on_filter_changed)
         right_layout.addWidget(self.filter_combo)
 
-        self.list_header = QLabel("Oggetti del progetto")
+        self.list_header = QLabel("Oggetti")
         self.list_header.setObjectName("nav_header")
         right_layout.addWidget(self.list_header)
 
         self.list = QListWidget()
+        self.list.setMinimumWidth(70)
+        self.list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.list.setAccessibleName("Oggetti del progetto")
         self.list.setAlternatingRowColors(False)
         self.list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -195,6 +195,7 @@ class Navigator(QWidget):
 
         self.hint = QLabel("Seleziona una categoria per iniziare.")
         self.hint.setWordWrap(True)
+        self.hint.setMinimumWidth(60)
         self.hint.setObjectName("nav_hint")
 
         right_layout.addWidget(self.hint)
@@ -205,6 +206,7 @@ class Navigator(QWidget):
         self.setTabOrder(self.directory_edit, self.filter_combo)
         self.setTabOrder(self.filter_combo, self.list)
 
+        self.setMinimumWidth(200)
         self.set_category("all")
 
     # --------------------------------------------------------------- progetto
@@ -267,7 +269,7 @@ class Navigator(QWidget):
                 self.list.addItem(item)
                 count += 1
         if self.category == "all":
-            self.list_header.setText(f"Oggetti del progetto ({count})")
+            self.list_header.setText(f"Oggetti ({count})")
         else:
             self.list_header.setText(f"{NAV_LABELS.get(self.category, self.category)} ({count})")
         if count:
@@ -356,9 +358,9 @@ class Navigator(QWidget):
                 )
                 add_entry(menu, open_action, "Apri l'oggetto nel designer o nella vista dati")
                 if category == "tables":
-                    structure = icons.make_action("Struttura…", "tabella", menu)
+                    structure = icons.make_action("Progetta tabella…", "database", menu)
                     structure.triggered.connect(lambda _checked=False, n=name: self.structure_object.emit(n))
-                    add_entry(menu, structure, "Modifica campi, indici e relazioni della tabella")
+                    add_entry(menu, structure, "Modifica campi, indici e relazioni nel Database Editor")
                 if category in ("tables", "queries", "forms", "reports", "labels", "scripts"):
                     run = icons.make_action("Esegui", "esegui", menu)
                     run.triggered.connect(

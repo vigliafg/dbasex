@@ -19,14 +19,14 @@ def test_navigator_categories_and_list(qapp, demo_project) -> None:
     navigator.set_project(demo_project)
     try:
         assert set(navigator._buttons) == {key for key, *_ in NAV_CATEGORIES}
-        assert navigator.filter_combo.count() == 9
+        assert navigator.filter_combo.count() == 8
         assert navigator.directory_edit.text() == str(demo_project.path)
         assert navigator.list.count() > 0
         rows = _rows(navigator)
         assert any(value.startswith("new:") for value in rows)
         assert any(value.startswith("tables:") for value in rows)
         assert any(value.startswith("queries:") for value in rows)
-        assert navigator.list_header.text().startswith("Oggetti del progetto")
+        assert navigator.list_header.text().startswith("Oggetti")
         assert "[Untitled]" in [
             navigator.list.item(row).text() for row in range(navigator.list.count())
         ]
@@ -34,22 +34,23 @@ def test_navigator_categories_and_list(qapp, demo_project) -> None:
         navigator.deleteLater()
 
 
-def test_navigator_database_precedes_tables(qapp, demo_project) -> None:
+def test_navigator_single_database_category(qapp, demo_project) -> None:
     navigator = Navigator()
     navigator.set_project(demo_project)
     try:
-        assert list(navigator._buttons)[:3] == ["all", "diagrams", "tables"]
-        assert navigator._buttons["diagrams"].text() == "Database"
-        assert navigator._buttons["tables"].text() == "Tabelle"
-        assert (
-            navigator._buttons["diagrams"].icon().cacheKey()
-            != navigator._buttons["tables"].icon().cacheKey()
-        )
+        assert list(navigator._buttons)[:2] == ["all", "tables"]
+        assert navigator._buttons["tables"].accessibleName() == "Database"
+        assert navigator._buttons["tables"].toolTip() == "Mostra Database"
+        assert "diagrams" not in navigator._buttons
         labels = [
             navigator.filter_combo.itemText(index)
             for index in range(navigator.filter_combo.count())
         ]
-        assert labels.index("Database (*.diagram.json)") < labels.index("Tabelle (*.table.json)")
+        assert "Database (*.table.json)" in labels
+        assert not any("diagram" in label for label in labels)
+        rows = _rows(navigator)
+        assert "tables:clienti" in rows
+        assert not any(value.startswith("diagrams:") for value in rows)
     finally:
         navigator.deleteLater()
 
@@ -93,7 +94,7 @@ def test_navigator_unavailable_categories_are_visible_but_disabled(qapp) -> None
             assert key in navigator._buttons
             assert not navigator._buttons[key].isEnabled()
             assert "non disponibile" in navigator._buttons[key].toolTip()
-        for key in ("all", "tables", "diagrams", "queries", "forms", "reports", "labels", "scripts", "menus"):
+        for key in ("all", "tables", "queries", "forms", "reports", "labels", "scripts", "menus"):
             assert navigator._buttons[key].isEnabled()
     finally:
         navigator.deleteLater()
@@ -107,11 +108,11 @@ def test_navigator_filter(qapp, demo_project) -> None:
         assert navigator.category == "tables"
         rows = _rows(navigator)
         assert all(
-            not value.startswith(("diagrams:", "queries:", "forms:", "reports:", "scripts:", "menus:"))
+            not value.startswith(("queries:", "forms:", "reports:", "scripts:", "menus:"))
             for value in rows
         )
         assert any(value.startswith("tables:") for value in rows)
-        assert navigator.list_header.text().startswith("Tabelle (")
+        assert navigator.list_header.text().startswith("Database (")
     finally:
         navigator.deleteLater()
 

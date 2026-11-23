@@ -1366,3 +1366,42 @@
   insegue lo spostamento della finestra su un altro monitor. I dialoghi aperti con `show()` e non
   con `exec()` non passano dall'aggancio.
 - **Prossimo passo:** gestire il cambio di schermo a runtime e uniformare i dialoghi non modali.
+
+### 2026-11-23 — Workspace a schede e Database unificato
+- **Stato:** completata
+- **Branch/commit:** `main`; commit dedicato alla nuova struttura della shell.
+- **Obiettivo:** sostituire il desktop MDI con un layout razionale: Navigator nel quinto sinistro,
+  finestre nei quattro quinti destri, schede orizzontali per più documenti; unificare creazione e
+  modifica di database e tabelle in un'unica entità.
+- **File toccati:** `dbx/ui/editor_host.py` (riscritto), `dbx/ui/main_window.py`,
+  `dbx/ui/navigator.py`, `dbx/ui/design.py`, `dbx/designers/database_designer.py`,
+  `dbx/designers/project_builder.py`, `dbx/smoke.py`, test UI, documentazione e rendering, DIARIO.
+- **Scelte:**
+  - **Layout**: un `QSplitter` divide la shell in 1:4; il Navigator occupa il quinto sinistro con
+    barra verticale a icone da 64 px e lista oggetti. A ogni ridimensionamento il rapporto viene
+    riapplicato; sulla sinistra resta un minimo leggibile di 200 px.
+  - **Schede**: `EditorHost` non usa più `QMdiArea`; ospita un `QTabWidget` con etichette
+    orizzontali, icone, chiusura e riordino. Ogni editor occupa tutta l'area a destra. La chiusura
+    chiede conferma se l'editor è sporco. `EditorTab` mantiene l'API `find`/`windows`/`widget`/
+    `property` usata dai chiamanti.
+  - **Database unico**: scompare la categoria utente «Tabelle» separata dal diagramma. Il Navigator
+    ha una sola categoria **Database** che elenca le tabelle; il doppio clic apre i dati, il menu
+    contestuale porta a «Progetta tabella…». Il Database Designer è l'unica superficie di
+    progettazione: nuova tabella, modifica, eliminazione, relazioni, proprietà e nuovo pulsante
+    **Dati** per aprire il Browse.
+  - **Comandi**: la toolbar ha una sola voce Database; «Nuova tabella» e «Struttura» aprono il
+    Database e selezionano la tabella, senza finestre di struttura separate. Il Table Builder resta
+    il dialogo interno riutilizzato. Il Project Editor mostra sette categorie, con Database al posto
+    di Tabelle e senza il diagramma separato.
+  - **Menu Finestra**: rimosse «Sovrapponi» e «Affianca»; il menu elenca le schede aperte e offre
+    «Chiudi scheda» / «Chiudi tutte le schede».
+- **Test:** `494 passed`; harness completo `PASS` con 14/14 scenari, 296/296 controlli e 31
+  screenshot; smoke headless verde. Aggiornati i test dell'host, della shell, del Navigator, del
+  Project Editor, del Table Builder e del Database Designer.
+- **Screenshot:** nuovo `10-desktop-tabs.png`; rimossi `10-desktop-mdi.png` e i riferimenti MDI;
+  rigenerati `01-desktop`, `02-navigator`, `10-desktop-tabs`, `15-database-designer`,
+  `13-project-editor` e le catture E2E delle schede.
+- **Problemi aperti:** il Navigator a un quinto è stretto per nomi lunghi (ellissi); la barra a
+  icone usa i tooltip per le etichette. Il rapporto 1:4 viene riapplicato a ogni resize, quindi il
+  trascinamento manuale del divisore non persiste.
+- **Prossimo passo:** valutare un pannello oggetti espandibile e una scorciatoia per il Database.

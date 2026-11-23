@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from unittest import mock
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QAbstractItemView
+from PyQt6.QtWidgets import QAbstractItemView, QDialog
 
 from dbx.core import types as T
 from dbx.core.metadata import Field
@@ -236,14 +238,19 @@ def test_structure_roundtrip_updates_open_browse(qapp, demo_project) -> None:
         before = view.grid.columnCount()
         view.edit_structure()
         qapp.processEvents()
-        sub = window.editors.find("structure:clienti")
-        assert sub is not None
-        dialog = sub.widget().dialog
-        assert isinstance(dialog, TableBuilderDialog)
-        dialog._add_field_row(Field("extra", T.TEXT))
-        dialog._apply()
+        tab = window.editors.find("database:designer")
+        assert tab is not None
+        designer = tab.widget()
+        assert designer.selected_table == "clienti"
+
+        def apply_extra(dialog):
+            dialog._add_field_row(Field("extra", T.TEXT))
+            dialog._apply()
+            return QDialog.DialogCode.Accepted
+
+        with mock.patch.object(TableBuilderDialog, "exec", apply_extra):
+            designer.edit_table_by_name("clienti")
         qapp.processEvents()
-        assert window.editors.find("structure:clienti") is None
         assert view.grid.columnCount() == before + 1
         assert view.table.field("extra") is not None
     finally:

@@ -1070,7 +1070,7 @@ def scenario_ui_designers(ctx: HarnessContext) -> None:
             window.show()
             ctx.qapp.processEvents()
         ctx.check(window.navigator.list.count() > 0, "Navigator popolato")
-        ctx.check("Oggetti del progetto" in window.navigator.list_header.text(), "intestazione Navigator")
+        ctx.check("Oggetti" in window.navigator.list_header.text(), "intestazione Navigator")
         ctx.capture(window, "e2e-main-window", (1280, 800))
 
         window.open_object("tables", "clienti")
@@ -1095,10 +1095,10 @@ def scenario_ui_designers(ctx: HarnessContext) -> None:
         ctx.qapp.processEvents()
         ctx.check(window.editors.find("menus:principale") is not None, "apertura Menu Designer")
 
-        ctx.check(window.mdi.subWindowList(), "finestre MDI aperte")
-        window.mdi.tileSubWindows()
+        ctx.check(window.editors.windows(), "schede documento aperte")
+        ctx.check(window.editors.tabs.count() == len(window.editors.windows()), "etichette orizzontali delle schede")
         ctx.qapp.processEvents()
-        ctx.capture(window, "e2e-main-window-mdi", (1280, 800))
+        ctx.capture(window, "e2e-main-window-tabs", (1280, 800))
     finally:
         window.close()
 
@@ -1180,7 +1180,7 @@ def scenario_ui_designers(ctx: HarnessContext) -> None:
 
     project_editor = ProjectEditorWidget(project)
     try:
-        ctx.check(project_editor.tree.topLevelItemCount() >= 8, "Project Editor")
+        ctx.check(project_editor.tree.topLevelItemCount() >= 7, "Project Editor")
         ctx.capture(project_editor, "e2e-project-editor", (900, 640))
     finally:
         project_editor.close()
@@ -1458,7 +1458,6 @@ def scenario_workflow_nuova_applicazione(ctx: HarnessContext) -> None:
                 window.editors.find(f"{category}:{name}") is not None,
                 f"apertura di {category}:{name} dalla shell",
             )
-        window.mdi.tileSubWindows()
         ctx.qapp.processEvents()
         ctx.capture(window, "e2e-wf-new-app-shell", (1280, 800))
     finally:

@@ -116,9 +116,8 @@ def run(theme: str = "aurora") -> int:
 
         window.open_object("tables", "clienti")
         window.open_object("forms", "form_clienti")
-        window.editors.cascade()
         app.processEvents()
-        captured.append(_capture(app, window, "10-desktop-mdi.png", (1280, 800)))
+        captured.append(_capture(app, window, "10-desktop-tabs.png", (1280, 800)))
 
         window.show()
         app.processEvents()
