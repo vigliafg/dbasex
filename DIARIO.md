@@ -1336,3 +1336,33 @@
   Navigator.
 - **Prossimo passo:** valutare un layout responsive del Table Builder e il refresh delle icone al
   cambio tema.
+
+### 2026-11-23 — Finestre adattive allo schermo
+- **Stato:** completata
+- **Branch/commit:** `main`; commit dedicato all'adattamento automatico delle finestre.
+- **Obiettivo:** evitare che la finestra principale, i dialoghi e le sottofinestre MDI escano
+  dallo schermo o restino più grandi dell'area utile su portatili e monitor piccoli.
+- **File toccati:** `dbx/ui/window_fit.py` (nuovo), `dbx/ui/app.py`, `dbx/ui/main_window.py`,
+  `dbx/ui/editor_host.py`, `tools/capture_ui.py`, `tools/e2e_scenarios.py`,
+  `tests/test_ui_window_fit.py` (nuovo), rendering canonici, DIARIO.
+- **Scelte:**
+  - `fit_to_available()` riduce una finestra entro `QScreen.availableGeometry()` e la riporta
+    dentro l'area utile solo se ne esce; non ingrandisce mai una finestra già piccola.
+  - La `MainWindow` si adatta al primo `show` (default 1180×780, ridotto su schermi minori).
+  - I dialoghi modali vengono adattati prima di `exec()` tramite un aggancio unico su
+    `QDialog.exec`; niente filtro globale sugli eventi `Show`, che destabilizzava la distruzione
+    degli oggetti Qt a fine sessione (crash intermittenti in uscita dal harness).
+  - Le sottofinestre MDI vengono ricontrollate quando cambia il viewport dell'area: se la shell
+    si restringe, le finestre si riducono e rientrano nei bordi. I minimi scendono a 240×160 in
+    caso di area molto piccola; `DialogEditor` continua a offrire lo scorrimento.
+  - Gli strumenti QA (`capture_ui.py` e `ctx.capture` del harness) impongono la dimensione della
+    baseline dopo `show`, così le immagini canoniche restano 1280×800 anche con schermo virtuale
+    offscreen 800×800.
+- **Test:** `494 passed`; harness completo `PASS` con 14/14 scenari, 295/295 controlli e 31
+  screenshot; smoke headless verde. Nuovi test: riduzione entro lo schermo, `MainWindow` al primo
+  show, dialogo modale dentro lo schermo, sottofinestra MDI che segue il ridimensionamento.
+- **Screenshot:** rendering canonici rigenerati; `01-desktop.png` resta 1280×800.
+- **Problemi aperti:** l'adattamento avviene al primo show e all'apertura dei dialoghi modali; non
+  insegue lo spostamento della finestra su un altro monitor. I dialoghi aperti con `show()` e non
+  con `exec()` non passano dall'aggancio.
+- **Prossimo passo:** gestire il cambio di schermo a runtime e uniformare i dialoghi non modali.

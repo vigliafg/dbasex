@@ -59,6 +59,7 @@ from .query_results import QueryResultsWidget
 from .report_preview import ReportPreviewDialog
 from .script_params import ScriptArgumentsDialog
 from .theme import apply_theme
+from .window_fit import fit_to_available
 
 OBJECT_ICONS = {
     "tables": "tabella",
@@ -142,6 +143,7 @@ class MainWindow(QMainWindow):
         self._filter_app: QApplication | None = None
         self.setWindowTitle(f"{APP_NAME} — {__version__}")
         self.resize(1180, 780)
+        self._screen_fitted = False
         self._build_ui()
         self._build_actions()
         if project is not None:
@@ -149,6 +151,12 @@ class MainWindow(QMainWindow):
         self._update_actions()
 
     # ------------------------------------------------------------------- UI
+    def showEvent(self, event) -> None:  # noqa: N802 - API Qt
+        super().showEvent(event)
+        if not self._screen_fitted:
+            self._screen_fitted = True
+            fit_to_available(self)
+
     def _build_ui(self) -> None:
         self._build_mdi()
         self._build_navigator()

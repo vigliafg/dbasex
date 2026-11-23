@@ -15,6 +15,7 @@ from .. import APP_NAME, APP_TITLE, ORGANIZATION, __version__
 from ..config import config_dir
 from . import design
 from .theme import apply_theme
+from .window_fit import install_dialog_fit
 
 
 def app_icon(size: int = 128, theme: str | None = None) -> QIcon:
@@ -95,6 +96,7 @@ def create_application(argv: list[str] | None = None, theme: str | None = None) 
     app.setApplicationVersion(__version__)
     app.setWindowIcon(app_icon(theme=resolved))
     apply_theme(app, resolved)
+    install_dialog_fit()
     install_exception_hook()
     return app
 

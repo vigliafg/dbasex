@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from PyQt6.QtCore import QEvent, QObject, QSize, Qt, pyqtSignal
+from PyQt6.QtCore import QEvent, QObject, QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QDialog,
@@ -146,10 +146,35 @@ class EditorHost(QObject):
         super().__init__(parent)
         self.area = area
         self.area.subWindowActivated.connect(self._on_activated)
+        self.area.installEventFilter(self)
+        self.area.viewport().installEventFilter(self)
+        self._fit_timer = QTimer(self)
+        self._fit_timer.setSingleShot(True)
+        self._fit_timer.setInterval(0)
+        self._fit_timer.timeout.connect(self.fit_windows)
 
     # ------------------------------------------------------------------ lettura
     def windows(self) -> list[QMdiSubWindow]:
         return [sub for sub in self.area.subWindowList() if sub.widget() is not None]
+
+    def fit_windows(self) -> None:
+        """Mantiene le sottofinestre dentro l'area MDI quando la shell cambia."""
+        available = self.area.viewport().size()
+        if not available.isValid():
+            return
+        max_width = max(240, available.width() - 24)
+        max_height = max(160, available.height() - 24)
+        for sub in self.windows():
+            if sub.isMaximized() or sub.isMinimized():
+                continue
+            width = min(sub.width(), max_width)
+            height = min(sub.height(), max_height)
+            if (width, height) != (sub.width(), sub.height()):
+                sub.resize(width, height)
+            x = min(max(sub.x(), 0), max(0, available.width() - sub.width()))
+            y = min(max(sub.y(), 0), max(0, available.height() - sub.height()))
+            if (x, y) != (sub.x(), sub.y()):
+                sub.move(x, y)
 
     def find(self, key: str) -> QMdiSubWindow | None:
         for sub in self.windows():
@@ -186,10 +211,10 @@ class EditorHost(QObject):
         available = self.area.viewport().size()
         if available.isValid():
             proposed.setWidth(
-                min(proposed.width(), max(MIN_EDITOR_SIZE.width(), available.width() - 24))
+                min(proposed.width(), max(240, available.width() - 24))
             )
             proposed.setHeight(
-                min(proposed.height(), max(MIN_EDITOR_SIZE.height(), available.height() - 24))
+                min(proposed.height(), max(160, available.height() - 24))
             )
         setter = getattr(widget, "set_preferred_size", None)
         if callable(setter):
@@ -264,6 +289,13 @@ class EditorHost(QObject):
         self.closed.emit()
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # noqa: N802 - API Qt
+        if (
+            event.type() == QEvent.Type.Resize
+            and (obj is self.area or obj is self.area.viewport())
+        ):
+            # Il viewport aggiorna la geometria dopo il resize della shell.
+            self._fit_timer.start()
+            return False
         if isinstance(obj, QMdiSubWindow) and event.type() == QEvent.Type.Close:
             widget = obj.widget()
             if widget is not None and editor_dirty(widget):

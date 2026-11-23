@@ -226,8 +226,9 @@ class HarnessContext:
         with self.quiet_qt():
             widget.show()
             self.qapp.processEvents()
+            widget.resize(*size)
             self.qapp.processEvents()
-            pixmap = widget.grab()
+        pixmap = widget.grab()
         if not pixmap.isNull() and pixmap.save(str(target), "PNG"):
             self.screenshots.append(str(target))
             widget.hide()

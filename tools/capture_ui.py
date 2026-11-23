@@ -73,6 +73,10 @@ def _capture(app: QApplication, widget: QWidget, name: str, size: tuple[int, int
     widget.resize(*size)
     widget.show()
     app.processEvents()
+    # La cattura QA impone una dimensione fissa anche su schermi virtuali
+    # piccoli: l'adattamento automatico vale per l'app, non per le baseline.
+    widget.resize(*size)
+    app.processEvents()
     app.processEvents()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     path = OUTPUT_DIR / name
