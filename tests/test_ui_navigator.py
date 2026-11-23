@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PyQt6.QtCore import Qt
 
-from dbx.ui.navigator import NAV_CATEGORIES, Navigator
+from dbx.ui.navigator import AVAILABLE_CATEGORIES, NAV_CATEGORIES, Navigator
 
 
 def _rows(navigator: Navigator) -> list[str]:
@@ -26,6 +26,11 @@ def test_navigator_categories_and_list(qapp, demo_project) -> None:
         assert any(value.startswith("new:") for value in rows)
         assert any(value.startswith("tables:") for value in rows)
         assert any(value.startswith("queries:") for value in rows)
+        groups = [value for value in rows if value.startswith("group:")]
+        assert groups == [f"group:{key}" for key in AVAILABLE_CATEGORIES]
+        header = navigator.list.item(rows.index("group:tables"))
+        assert header.text().startswith("Database (")
+        assert header.flags() == Qt.ItemFlag.NoItemFlags
         assert navigator.list_header.text().startswith("Oggetti")
         assert "[Untitled]" in [
             navigator.list.item(row).text() for row in range(navigator.list.count())

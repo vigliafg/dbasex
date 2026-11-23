@@ -60,11 +60,20 @@ def test_workspace_keeps_fifth_split_and_tab_fill(qapp, demo_project) -> None:
         left, right = window.workspace_splitter.sizes()
         assert left <= max(240, window.workspace_splitter.width() // 5) + 4
         assert right > left
-        window.resize(760, 480)
+        window.open_object("queries", "fatture_clienti")
         qapp.processEvents()
         left, right = window.workspace_splitter.sizes()
         assert left <= max(240, window.workspace_splitter.width() // 5) + 4
-        assert tab.widget().width() <= window.editors.width()
-        assert tab.widget().height() <= window.editors.height()
+        assert right > left
+        query = window.editors.find("queries:fatture_clienti")
+        assert query is not None
+        assert query.widget().width() <= window.editors.width()
+        window.resize(760, 480)
+        qapp.processEvents()
+        qapp.processEvents()
+        left, right = window.workspace_splitter.sizes()
+        assert left <= max(240, window.workspace_splitter.width() // 5) + 4
+        assert query.widget().width() <= window.editors.width()
+        assert query.widget().height() <= window.editors.height()
     finally:
         window.close()

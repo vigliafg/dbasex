@@ -1492,3 +1492,29 @@
   orizzontale; il pannello destro non ha una larghezza memorizzata tra sessioni.
 - **Prossimo passo:** rendere il rapporto del divisore persistente e valutare un ingrandimento del
   pannello strumenti su richiesta.
+
+### 2026-11-23 — Rifiniture: toolbar, gruppi del Navigator e fit del workspace
+- **Stato:** completata
+- **Branch/commit:** `main`; commit dedicato alle tre rifiniture richieste.
+- **Obiettivo:** eliminare i pulsanti duplicati del Table Structure, raggruppare gli oggetti del
+  Navigator e garantire che ogni editor aperto resti nei quattro quinti destri.
+- **File toccati:** `dbx/designers/table_builder.py`, `dbx/ui/navigator.py`,
+  `dbx/ui/main_window.py`, test UI, README, rendering, DIARIO.
+- **Scelte:**
+  - **Table Structure:** rimossa la seconda serie di pulsanti Indici/Relazioni/Proprietà/DDL dalla
+    toolbar; restano solo le schede affiancate ai campi e i comandi di gestione record.
+  - **Navigator:** nella vista «Tutti» ogni categoria ha un'intestazione non selezionabile
+    (`Database (2)`, `Query (2)`, …) con colore del tema e conteggio, seguita dagli oggetti e da
+    `[Untitled]`. Le viste filtrate restano senza intestazione ridondante.
+  - **Fit del workspace:** `EditorHost` e il `QTabWidget` hanno un minimo esplicito di 1×1, così i
+    minimi dei singoli editor non allargano più il pannello destro; il rapporto 1:4 viene
+    riapplicato all'apertura e all'attivazione di ogni scheda. Gli editor occupano sempre i quattro
+    quinti destri, anche con Query/Report Designer larghi.
+- **Test:** `497 passed`; harness completo `PASS` con 14/14 scenari, 298/298 controlli e 32
+  screenshot; smoke headless verde. Nuovi controlli su gruppi del Navigator, schede del Table
+  Structure e mantenimento del rapporto dopo l'apertura di editor larghi.
+- **Screenshot:** `04-table-structure.png`, `01-desktop.png`, `02-navigator.png` e
+  `10-desktop-tabs.png` rigenerati.
+- **Problemi aperti:** con molti gruppi l'elenco richiede scorrimento; il rapporto 1:4 viene
+  riapplicato a ogni apertura/attivazione, quindi un trascinamento manuale del divisore non persiste.
+- **Prossimo passo:** valutare la persistenza del rapporto e un filtro rapido per gruppo.

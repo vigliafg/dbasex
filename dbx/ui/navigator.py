@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PyQt6.QtCore import QSize, Qt, QUrl, pyqtSignal
-from PyQt6.QtGui import QDesktopServices
+from PyQt6.QtGui import QBrush, QColor, QDesktopServices
 from PyQt6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -245,9 +245,25 @@ class Navigator(QWidget):
             AVAILABLE_CATEGORIES if self.category == "all" else [self.category]
         )
         count = 0
+        palette = design.palette()
         for category in categories:
             if category not in CATEGORY_ICONS:
                 continue
+            names = self.project.names(category)
+            if self.category == "all":
+                header = QListWidgetItem(
+                    f"{NAV_LABELS.get(category, category)} ({len(names)})"
+                )
+                header.setData(Qt.ItemDataRole.UserRole, f"group:{category}")
+                header.setFlags(Qt.ItemFlag.NoItemFlags)
+                font = header.font()
+                font.setBold(True)
+                header.setFont(font)
+                header.setForeground(QBrush(QColor(palette["accent"])))
+                header.setBackground(QBrush(QColor(palette["panel_alt"])))
+                header.setToolTip(f"Gruppo {NAV_LABELS.get(category, category)}")
+                header.setSizeHint(QSize(0, 24))
+                self.list.addItem(header)
             untitled = QListWidgetItem(
                 icons.icon(CATEGORY_ICONS[category], design.category_color(category)),
                 "[Untitled]",
@@ -257,7 +273,7 @@ class Navigator(QWidget):
                 f"Nuovo oggetto — {NAV_LABELS.get(category, CATEGORY_LABELS.get(category, category))}"
             )
             self.list.addItem(untitled)
-            for name in self.project.names(category):
+            for name in names:
                 item = QListWidgetItem(
                     icons.icon(CATEGORY_ICONS[category], design.category_color(category)),
                     name,
@@ -295,7 +311,7 @@ class Navigator(QWidget):
     # ------------------------------------------------------------------ azioni
     def _activate(self, item: QListWidgetItem) -> None:
         data = item.data(Qt.ItemDataRole.UserRole)
-        if not isinstance(data, str):
+        if not isinstance(data, str) or data.startswith("group:"):
             return
         if data.startswith("new:"):
             self.new_object.emit(data.split(":", 1)[1])

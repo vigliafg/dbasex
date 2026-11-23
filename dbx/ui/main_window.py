@@ -186,6 +186,8 @@ class MainWindow(QMainWindow):
         self.navigator.structure_object.connect(self.open_table_structure)
 
         self.editors = EditorHost(self)
+        self.editors.setMinimumSize(1, 1)
+        self.editors.tabs.setMinimumSize(1, 1)
         self.editors.activated.connect(self._on_editor_activated)
         self.editors.closed.connect(self._on_editor_closed)
         self.editors.opened.connect(self._on_editor_opened)
@@ -1550,6 +1552,7 @@ class MainWindow(QMainWindow):
             action.setChecked(tab is current)
 
     def _on_editor_activated(self, widget: QWidget | None) -> None:
+        self._apply_workspace_ratio()
         self._sync_window_menu()
         self._update_actions()
         if widget is None:
@@ -1563,6 +1566,7 @@ class MainWindow(QMainWindow):
             self.record_label.setText("Record: —")
 
     def _on_editor_opened(self, _sub=None) -> None:
+        self._apply_workspace_ratio()
         self._refresh_window_menu()
         self._update_actions()
 

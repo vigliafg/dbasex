@@ -250,15 +250,6 @@ class TableBuilderDialog(QDialog):
         ):
             toolbar.addWidget(button)
         toolbar.addStretch(1)
-        for text, glyph, index, tip in (
-            ("Indici", "tabella", 0, "Indici della tabella"),
-            ("Relazioni", "elenco", 1, "Relazioni verso altre tabelle"),
-            ("Proprietà", "impostazioni", 2, "Proprietà della tabella e del campo"),
-            ("DDL", "testo", 3, "Anteprima del DDL"),
-        ):
-            toolbar.addWidget(
-                icons.make_button(text, glyph, lambda _checked=False, i=index: self._show_tool(i), self, tip)
-            )
         layout.addLayout(toolbar)
 
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
