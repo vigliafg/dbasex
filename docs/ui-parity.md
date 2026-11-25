@@ -8,7 +8,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Finestra originale | Riferimento | Modulo dBX | Stato 0.3 | Gap principale |
 |---|---|---|---|---|
 | Desktop + menu + SpeedBar | `01`, `43` | `dbx/ui/main_window.py` | fatto | — |
-| Navigator | `01`, `42`, `43` | `dbx/ui/navigator.py` | fatto | Immagini/Suoni/Cataloghi/Personalizzati disabilitate |
+| Navigator | `01`, `42`, `43` | `dbx/ui/navigator.py` | fatto | **Database** apre lo schema ER, **Tabelle** apre la struttura; Immagini/Suoni/Cataloghi/Personalizzati disabilitate |
 | Command Window | `01`, `02`, `04` | `dbx/ui/command_window.py` | fatto | Comandi limitati a HELP/TABELLE/USE/RECORD/CLEAR/espressioni |
 | Browse / Table | `07`, `11`, `18` | `dbx/ui/data_view.py` | fatto | Find mode, sostituzione e import CSV (0.6) |
 | Table Structure | `08`, `09`, `13`, `14`, `27` | `dbx/designers/table_builder.py` | fatto | Campi calcolati, auto-enter, incremento, Scelta, dominio numerico e maschere nella scheda Proprietà (con scorrimento interno); stampa minimale |
@@ -71,5 +71,5 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - Le checklist di collaudo, i test e i difetti noti accettati sono in `docs/qa-0.2.md`,
   `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-0.5.md`, `docs/qa-0.6.md`, `docs/qa-0.7.md`, `docs/qa-0.8.md` e `docs/qa-0.9.md`.
 - Il Label Designer leggero è tornato nella 0.8: la categoria **Etichette** convive con **Database** e
-  produce etichette/mail merge; non è il designer a controlli liberi di dBASE.
+  **Tabelle** e produce etichette/mail merge; non è il designer a controlli liberi di dBASE.
 - Query Designer, Query Results e le query come sorgente di form/report sono parte della release 0.3.0.

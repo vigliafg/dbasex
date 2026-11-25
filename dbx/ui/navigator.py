@@ -30,7 +30,8 @@ from .menu import DescriptiveMenu, add_entry
 # disabilitate, con tooltip esplicativo.
 NAV_CATEGORIES = [
     ("all", "Tutti", "elenco", True),
-    ("tables", "Database", "database", True),
+    ("diagrams", "Database", "database", True),
+    ("tables", "Tabelle", "tabella", True),
     ("queries", "Query", "cerca", True),
     ("forms", "Form", "form", True),
     ("reports", "Report", "report", True),
@@ -50,7 +51,8 @@ AVAILABLE_CATEGORIES = [
 SELECTABLE_CATEGORIES = ["all", *AVAILABLE_CATEGORIES]
 
 CATEGORY_ICONS = {
-    "tables": "database",
+    "diagrams": "database",
+    "tables": "tabella",
     "queries": "cerca",
     "forms": "form",
     "reports": "report",
@@ -61,7 +63,8 @@ CATEGORY_ICONS = {
 
 FILTERS = [
     ("Tutti i file (*.*)", "all"),
-    ("Database (*.table.json)", "tables"),
+    ("Database (*.diagram.json)", "diagrams"),
+    ("Tabelle (*.table.json)", "tables"),
     ("Query (*.query.json)", "queries"),
     ("Form (*.form.json)", "forms"),
     ("Report (*.report.json)", "reports"),
@@ -318,6 +321,9 @@ class Navigator(QWidget):
             return
         if ":" in data:
             category, name = data.split(":", 1)
+            if category == "tables":
+                self.structure_object.emit(name)
+                return
             self.open_object.emit(category, name)
 
     def _context_menu(self, position) -> None:
@@ -368,21 +374,36 @@ class Navigator(QWidget):
                     add_expert(category)
             elif isinstance(data, str) and ":" in data:
                 category, name = data.split(":", 1)
-                open_action = icons.make_action("Apri / modifica", "apri", menu)
-                open_action.triggered.connect(
-                    lambda _checked=False, c=category, n=name: self.open_object.emit(c, n)
-                )
-                add_entry(menu, open_action, "Apri l'oggetto nel designer o nella vista dati")
                 if category == "tables":
-                    structure = icons.make_action("Progetta tabella…", "database", menu)
-                    structure.triggered.connect(lambda _checked=False, n=name: self.structure_object.emit(n))
-                    add_entry(menu, structure, "Modifica campi, indici e relazioni nel Database Editor")
+                    open_action = icons.make_action("Apri struttura…", "apri", menu)
+                    open_action.triggered.connect(
+                        lambda _checked=False, n=name: self.structure_object.emit(n)
+                    )
+                    add_entry(
+                        menu,
+                        open_action,
+                        "Modifica campi, indici e relazioni della tabella",
+                    )
+                else:
+                    label = "Apri schema ER…" if category == "diagrams" else "Apri / modifica"
+                    open_action = icons.make_action(label, "apri", menu)
+                    open_action.triggered.connect(
+                        lambda _checked=False, c=category, n=name: self.open_object.emit(c, n)
+                    )
+                    add_entry(menu, open_action, "Apri l'oggetto nel designer o nella vista dati")
                 if category in ("tables", "queries", "forms", "reports", "labels", "scripts"):
-                    run = icons.make_action("Esegui", "esegui", menu)
+                    label = "Sfoglia dati" if category == "tables" else "Esegui"
+                    glyph = "tabella" if category == "tables" else "esegui"
+                    description = (
+                        "Mostra i record della tabella nella Browse"
+                        if category == "tables"
+                        else "Esegui l'oggetto con i dati reali"
+                    )
+                    run = icons.make_action(label, glyph, menu)
                     run.triggered.connect(
                         lambda _checked=False, c=category, n=name: self.run_object.emit(c, n)
                     )
-                    add_entry(menu, run, "Esegui l'oggetto con i dati reali")
+                    add_entry(menu, run, description)
                 duplicate = icons.make_action("Duplica…", "copia", menu)
                 duplicate.triggered.connect(
                     lambda _checked=False, c=category, n=name: self.duplicate_object.emit(c, n)

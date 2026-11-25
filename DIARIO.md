@@ -1636,3 +1636,20 @@
 - **Decisioni:** nessun bump di versione; il piano è documentato come estensione non rilasciata della 0.9.
 - **Decisioni rimandate all'utente:** eventuale numero di versione e tag per la release che includerà la validazione.
 - **RIPRESA:** nessuna fase pendente di questo piano. Per una nuova attività leggere `PLAN.md`, `DIARIO.md` e il repository; non riaprire le fasi 0–7 senza una richiesta esplicita.
+
+### 2026-11-25 — Navigator — separazione Database / Tabelle
+- **Stato:** completata
+- **Branch/commit:** `main`; commit della modifica.
+- **Obiettivo:** distinguere nel Navigator lo **schema ER** dalle **tabelle**: `Database` apre lo schema generale delle tabelle correlate, `Tabelle` elenca le tabelle e apre la struttura di quella scelta.
+- **File toccati:** `dbx/ui/navigator.py`, `dbx/ui/main_window.py`, `dbx/designers/database_designer.py`, `tests/test_ui_navigator.py`, `tests/test_ui_shell.py`, `README.md`, `CHANGELOG.md`, `PLAN.md`, `docs/ui-parity.md`, rendering `01-desktop.png` e `02-navigator.png`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - **Categorie:** `diagrams` è ora esposta come **Database** (icona database, apre il Database Designer); `tables` diventa **Tabelle** (icona tabella). L'ordine è `Tutti`, `Database`, `Tabelle`, `Query`, `Form`, `Report`, `Etichette`, `Menu`, `Programmi`, poi le categorie disabilitate.
+  - **Doppio clic:** su una tabella emette `structure_object`, quindi apre la **Struttura** (Table Builder) e non più la Browse. La Browse resta nel menu contestuale come **Sfoglia dati**; la voce ridondante “Progetta tabella…” è stata rimossa. Per lo schema ER la voce è **Apri schema ER…**.
+  - **Schema ER:** il doppio clic sulla card o sulla lista laterale del Database Designer e il pulsante **Modifica** continuano ad aprire la stessa Struttura. Il titolo della finestra è ora “Database — schema ER”.
+  - **Filtro:** aggiunto `Database (*.diagram.json)`; `Database (*.table.json)` diventa `Tabelle (*.table.json)`.
+  - **Nuova tabella:** `[Untitled]` sotto **Tabelle** mantiene il flusso esistente (Database Designer + dialogo nuova tabella); a fine creazione si apre la Struttura.
+  - **`[Untitled]` sotto Database:** resta visibile per coerenza con le altre categorie e apre il Database Designer; il progetto ha comunque un solo schema, mostrato come voce `schema`.
+- **Test:** `560 passed` (era 559); smoke headless OK; harness E2E `PASS` con 14/14 scenari e 298/298 controlli. `ruff` non installato, lint non eseguito.
+- **Screenshot:** rendering canonici rigenerati in Aurora; `02-navigator.png` mostra i gruppi **Database (1)** con `schema` e **Tabelle (2)** con `clienti` e `fatture`; `01-desktop.png` aggiornato.
+- **Problemi aperti:** il gruppo Database mostra sia `[Untitled]` sia `schema`; se in futuro il progetto ammetterà più schemi la voce andrà rivalutata. La Browse non ha più un doppio clic dedicato dalle Tabelle, ma resta a un clic dal menu contestuale.
+- **Prossimo passo:** nessuno; modifica conclusa. In attesa di nuove richieste.

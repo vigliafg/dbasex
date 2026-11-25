@@ -563,7 +563,7 @@ class DatabaseDesignerWidget(QWidget):
         self.selected_table: str | None = None
         self.selected_edge: SchemaEdge | None = None
         self._saved_state = self.diagram.to_dict()
-        self.setWindowTitle("Database — schema e tabelle")
+        self.setWindowTitle("Database — schema ER")
         self.resize(1180, 760)
         self._build_ui()
         self._load()

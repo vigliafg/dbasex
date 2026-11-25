@@ -38,6 +38,9 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
 
 ### Modificato
 
+- **Navigator**: **Database** ora è la categoria dello schema ER, mentre il nuovo gruppo **Tabelle**
+  elenca le tabelle e apre la loro struttura con doppio clic; la Browse resta disponibile come
+  **Sfoglia dati** nel menu contestuale.
 - Il Table Builder espone i gruppi **Valori (Scelta)**, **Dominio numerico** e **Incremento** nella
   scheda Proprietà, ora con scorrimento interno.
 - La Browse evidenzia la cella non valida e riporta il motivo nella barra di stato, senza dialogo

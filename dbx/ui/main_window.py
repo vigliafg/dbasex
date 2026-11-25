@@ -460,7 +460,7 @@ class MainWindow(QMainWindow):
 
         objects_menu = DescriptiveMenu("&Oggetto", menu)
         menu.addMenu(objects_menu)
-        add(objects_menu, self.act_diagram, "Apri il database: tabelle, campi, relazioni e dati")
+        add(objects_menu, self.act_diagram, "Apri lo schema ER: tabelle, relazioni e layout")
         expert_menu = DescriptiveMenu("Nuovo con esperto", objects_menu)
         objects_menu.addMenu(expert_menu)
         add(expert_menu, self.act_table_expert, "Crea una tabella da un template guidato")
@@ -1262,7 +1262,7 @@ class MainWindow(QMainWindow):
         editor.windowTitleChanged.connect(sub.setWindowTitle)
 
     def open_database_designer(self, new_table: bool = False, table: str = "") -> None:
-        """Apre l'unica superficie di progettazione: tabelle, relazioni e dati."""
+        """Apre lo schema ER della base dati: tabelle, relazioni e layout."""
         if not self._require_project():
             return
         assert self.project is not None
@@ -1281,7 +1281,7 @@ class MainWindow(QMainWindow):
             )
             sub = self.editors.open(
                 key,
-                "Database — schema e tabelle",
+                "Database — schema ER",
                 designer,
                 icon=icons.icon("database"),
                 size=QSize(1180, 760),

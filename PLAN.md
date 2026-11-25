@@ -987,6 +987,13 @@ condizionale, campo Scelta, dominio numerico, maschere e `increment`. Le fasi
 | 6 | `increment`, migrazione `auto_serial`, `re_evaluate` e avvisi storici | `[x]` completata (2026-11-25) |
 | 7 | Rifinitura: changelog, README e chiusura del diario | `[x]` completata (2026-11-25) |
 
+### Navigator — Database e Tabelle (2026-11-25)
+
+Il gruppo **Database** identifica lo schema ER (`diagrams/schema`); il nuovo gruppo **Tabelle**
+elenca le tabelle e apre la struttura della tabella selezionata. La Browse resta accessibile come
+**Sfoglia dati** dal menu contestuale. Il Database Designer continua a mostrare schema e tabelle e
+resta la superficie di modifica delle relazioni.
+
 ### Stato di avanzamento 0.6.0–0.9.0
 
 | Ondata | Stato | Checkpoint |

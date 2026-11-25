@@ -199,7 +199,8 @@ def test_accessible_names_on_shell_and_navigator(qapp, demo_project) -> None:
     try:
         assert window.navigator.list.accessibleName() == "Oggetti del progetto"
         assert window.navigator.filter_combo.accessibleName() == "Filtro dei file"
-        assert window.navigator._buttons["tables"].accessibleName() == "Database"
+        assert window.navigator._buttons["diagrams"].accessibleName() == "Database"
+        assert window.navigator._buttons["tables"].accessibleName() == "Tabelle"
         window.open_command_window()
         qapp.processEvents()
         command = window.editors.current_editor()
