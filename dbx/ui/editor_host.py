@@ -303,7 +303,7 @@ class EditorHost(QWidget):
     def _on_tab_close_requested(self, index: int) -> None:
         widget = self.tabs.widget(index)
         tab = next((item for item in self._items if item.widget() is widget), None)
-        self.close(tab)
+        self.close_tab(tab)
 
     def _on_current_changed(self, _index: int) -> None:
         tab = self.current()

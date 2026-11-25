@@ -1682,3 +1682,15 @@
 - **Screenshot:** invariati; il focus sulla scheda non modifica i rendering canonici.
 - **Problemi aperti:** nessuno.
 - **Prossimo passo:** nessuno; in attesa di nuove richieste.
+
+### 2026-11-25 — Chiusura schede dalla tab bar
+- **Stato:** completata
+- **Branch/commit:** `main`; commit della correzione.
+- **Obiettivo:** correggere l’errore “many arguments” che compariva chiudendo una scheda con il pulsante **[x]** della tab bar.
+- **File toccati:** `dbx/ui/editor_host.py`, `tests/test_ui_table_builder.py`, `CHANGELOG.md`, `DIARIO.md`.
+- **Causa:** `EditorHost._on_tab_close_requested` chiamava `self.close(tab)`; `EditorHost` eredita da `QWidget`, quindi `close()` non accetta argomenti e Qt/Python segnalava l’errore. La connessione a `tabCloseRequested` passava l’indice, ma il metodo sbagliato riceveva la scheda come argomento posizionale.
+- **Correzione:** la chiamata ora è `self.close_tab(tab)`, che esegue il controllo delle modifiche e rimuove la scheda. Aggiunto un test che emette `tabCloseRequested` sulla scheda Struttura e verifica la chiusura.
+- **Test:** `565 passed`; smoke headless OK.
+- **Screenshot:** invariati.
+- **Problemi aperti:** nessuno.
+- **Prossimo passo:** nessuno; in attesa di nuove richieste.

@@ -55,6 +55,12 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
 - Il vecchio `lookup` viene letto come `choice` con sorgente tabella; `auto_serial` viene letto come
   `increment="records"` e riscritto con il solo campo nuovo.
 
+### Corretto
+
+- Chiusura delle schede con il pulsante **[x]** della tab bar: `EditorHost` chiamava
+  `QWidget.close` con l’argomento della scheda, provocando un `TypeError`; ora usa `close_tab` e la
+  scheda si chiude regolarmente.
+
 ### Note di aggiornamento
 
 - I metadati nuovi sono additivi con default vuoti: i file esistenti restano validi.

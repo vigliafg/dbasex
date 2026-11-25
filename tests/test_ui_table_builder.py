@@ -310,3 +310,19 @@ def test_embedded_structure_fits_a_laptop_viewport(qapp, demo_project) -> None:
         assert dialog.minimumSizeHint().width() <= 900
     finally:
         dialog.close()
+
+
+def test_structure_tab_closes_from_the_tab_bar(qapp, demo_project) -> None:
+    window = MainWindow(demo_project)
+    try:
+        window.show()
+        window.open_table_structure("clienti")
+        qapp.processEvents()
+        tab = window.editors.find("structure:clienti")
+        assert tab is not None
+        index = window.editors.tabs.indexOf(tab.widget())
+        window.editors.tabs.tabCloseRequested.emit(index)
+        qapp.processEvents()
+        assert window.editors.find("structure:clienti") is None
+    finally:
+        window.close()
