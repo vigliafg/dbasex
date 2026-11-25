@@ -264,3 +264,49 @@ def test_tools_are_side_tabs_next_to_fields(qapp, demo_project) -> None:
         assert dialog.tabs.currentIndex() == 2
     finally:
         dialog.close()
+
+
+def test_new_table_from_navigator_opens_embedded_structure(qapp, demo_project) -> None:
+    window = MainWindow(demo_project)
+    try:
+        window.show()
+        window.new_object("tables")
+        qapp.processEvents()
+        tab = window.editors.find("structure:new")
+        assert tab is not None
+        dialog = tab.widget().dialog
+        assert isinstance(dialog, TableBuilderDialog)
+        assert dialog.embedded is True
+        assert dialog.name_edit.hasFocus()
+        dialog.name_edit.setText("nuova_tabella_test")
+        dialog._apply()
+        qapp.processEvents()
+        assert demo_project.table("nuova_tabella_test") is not None
+        assert window.editors.find("structure:nuova_tabella_test") is not None
+        assert window.editors.find("structure:new") is None
+    finally:
+        window.close()
+
+
+def test_new_table_structure_cancel_closes_the_tab(qapp, demo_project) -> None:
+    window = MainWindow(demo_project)
+    try:
+        window.show()
+        window.open_new_table_structure()
+        qapp.processEvents()
+        tab = window.editors.find("structure:new")
+        assert tab is not None
+        tab.widget().dialog._cancel()
+        qapp.processEvents()
+        assert window.editors.find("structure:new") is None
+    finally:
+        window.close()
+
+
+def test_embedded_structure_fits_a_laptop_viewport(qapp, demo_project) -> None:
+    dialog = TableBuilderDialog(demo_project, demo_project.require_table("clienti"))
+    try:
+        # Larghezza tipica utile a 1280 px meno il Navigator e la scrollbar.
+        assert dialog.minimumSizeHint().width() <= 900
+    finally:
+        dialog.close()

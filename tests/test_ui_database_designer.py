@@ -218,3 +218,18 @@ def test_main_window_opens_structure_and_browse_from_database(qapp, demo_project
         assert len(window.editors.windows()) == 3
     finally:
         window.close()
+
+
+def test_diagram_canvas_is_the_main_viewport(qapp, demo_project) -> None:
+    designer = DatabaseDesignerWidget(demo_project)
+    try:
+        designer.resize(1180, 760)
+        designer.show()
+        qapp.processEvents()
+        sizes = designer.splitter.sizes()
+        assert sizes[1] > sizes[0] + sizes[2]
+        assert sizes[1] / sum(sizes) > 0.6
+        # Il pannello deve stare anche nell'area documenti di una finestra 1280.
+        assert designer.minimumSizeHint().width() <= 900
+    finally:
+        designer.close()

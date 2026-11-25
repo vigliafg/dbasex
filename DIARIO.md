@@ -1653,3 +1653,19 @@
 - **Screenshot:** rendering canonici rigenerati in Aurora; `02-navigator.png` mostra i gruppi **Database (1)** con `schema` e **Tabelle (2)** con `clienti` e `fatture`; `01-desktop.png` aggiornato.
 - **Problemi aperti:** il gruppo Database mostra sia `[Untitled]` sia `schema`; se in futuro il progetto ammetterà più schemi la voce andrà rivalutata. La Browse non ha più un doppio clic dedicato dalle Tabelle, ma resta a un clic dal menu contestuale.
 - **Prossimo passo:** nessuno; modifica conclusa. In attesa di nuove richieste.
+
+### 2026-11-25 — Struttura nuova tabella e diagramma ER dominante
+- **Stato:** completata
+- **Branch/commit:** `main`; commit della modifica.
+- **Obiettivo:** aprire la struttura di una nuova tabella nella scheda del workspace invece del popup; adattare l’editor al viewport senza debordare; dare al diagramma ER la maggior parte della larghezza dell’ambiente Database.
+- **File toccati:** `dbx/ui/main_window.py`, `dbx/designers/table_builder.py`, `dbx/designers/database_designer.py`, `tests/test_ui_table_builder.py`, `tests/test_ui_database_designer.py`, `README.md`, `CHANGELOG.md`, `docs/ui-parity.md`, rendering `01-desktop.png`, `02-navigator.png`, `04-table-structure.png`, `15-database-designer.png`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - **Nuova tabella:** `open_new_table_structure()` crea un `TableBuilderDialog(..., embedded=True)` nella scheda `structure:new`, con lo stesso `DialogEditor` della struttura esistente. Al primo **Applica** la scheda viene rikeyata in `structure:<nome>`; **Annulla** chiude la scheda. Il vecchio percorso modale del Navigator non è più usato.
+  - **Focus iniziale:** all’apertura della struttura il focus va al campo **Name** in alto. Interpretazione di “etichetta superiore”; se si intendeva la scheda o un’altra etichetta, va corretto.
+  - **Larghezza Table Builder:** la larghezza minima era 1053 px, causata dal suggerimento “Trascina il numero…” nella barra dei campi. Il suggerimento ora ha policy orizzontale `Ignored`, i tools scendono a 300 px e la minima è 766 px: a 1280 px l’area documenti è circa 1024 px, quindi non deborda più.
+  - **Database Designer:** toolbar su due righe per non forzare la larghezza; pannelli laterali a 120 px (tabelle) e 250 px (ispettore); il canvas riceve il fattore di stretch e circa il 70% della larghezza. La larghezza minima scende da 1096 a 716 px.
+  - **Pannelli laterali:** restano ridimensionabili con il splitter; non è stato aggiunto un pulsante di chiusura per non affollare la toolbar.
+- **Test:** `564 passed` (erano 560); smoke headless OK; harness E2E `PASS` con 14/14 scenari e 298/298 controlli. `ruff` non installato, lint non eseguito.
+- **Screenshot:** rendering canonici rigenerati in Aurora; `15-database-designer.png` mostra toolbar a due righe e diagramma ER a circa il 70%; `04-table-structure.png` riflette la nuova larghezza minima.
+- **Problemi aperti:** il focus è stato interpretato come campo Name; i pannelli laterali non hanno un toggle esplicito, solo il trascinamento del splitter.
+- **Prossimo passo:** nessuno; in attesa di nuove richieste.

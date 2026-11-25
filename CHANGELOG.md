@@ -41,6 +41,12 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
 - **Navigator**: **Database** ora è la categoria dello schema ER, mentre il nuovo gruppo **Tabelle**
   elenca le tabelle e apre la loro struttura con doppio clic; la Browse resta disponibile come
   **Sfoglia dati** nel menu contestuale.
+- **Table Builder**: la nuova tabella si apre nella scheda del workspace, non in un dialogo modale,
+  con lo stesso adattamento della struttura esistente; il focus iniziale va al campo **Name** e la
+  larghezza minima scende sotto i 900 px per non debordare nei viewport da 1280 px.
+- **Database Designer**: toolbar su due righe e pannelli laterali più stretti; il diagramma ER occupa
+  circa il 70% della larghezza, la larghezza minima scende sotto i 900 px e l'area documenti non
+  deborda più nei viewport da 1280 px.
 - Il Table Builder espone i gruppi **Valori (Scelta)**, **Dominio numerico** e **Incremento** nella
   scheda Proprietà, ora con scorrimento interno.
 - La Browse evidenzia la cella non valida e riporta il motivo nella barra di stato, senza dialogo

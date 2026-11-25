@@ -26,6 +26,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QScrollArea,
+    QSizePolicy,
     QSplitter,
     QStyledItemDelegate,
     QTableWidget,
@@ -259,7 +260,7 @@ class TableBuilderDialog(QDialog):
         self.splitter.setChildrenCollapsible(False)
         self.splitter.addWidget(self._build_fields_widget())
         tools = self._build_tools_widget()
-        tools.setMinimumWidth(340)
+        tools.setMinimumWidth(300)
         self.splitter.addWidget(tools)
         self.splitter.setStretchFactor(0, 3)
         self.splitter.setStretchFactor(1, 2)
@@ -324,6 +325,10 @@ class TableBuilderDialog(QDialog):
         bar.addStretch(1)
         self.grid_hint = QLabel("Trascina il numero del campo per riordinare")
         self.grid_hint.setObjectName("nav_hint")
+        self.grid_hint.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred
+        )
+        self.grid_hint.setMinimumWidth(0)
         bar.addWidget(self.grid_hint)
         layout.addLayout(bar)
         return container
@@ -1670,16 +1675,19 @@ class TableBuilderDialog(QDialog):
         if not self.embedded:
             self.reject()
             return
-        if self.original is not None:
-            reloaded = self.project.table(self.original.name)
-            if reloaded is not None:
-                self.table = reloaded.copy()
-                self.original = reloaded
-                self._original_names = {field.id: field.name for field in self.table.fields}
-                self._index_touched.clear()
-                self._load()
-                self._update_preview()
-                self._refresh_stats()
+        if self.original is None:
+            # La scheda di una nuova tabella si chiude come un annullamento.
+            self.reject()
+            return
+        reloaded = self.project.table(self.original.name)
+        if reloaded is not None:
+            self.table = reloaded.copy()
+            self.original = reloaded
+            self._original_names = {field.id: field.name for field in self.table.fields}
+            self._index_touched.clear()
+            self._load()
+            self._update_preview()
+            self._refresh_stats()
 
     def _apply(self) -> None:
         table = self.current_table()

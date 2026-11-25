@@ -672,7 +672,7 @@ class MainWindow(QMainWindow):
             self.new_query_wizard()
             return
         if category == "tables":
-            self.open_database_designer(new_table=True)
+            self.open_new_table_structure()
             return
         if category == "labels":
             sources = self.project.names("tables") + self.project.names("queries")
@@ -1326,10 +1326,45 @@ class MainWindow(QMainWindow):
             page,
             icon=icons.icon("modifica"),
         )
+        dialog.name_edit.setFocus(Qt.FocusReason.OtherFocusReason)
+
+    def open_new_table_structure(self) -> None:
+        """Apre la struttura di una nuova tabella nella scheda, non in un popup."""
+        if not self._require_project():
+            return
+        assert self.project is not None
+        key = "structure:new"
+        existing = self.editors.find(key)
+        if existing is not None:
+            self.editors.activate(existing)
+            return
+        dialog = TableBuilderDialog(self.project, None, self, embedded=True)
+        dialog.setWindowTitle("Nuova tabella — struttura")
+        page = DialogEditor(dialog, self)
+        page.setWindowTitle("Nuova tabella — struttura")
+        dialog.table_changed.connect(
+            lambda new_name, target=page: self._on_structure_changed(new_name, target)
+        )
+        tab = self.editors.open(
+            key,
+            "Nuova tabella — struttura",
+            page,
+            icon=icons.icon("modifica"),
+        )
+        page.finished.connect(lambda: self.editors.close_tab(tab))
+        dialog.name_edit.setFocus(Qt.FocusReason.OtherFocusReason)
 
     def _on_structure_changed(self, name: str, page: DialogEditor) -> None:
         self._on_table_structure_changed(name)
         self.editors.set_title_for_widget(page, f"Modifica — {name}")
+        tab = next(
+            (item for item in self.editors.windows() if item.widget() is page),
+            None,
+        )
+        if tab is not None:
+            key = f"structure:{name}"
+            if tab.property("dbx_key") != key:
+                tab.setProperty("dbx_key", key)
 
     def _on_table_structure_changed(self, name: str) -> None:
         self._refresh_navigator()
