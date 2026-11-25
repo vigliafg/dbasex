@@ -3,6 +3,57 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
+## [Non rilasciato]
+
+Estensione della **validazione dei campi** descritta in
+[`PLAN-VALIDAZIONE.md`](PLAN-VALIDAZIONE.md): regole sul dato condivise da griglia, form, import e
+script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazione.
+
+### Aggiunto
+
+- **Issue strutturate**: `Rowset` restituisce `ValidationIssue` con campo, codice e severità;
+  `ValidationError` estende `RowsetError` e conserva l'elenco delle issue per la UI.
+- **Validazione per campo** (`validate_field`, `Rowset.update(only=)`): una cella valida si salva
+  anche se un altro campo obbligatorio è ancora vuoto; il salvataggio dell'intero record continua a
+  controllare tutto.
+- **Obbligatorietà condizionale** (`required_expr`, `skip_expr`, `rule_message`): l'espressione vince
+  sul booleano, un campo saltato non è obbligatorio e la regola può mostrare un messaggio dedicato.
+- **Campo Scelta** (`choice`): valori statici con valore ed etichetta, sorgente dinamica
+  `tabella.colonna`, combinazione `append`/`replace`, confronto esatto o senza maiuscole, vuoto
+  ammesso o meno e testo libero opzionale. Cache, invalidazione e limite di 1000 valori; una
+  sorgente mancante blocca con `choice_source`.
+- **Dominio numerico**: minimo/massimo inclusivi oppure intervalli multipli, estremi aperti,
+  messaggio personalizzato; vale per `INTEGER` e `DECIMAL`.
+- **Input guidato**: maschera `9`/`A`/`a`/spazio, normalizzazione maiuscole/minuscole/titolo/frase e
+  avanzamento automatico del focus nella griglia, nel nuovo record e nel Form Runtime.
+- **Incremento** (`increment`): numero progressivo all'inserimento (`records`) o contatore di
+  revisione per record (`updates`), con migrazione trasparente di `auto_serial`.
+- **Riapplica regole di campo**: comando `File → Manutenzione database → Riapplica regole di
+  campo…` che normalizza i valori esistenti, ricontrolla required/Scelta/dominio/regole e segnala i
+  valori storici fuori elenco o dominio come avvisi `choice_stale`/`domain_stale`.
+- **Import CSV a scarti**: le righe valide entrano e quelle rifiutate sono elencate con numero di
+  riga e motivo.
+- Rendering `27-table-calculated.png` aggiornato con Maiuscole, Maschera, Incremento e Dominio
+  numerico.
+
+### Modificato
+
+- Il Table Builder espone i gruppi **Valori (Scelta)**, **Dominio numerico** e **Incremento** nella
+  scheda Proprietà, ora con scorrimento interno.
+- La Browse evidenzia la cella non valida e riporta il motivo nella barra di stato, senza dialogo
+  modale; il dialogo resta per il salvataggio dell'intero record.
+- Il vecchio `lookup` viene letto come `choice` con sorgente tabella; `auto_serial` viene letto come
+  `increment="records"` e riscritto con il solo campo nuovo.
+
+### Note di aggiornamento
+
+- I metadati nuovi sono additivi con default vuoti: i file esistenti restano validi.
+- I valori storici non vengono riscritti: lista e dominio valgono alla scrittura, mentre
+  `Riapplica regole di campo` li segnala soltanto.
+- La maschera e le maiuscole sono regole dell'editor: i valori già presenti nel database non
+  cambiano finché non vengono modificati o normalizzati dal comando di manutenzione.
+- `increment="updates"` è un contatore di revisione del singolo record, non una sequenza globale.
+
 ## [0.9.0] — 2026-11-22
 
 Release dell'**automazione**: parametri riutilizzabili, variabili globali persistite e transazioni

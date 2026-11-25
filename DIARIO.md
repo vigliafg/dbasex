@@ -1611,3 +1611,28 @@
 - **Decisioni:** `increment` sostituisce `auto_serial` con migrazione in lettura; `records` usa `MAX + 1` all'inserimento, `updates` è un contatore di revisione per record; `re_evaluate` normalizza solo `case_mode`, segnala `choice_stale`/`domain_stale` come avvisi e salta i record con errori bloccanti.
 - **Decisioni rimandate all'utente:** nessuna bloccante.
 - **RIPRESA:** checkpoint attivo. Dopo `continua`, leggere `PLAN.md`, `PLAN-VALIDAZIONE.md` e questo diario, controllare `git status`/`git log`, ed eseguire la **Fase 7 — Rifinitura** (CHANGELOG, README, `PLAN.md` §16, chiusura del diario). Non ripartire da Fase 0–6.
+
+### 2026-11-25 — Piano di validazione — Fase 7 (rifinitura)
+- **Stato:** completata (Fase 7)
+- **Branch/commit:** `main`; commit di chiusura del piano.
+- **Obiettivo:** chiudere la documentazione del piano di validazione: changelog, README, rimando in `PLAN.md`, stato del sotto-piano e voce di diario.
+- **File toccati:** `CHANGELOG.md`, `README.md`, `PLAN.md`, `PLAN-VALIDAZIONE.md`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - **Nessun bump di versione:** il lavoro è registrato in `CHANGELOG.md` sotto `[Non rilasciato]`, perché non è stata richiesta una release né una nuova versione. `pyproject.toml` e `dbx/__init__.py` restano a `0.9.0`; il changelog dice esplicitamente che i progetti 0.9 si aprono senza migrazione.
+  - **README:** aggiunto un paragrafo sulla validazione, aggiornate le righe Browse, Table Builder e Campi calcolati, aggiunta la riga **Validazione** e corretto l'intervallo dei rendering da `01`–`24` a `01`–`37`.
+  - **`PLAN.md` §16:** il rimando a `PLAN-VALIDAZIONE.md` esisteva già; è stato completato con lo stato delle fasi 0–7 e una tabella di riepilogo.
+  - **`PLAN-VALIDAZIONE.md`:** intestazione aggiornata da “piano pronto” a “implementato”; nessuna riscrittura delle decisioni né dei contenuti storici.
+  - **Screenshot:** nessuna nuova cattura necessaria; la serie canonica `01`–`37` in Aurora è già quella verificata in Fase 6 e comprende il Table Builder aggiornato.
+- **Test:** `559 passed`; smoke headless OK. `ruff` non è installato, quindi lint non eseguito.
+- **Screenshot:** invariati e coerenti con lo stato finale; `27-table-calculated.png` mostra Maiuscole, Maschera, Incremento e Dominio numerico.
+- **Problemi aperti:** gli avvisi storici `choice_stale`/`domain_stale` restano visibili solo nel riepilogo del comando, senza una vista dedicata; il gruppo Dominio del Table Builder non è richiudibile; il warning di schema per `domain_ranges` + min/max non viene emesso. Nessuno è bloccante.
+- **Prossimo passo:** piano di validazione concluso. In attesa di una nuova richiesta; eventuale release da pianificare separatamente con decisione esplicita sulla versione.
+
+## Chiusura piano di validazione (2026-11-25)
+
+- **Stato fasi:** Fasi 0–7 completate; Fase 3 dinamica assorbita nella Fase 2.
+- **Test finali:** `559 passed`; smoke headless OK; ultimo harness E2E `PASS` (14/14 scenari, 298/298 controlli, 32 screenshot); catture Aurora e Dark verificate.
+- **Documentazione:** `CHANGELOG.md` con sezione `[Non rilasciato]`, README aggiornato, `PLAN.md` §16 con stato delle fasi, `PLAN-VALIDAZIONE.md` marcato implementato, diario chiuso.
+- **Decisioni:** nessun bump di versione; il piano è documentato come estensione non rilasciata della 0.9.
+- **Decisioni rimandate all'utente:** eventuale numero di versione e tag per la release che includerà la validazione.
+- **RIPRESA:** nessuna fase pendente di questo piano. Per una nuova attività leggere `PLAN.md`, `DIARIO.md` e il repository; non riaprire le fasi 0–7 senza una richiesta esplicita.

@@ -1,6 +1,6 @@
 # Piano — Validazione dei campi in dBX
 
-**Stato:** decisioni approvate il 2026-11-25; piano pronto per l'esecuzione.
+**Stato:** implementato il 2026-11-25; fasi 0–7 completate e verificate.
 **Data:** 2026-11-25.
 **Riferimento:** confronto con `adbx-legacy` (regole di campo Alpha Four) e
 studio del tipo `choice` con dominio numerico.

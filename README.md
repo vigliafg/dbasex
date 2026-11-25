@@ -21,6 +21,11 @@ filtro/ordinamento e stampa o PDF su più fogli, **grafici** barre/linee/torta n
 La 0.9 aggiunge **automazione**: parametri dichiarati per gli script, variabili globali persistite
 nel progetto e transazioni esplicite con avvio, conferma e annullamento.
 
+L'estensione **validazione** aggiunge regole sul dato condivise da griglia, form, import e script:
+issue strutturate per campo, obbligatorietà condizionale, campo **Scelta** statico o da tabella,
+**dominio numerico**, maschere e normalizzazione delle maiuscole, **incremento** all'inserimento o a
+ogni modifica e il comando **Riapplica regole di campo**. I progetti 0.9 si aprono senza migrazione.
+
 ## Funzioni
 
 | Strumento | Cosa fa |
@@ -28,7 +33,7 @@ nel progetto e transazioni esplicite con avvio, conferma e annullamento.
 | **Area documenti** | Navigator nel quinto sinistro con barra verticale a icone, quattro quinti alle schede dei documenti; menu `Progetto · Modifica · Visualizza · Oggetto · Procedure · Proprietà · Finestra · ?`, SpeedBar a icone raggruppate, barra di stato con coordinate, oggetto, record e modalità |
 | **Navigator** | Barra verticale a icone nel quinto sinistro, elenco oggetti raggruppato per categoria con `[Untitled]`, filtro file, cartella corrente e azioni contestuali; categoria unica **Database** per tabelle e struttura, più **Query**, **Form**, **Report**, **Etichette**, **Menu** e **Programmi**; Immagini/Suoni/Cataloghi/Personalizzati visibili e disabilitate finché non implementate |
 | **Command Window** | Riquadri `Command` / `Command Results` in una scheda, cronologia con ↑/↓, comandi `HELP`, `TABELLE`, `USE`, `RECORD`, `CLEAR` ed espressioni |
-| **Browse / Vista Dati** | Griglia editabile, selettore di record, barra di navigazione, filtro, ordinamento, nuovo/elimina, export/import CSV, Find mode, campi calcolati in sola lettura, opzioni di editing e larghezze colonna persistenti |
+| **Browse / Vista Dati** | Griglia editabile, selettore di record, barra di navigazione, filtro, ordinamento, nuovo/elimina, export/import CSV, Find mode, campi calcolati in sola lettura, validazione per cella con evidenziazione e stato, opzioni di editing e larghezze colonna persistenti |
 | **Database** | Elenco tabelle, diagramma entità-relazione con card e PK/FK, archi con cardinalità e `ON DELETE`, pan/zoom, auto-layout, export PNG/SVG, creazione relazioni e modifica schema con backup; per ogni tabella due schede nel workspace, **Modifica** struttura e **Dati** in griglia |
 | **Query Designer** | Tabelle e campi con spunta, INNER/LEFT JOIN suggeriti dalle foreign key, filtri AND, ordinamento multiplo, `GROUP BY` con SUM/COUNT/AVG/MIN/MAX, anteprima SQL parametrizzata e risultato tipizzato in sola lettura; modalità **QBE** con query image, example elements, intervalli, pattern e righe OR |
 | **Esperti** | Procedure guidate per tabella (template, campi, indici, DDL), query (join dalle FK, campi, criteri, ordinamento), report (layout tabellare/colonnare/riepilogo, gruppi) e form; producono artefatti normali, poi modificabili nei designer |
@@ -37,8 +42,9 @@ nel progetto e transazioni esplicite con avvio, conferma e annullamento.
 | **Importa CSV** | Wizard con rilevamento di codifica e delimitatore, anteprima, mappatura colonne → campi, conversione tipi e opzione di svuotamento con backup |
 | **Manutenzione** | Rinomina tabella con aggiornamento dei riferimenti, duplicazione di oggetti (tabelle con dati), compattazione con backup e verifica integrità SQLite |
 | **Query come sorgente** | Form generati da query in sola lettura (campi calcolati, niente inserimento/modifica) e report a bande su colonne di query con gruppi, totali, filtro e ordinamento |
-| **Table Builder** | Struttura a griglia unica (`Field · Name · Type · Width · Decimal · Index`) affiancata da schede laterali per indici, relazioni, proprietà e DDL; tipi, obbligatorietà, default, didascalie, formati, regole, lookup, `Save As`, stampa, migrazioni con backup |
-| **Campi calcolati** | Formula valutata a ogni lettura, senza colonna fisica; auto-enter con espressione, serie automatica e data di creazione/modifica; valori visibili in sola lettura in Browse, form e report |
+| **Table Builder** | Struttura a griglia unica (`Field · Name · Type · Width · Decimal · Index`) affiancata da schede laterali per indici, relazioni, proprietà e DDL; tipi, obbligatorietà anche condizionale, default, didascalie, formati, regole con messaggio, Scelta statica o da tabella, dominio numerico, maschere e incremento, `Save As`, stampa, migrazioni con backup |
+| **Campi calcolati** | Formula valutata a ogni lettura, senza colonna fisica; auto-enter con espressione, incremento e data di creazione/modifica; valori visibili in sola lettura in Browse, form e report |
+| **Validazione** | `Rowset` come unico punto di enforcement: issue strutturate per campo, obbligatorietà condizionale, Scelta con etichette e sorgente dinamica, dominio numerico inclusivo, regole con messaggio, import CSV a scarti e comando per riapplicare le regole ai record esistenti |
 | **Form Expert** | Wizard a cinque passi: assistito o vuoto, tabella, scelta campi, layout, font/colori/stile |
 | **Form Designer** | Palette `Controls` / `Field`, canvas con righelli e griglia 8 px, otto maniglie reali, selezione multipla, clipboard, undo/redo, allineamento, distribuzione, z-order, pagine a schede, Object Inspector ad albero, eventi e metodi |
 | **Form Runtime** | Navigazione, CRUD, stato del record, vista **Lista** dei record, portali uno-a-molti con ordinamento/filtro, script, report e messaggi; form su query in sola lettura |
@@ -154,7 +160,7 @@ Ogni ambiente segue lo schema generale di dBASE 5.5 (senza imitarne i colori Win
 - **Project Editor**: albero oggetti, impostazioni, validazione e build.
 
 Rendering aggiornati in [`docs/reference/dbx-ui/renders/`](docs/reference/dbx-ui/renders/):
-la serie `01`–`24` copre le finestre, `14-menu-progetto.png` mostra il menu icona + descrizione.
+la serie `01`–`37` copre le finestre, `14-menu-progetto.png` mostra il menu icona + descrizione.
 
 ## Scorciatoie da tastiera
 

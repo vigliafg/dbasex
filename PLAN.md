@@ -972,10 +972,20 @@ dieci mancanze più frequenti per un personal database desktop.
 
 ### Piano di validazione dei campi (2026-11-25)
 
-Sotto-piano approvato: [`PLAN-VALIDAZIONE.md`](PLAN-VALIDAZIONE.md). Estende
+Sotto-piano completato: [`PLAN-VALIDAZIONE.md`](PLAN-VALIDAZIONE.md). Estende
 `Rowset` come unico punto di enforcement con issue strutturate, obbligatorietà
 condizionale, campo Scelta, dominio numerico, maschere e `increment`. Le fasi
-sono eseguite in sotto-ondate con diario e checkpoint ogni tre fasi.
+0–7 sono state eseguite in sotto-ondate con diario e checkpoint ogni tre fasi.
+
+| Fase | Contenuto | Stato |
+|---|---|---|
+| 0 | Fondamenta: issue, `ValidationError`, `validate_field`, `update(only=)` | `[x]` completata (2026-11-25) |
+| 1 | Obbligatorietà condizionale, `skip_expr`, messaggi, validazione per cella, import a scarti | `[x]` completata (2026-11-25) |
+| 2–3 | Campo Scelta statico e dinamico, etichette, cache, migrazione `lookup` | `[x]` completata (2026-11-25) |
+| 4 | Dominio numerico min/max e intervalli | `[x]` completata (2026-11-25) |
+| 5 | Maschere, maiuscole e auto-advance | `[x]` completata (2026-11-25) |
+| 6 | `increment`, migrazione `auto_serial`, `re_evaluate` e avvisi storici | `[x]` completata (2026-11-25) |
+| 7 | Rifinitura: changelog, README e chiusura del diario | `[x]` completata (2026-11-25) |
 
 ### Stato di avanzamento 0.6.0–0.9.0
 
