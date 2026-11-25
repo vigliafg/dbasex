@@ -31,14 +31,16 @@ def test_table_builder_creates_auto_fields(qapp, demo_project):
     table = demo_project.require_table("fatture")
     dialog = TableBuilderDialog(demo_project, table)
     dialog._add_field_row(Field("progressivo", T.INTEGER))
-    dialog.auto_serial_check.setChecked(True)
+    dialog.increment_combo.setCurrentIndex(
+        dialog.increment_combo.findData("records")
+    )
     dialog._store_field_meta()
     dialog._add_field_row(Field("inserita", T.DATE))
     dialog.auto_date_combo.setCurrentIndex(dialog.auto_date_combo.findData("insert"))
     dialog._store_field_meta()
     dialog._apply()
     updated = demo_project.require_table("fatture")
-    assert updated.field("progressivo").auto_serial is True
+    assert updated.field("progressivo").increment == "records"
     assert updated.field("inserita").auto_date == "insert"
     dialog.close()
 

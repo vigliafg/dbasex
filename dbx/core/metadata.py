@@ -14,12 +14,11 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable
 
 from . import types as T
+from .input_rules import CASE_MODES, MASK_CHARS
 
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 RESERVED_NAMES = {"_id", "rowid", "oid", "sqlite_master"}
 ON_DELETE_ACTIONS = ("NO ACTION", "CASCADE", "SET NULL", "RESTRICT")
-CASE_MODES = ("", "upper", "lower", "title", "sentence")
-MASK_CHARS = frozenset("9Aa ")
 
 
 class MetadataError(ValueError):
@@ -87,7 +86,7 @@ class Field:
     skip_expr: str = ""
     calculated: str = ""
     auto_enter: str = ""
-    auto_serial: bool = False
+    increment: str = ""
     auto_date: str = ""
     id: str = dc_field(default_factory=new_id)
 
@@ -106,6 +105,10 @@ class Field:
             raise MetadataError(
                 f"Momento automatico non valido per {self.name}: {self.auto_date!r}"
             )
+        if self.increment not in ("", "records", "updates"):
+            raise MetadataError(
+                f"Incremento non valido per {self.name}: {self.increment!r}"
+            )
         for source, label in (
             (self.required_expr, "obbligatorietà condizionale"),
             (self.skip_expr, "condizione di salto"),
@@ -115,13 +118,13 @@ class Field:
         mechanisms = [
             bool(self.calculated.strip()),
             bool(self.auto_enter.strip()),
-            bool(self.auto_serial),
+            bool(self.increment),
             bool(self.auto_date),
         ]
         if sum(mechanisms) > 1:
             raise MetadataError(
                 f"Il campo {self.name} può avere un solo meccanismo automatico "
-                "(calcolato, auto-enter, serie o data)"
+                "(calcolato, auto-enter, incremento o data)"
             )
         if self.calculated:
             if self.pk or self.required:
@@ -133,9 +136,9 @@ class Field:
             _check_expression(self.calculated, f"calcolo di {self.name}")
         if self.auto_enter:
             _check_expression(self.auto_enter, f"auto-enter di {self.name}")
-        if self.auto_serial and self.type != T.INTEGER:
+        if self.increment and self.type != T.INTEGER:
             raise MetadataError(
-                f"La serie automatica di {self.name} richiede il tipo Intero"
+                f"L'incremento di {self.name} richiede il tipo Intero"
             )
         if self.auto_date and self.type not in (T.DATE, T.DATETIME):
             raise MetadataError(
@@ -320,7 +323,7 @@ class Field:
             "skip_expr": self.skip_expr,
             "calculated": self.calculated,
             "auto_enter": self.auto_enter,
-            "auto_serial": self.auto_serial,
+            "increment": self.increment,
             "auto_date": self.auto_date,
         }
 
@@ -333,6 +336,10 @@ class Field:
         choice_value = str(data.get("choice_value", ""))
         choice_combine = str(data.get("choice_combine", "append"))
         choice_allow_other = bool(data.get("choice_allow_other", False))
+        increment = str(data.get("increment", "") or "")
+        # Migrazione trasparente del vecchio auto_serial in increment.
+        if not increment and bool(data.get("auto_serial", False)):
+            increment = "records"
         # Migrazione trasparente del vecchio lookup testuale in Scelta.
         if (
             type_name == T.TEXT
@@ -386,7 +393,7 @@ class Field:
             skip_expr=str(data.get("skip_expr", "")),
             calculated=str(data.get("calculated", "")),
             auto_enter=str(data.get("auto_enter", "")),
-            auto_serial=bool(data.get("auto_serial", False)),
+            increment=increment,
             auto_date=str(data.get("auto_date", "")),
             id=str(data.get("id") or new_id()),
         )
@@ -544,7 +551,7 @@ class Table:
     def new_record(self) -> dict[str, Any]:
         record: dict[str, Any] = {}
         for f in self.fields:
-            if not f.stored or f.auto_serial or f.auto_date:
+            if not f.stored or f.increment or f.auto_date:
                 # I calcolati e i campi automatici partono vuoti: li risolve il Rowset.
                 record[f.name] = None if f.stored else T.default_value(f.type)
                 continue

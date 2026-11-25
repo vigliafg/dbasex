@@ -8,7 +8,7 @@ from dbx.core import types as T
 from dbx.core.db import Database
 from dbx.core.ddl import apply_migration
 from dbx.core.metadata import Field, MetadataError, Table
-from dbx.runtime.rowset import Rowset, RowsetError
+from dbx.runtime.rowset import Rowset, RowsetError, re_evaluate
 from dbx.runtime.validation import (
     ValidationError,
     ValidationIssue,
@@ -447,3 +447,154 @@ def test_domain_roundtrip_serialization():
     assert Field.from_dict(ranged.to_dict()) == ranged
     legacy = Field.from_dict({"name": "valore", "type": T.INTEGER})
     assert legacy.domain_min == "" and legacy.domain_ranges == []
+
+
+# --------------------------------------------------------------- incremento
+def increment_rowset(mode: str = "records") -> Rowset:
+    db = Database(":memory:")
+    table = Table(
+        name="progressivi",
+        fields=[
+            Field("nome", T.TEXT),
+            Field("numero", T.INTEGER, increment=mode),
+        ],
+    )
+    apply_migration(db.con, table, None)
+    return Rowset(db, table)
+
+
+def test_increment_records_assigns_on_insert_and_preserves_on_update():
+    rowset = increment_rowset("records")
+    first = rowset.insert({"nome": "a"})
+    second = rowset.insert({"nome": "b"})
+    assert rowset.load(first)["numero"] == 1
+    assert rowset.load(second)["numero"] == 2
+    rowset.update(second, {"nome": "b2"})
+    assert rowset.load(second)["numero"] == 2
+
+
+def test_increment_updates_advances_the_single_record():
+    rowset = increment_rowset("updates")
+    first = rowset.insert({"nome": "a"})
+    second = rowset.insert({"nome": "b"})
+    # Il contatore di revisione è per record: entrambi partono da 1.
+    assert rowset.load(first)["numero"] == 1
+    assert rowset.load(second)["numero"] == 1
+    rowset.update(first, {"nome": "a2"})
+    assert rowset.load(first)["numero"] == 2
+    rowset.update(first, {"nome": "a3"})
+    assert rowset.load(first)["numero"] == 3
+    rowset.update(second, {"nome": "b2"})
+    assert rowset.load(second)["numero"] == 2
+
+
+def test_increment_preserves_manual_value_on_insert():
+    rowset = increment_rowset("records")
+    record = rowset.insert({"nome": "a", "numero": 42})
+    assert rowset.load(record)["numero"] == 42
+
+
+def test_increment_legacy_auto_serial_is_written_as_increment():
+    legacy = Field.from_dict(
+        {"name": "numero", "type": T.INTEGER, "auto_serial": True}
+    )
+    assert legacy.increment == "records"
+    data = legacy.to_dict()
+    assert data["increment"] == "records"
+    assert "auto_serial" not in data
+    assert Field.from_dict(data).increment == "records"
+
+
+def test_increment_schema_rules():
+    with pytest.raises(MetadataError):
+        Field("x", T.INTEGER, increment="sempre").validate()
+    with pytest.raises(MetadataError):
+        Field("x", T.TEXT, increment="records").validate()
+    with pytest.raises(MetadataError):
+        Field("x", T.INTEGER, increment="records", calculated="1").validate()
+    with pytest.raises(MetadataError):
+        Field("x", T.INTEGER, increment="records", auto_date="insert").validate()
+
+
+# --------------------------------------------------------------- re-evaluate
+def reevaluate_rowset(**field_kwargs) -> tuple[Database, Table, Rowset]:
+    db = Database(":memory:")
+    table = Table(
+        name="dati",
+        fields=[
+            Field("nome", T.TEXT, case_mode="upper"),
+            Field(
+                "stato",
+                T.CHOICE,
+                choices=[
+                    {"value": "A", "label": "Attivo"},
+                    {"value": "S", "label": "Sospeso"},
+                ],
+                **field_kwargs,
+            ),
+            Field("quantita", T.INTEGER, domain_min="1", domain_max="10"),
+            Field("revisione", T.INTEGER, increment="updates"),
+        ],
+    )
+    apply_migration(db.con, table, None)
+    return db, table, Rowset(db, table)
+
+
+def test_re_evaluate_applies_case_mode_without_touching_increment():
+    db, table, rowset = reevaluate_rowset()
+    record = rowset.insert({"nome": "ada", "stato": "A", "quantita": 5})
+    assert rowset.load(record)["revisione"] == 1
+    updated, issues = re_evaluate(table, db)
+    assert updated == 1
+    assert issues == []
+    loaded = rowset.load(record)
+    assert loaded["nome"] == "ADA"
+    assert loaded["revisione"] == 1
+
+
+def test_re_evaluate_reports_stale_choice_and_domain_as_warnings():
+    db, table, rowset = reevaluate_rowset()
+    record = rowset.insert(
+        {"nome": "ada", "stato": "X", "quantita": 50}, validate=False
+    )
+    updated, issues = re_evaluate(table, db)
+    assert updated == 1
+    assert {issue.code for issue in issues} == {"choice_stale", "domain_stale"}
+    assert all(issue.severity == "warning" for issue in issues)
+    loaded = rowset.load(record)
+    assert loaded["nome"] == "ADA"
+    # I valori storici fuori elenco/dominio non vengono riscritti.
+    assert loaded["stato"] == "X"
+    assert loaded["quantita"] == 50
+
+
+def test_re_evaluate_skips_records_with_blocking_errors():
+    db = Database(":memory:")
+    table = Table(
+        name="regole",
+        fields=[
+            Field("nome", T.TEXT, required=True, case_mode="upper"),
+            Field("codice", T.TEXT, rule="LEN([codice]) >= 3", case_mode="upper"),
+        ],
+    )
+    apply_migration(db.con, table, None)
+    rowset = Rowset(db, table)
+    good = rowset.insert({"nome": "ada", "codice": "abc"})
+    bad = rowset.insert({"nome": "bob", "codice": "x"}, validate=False)
+    updated, issues = re_evaluate(table, db)
+    assert updated == 1
+    assert rowset.load(good)["nome"] == "ADA"
+    assert rowset.load(bad)["nome"] == "bob"
+    assert any(issue.code == "rule" and issue.is_error for issue in issues)
+
+
+def test_re_evaluate_does_not_canonicalize_historical_choice_case():
+    db, table, rowset = reevaluate_rowset(choice_case_sensitive=False)
+    record = rowset.insert(
+        {"nome": "ada", "stato": "a", "quantita": 5}, validate=False
+    )
+    _updated, issues = re_evaluate(table, db)
+    assert issues == []
+    # "a" corrisponde a "A" senza distinzione di maiuscole: si accetta, ma il
+    # valore storico non viene sostituito con quello canonico.
+    assert rowset.load(record)["stato"] == "a"

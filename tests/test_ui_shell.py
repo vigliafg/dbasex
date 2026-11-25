@@ -300,3 +300,11 @@ def test_menu_hover_moves_focus_to_single_entry(qapp, demo_project) -> None:
         ]
     finally:
         window.close()
+
+
+def test_maintenance_menu_exposes_reevaluate_action(qapp, demo_project) -> None:
+    window = MainWindow(demo_project)
+    try:
+        assert "Riapplica regole" in window.act_reevaluate.text()
+    finally:
+        window.close()

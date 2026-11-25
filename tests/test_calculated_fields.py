@@ -23,7 +23,7 @@ def _table() -> Table:
             Field("qta", T.INTEGER, required=True),
             Field("prezzo", T.DECIMAL, required=True),
             Field("totale", T.DECIMAL, calculated="[qta] * [prezzo]"),
-            Field("codice", T.INTEGER, auto_serial=True),
+            Field("codice", T.INTEGER, increment="records"),
             Field("creato", T.DATE, auto_date="insert"),
             Field("etichetta", T.TEXT, auto_enter="CONCAT([qta], ' x')"),
         ],
@@ -115,12 +115,12 @@ def test_invalid_mechanisms_are_rejected():
                     "x",
                     T.INTEGER,
                     calculated="1",
-                    auto_serial=True,
+                    increment="records",
                 )
             ],
         ).validate()
     with pytest.raises(MetadataError):
-        Table(name="t", fields=[Field("x", T.TEXT, auto_serial=True)]).validate()
+        Table(name="t", fields=[Field("x", T.TEXT, increment="records")]).validate()
     with pytest.raises(MetadataError):
         Table(name="t", fields=[Field("x", T.TEXT, auto_date="insert")]).validate()
     with pytest.raises(MetadataError):
@@ -138,7 +138,7 @@ def test_calculated_fields_round_trip():
     clone = Table.from_dict(table.to_dict())
     field = clone.field("totale")
     assert field.calculated == "[qta] * [prezzo]"
-    assert clone.field("codice").auto_serial is True
+    assert clone.field("codice").increment == "records"
     assert clone.field("creato").auto_date == "insert"
     assert clone.field("etichetta").auto_enter == "CONCAT([qta], ' x')"
     assert clone.to_dict() == table.to_dict()
@@ -151,7 +151,7 @@ def test_migration_adds_only_stored_columns():
         fields=[
             Field("a", T.INTEGER),
             Field("calc", T.INTEGER, calculated="[a] + 1"),
-            Field("serie", T.INTEGER, auto_serial=True),
+            Field("serie", T.INTEGER, increment="records"),
         ],
     )
     plan = plan_migration(old, new)

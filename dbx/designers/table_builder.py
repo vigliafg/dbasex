@@ -433,8 +433,13 @@ class TableBuilderDialog(QDialog):
         self.auto_enter_edit = QLineEdit()
         self.auto_enter_edit.setPlaceholderText("es. TODAY() oppure [nome]")
         self.auto_enter_edit.setToolTip("Espressione valutata alla creazione se il campo è vuoto")
-        self.auto_serial_check = QCheckBox("Serie automatica")
-        self.auto_serial_check.setToolTip("Assegna il numero successivo alla creazione")
+        self.increment_combo = QComboBox()
+        self.increment_combo.addItem("(nessuno)", "")
+        self.increment_combo.addItem("A ogni nuovo record", "records")
+        self.increment_combo.addItem("A ogni modifica", "updates")
+        self.increment_combo.setToolTip(
+            "Numero progressivo assegnato alla creazione o a ogni modifica"
+        )
         self.auto_date_combo = QComboBox()
         self.auto_date_combo.addItem("(nessuna)", "")
         self.auto_date_combo.addItem("Data di creazione", "insert")
@@ -454,7 +459,7 @@ class TableBuilderDialog(QDialog):
             self.lookup_edit,
             self.calculated_edit,
             self.auto_enter_edit,
-            self.auto_serial_check,
+            self.increment_combo,
             self.auto_date_combo,
         ):
             widget.setEnabled(False)
@@ -471,7 +476,7 @@ class TableBuilderDialog(QDialog):
         form.addRow("Lookup", self.lookup_edit)
         form.addRow("Calcolato", self.calculated_edit)
         form.addRow("Auto-enter", self.auto_enter_edit)
-        form.addRow("", self.auto_serial_check)
+        form.addRow("Incremento", self.increment_combo)
         form.addRow("Data automatica", self.auto_date_combo)
         layout.addLayout(form)
         layout.addWidget(self._build_choice_group())
@@ -479,7 +484,7 @@ class TableBuilderDialog(QDialog):
         layout.addStretch(1)
 
         self.required_check.toggled.connect(self._store_field_meta)
-        self.auto_serial_check.toggled.connect(self._store_field_meta)
+        self.increment_combo.currentIndexChanged.connect(self._store_field_meta)
         self.auto_date_combo.currentIndexChanged.connect(self._store_field_meta)
         self.case_mode_combo.currentIndexChanged.connect(self._store_field_meta)
         for edit in (
@@ -751,7 +756,7 @@ class TableBuilderDialog(QDialog):
             "domain_message": field.domain_message,
             "calculated": field.calculated,
             "auto_enter": field.auto_enter,
-            "auto_serial": field.auto_serial,
+            "increment": field.increment,
             "auto_date": field.auto_date,
             "pk": field.pk,
         }
@@ -983,7 +988,7 @@ class TableBuilderDialog(QDialog):
                     lookup=str(meta.get("lookup", "")),
                     calculated=str(meta.get("calculated", "")),
                     auto_enter=str(meta.get("auto_enter", "")),
-                    auto_serial=bool(meta.get("auto_serial", False)),
+                    increment=str(meta.get("increment", "")),
                     auto_date=str(meta.get("auto_date", "")),
                     pk=bool(meta.get("pk", False)),
                     id=field_id,
@@ -1172,6 +1177,9 @@ class TableBuilderDialog(QDialog):
         text_input = type_name == T.TEXT and not calculated
         self.case_mode_combo.setEnabled(editable and text_input)
         self.mask_edit.setEnabled(editable and text_input)
+        self.increment_combo.setEnabled(
+            editable and type_name == T.INTEGER and not calculated
+        )
 
     def _load_field_meta(self, row: int) -> None:
         number = self.fields_grid.item(row, COL_FIELD)
@@ -1197,7 +1205,9 @@ class TableBuilderDialog(QDialog):
         self.lookup_edit.setText(str(meta.get("lookup", "")))
         self.calculated_edit.setText(str(meta.get("calculated", "")))
         self.auto_enter_edit.setText(str(meta.get("auto_enter", "")))
-        self.auto_serial_check.setChecked(bool(meta.get("auto_serial", False)))
+        self.increment_combo.setCurrentIndex(
+            max(0, self.increment_combo.findData(str(meta.get("increment", ""))))
+        )
         position = self.auto_date_combo.findData(str(meta.get("auto_date", "")))
         self.auto_date_combo.setCurrentIndex(max(0, position))
         self._fill_choice_tables()
@@ -1270,7 +1280,7 @@ class TableBuilderDialog(QDialog):
             self.lookup_edit,
             self.calculated_edit,
             self.auto_enter_edit,
-            self.auto_serial_check,
+            self.increment_combo,
             self.auto_date_combo,
         ):
             widget.setEnabled(enabled and self.exclusive_button.isChecked())
@@ -1295,7 +1305,7 @@ class TableBuilderDialog(QDialog):
             self.auto_enter_edit,
         ):
             edit.clear()
-        self.auto_serial_check.setChecked(False)
+        self.increment_combo.setCurrentIndex(0)
         self.auto_date_combo.setCurrentIndex(0)
         self.case_mode_combo.setCurrentIndex(0)
         self.mask_edit.clear()
@@ -1367,7 +1377,7 @@ class TableBuilderDialog(QDialog):
             else "",
             "calculated": self.calculated_edit.text(),
             "auto_enter": self.auto_enter_edit.text(),
-            "auto_serial": self.auto_serial_check.isChecked(),
+            "increment": str(self.increment_combo.currentData() or ""),
             "auto_date": str(self.auto_date_combo.currentData() or ""),
             "pk": bool(self._meta.get(field_id, {}).get("pk", False)),
         }

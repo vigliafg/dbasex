@@ -350,7 +350,7 @@ def run_smoke() -> int:
             Field("codice", T.TEXT, required=True),
             Field("nome", T.TEXT),
             Field("nome_maiuscolo", T.TEXT, calculated="UPPER([nome])"),
-            Field("progressivo", T.INTEGER, auto_serial=True),
+            Field("progressivo", T.INTEGER, increment="records"),
         ],
     )
     project.apply_table(imported_table)

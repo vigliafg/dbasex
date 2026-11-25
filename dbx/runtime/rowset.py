@@ -8,6 +8,7 @@ from ..core import types as T
 from ..core.db import Database
 from ..core.ddl import INTERNAL_ID
 from ..core.expressions import Expression, ExpressionError
+from ..core.input_rules import InputRules
 from ..core.metadata import Table
 from .validation import (
     ChoiceSourceError,
@@ -127,11 +128,29 @@ class Rowset:
         result = dict(values)
         base = self.table.new_record()
         base.update(result)
-        # Prima serie e date, così le espressioni auto-enter possono leggerle.
+        # Prima incrementi e date, così le espressioni auto-enter possono leggerli.
         for field in self.table.stored_fields:
-            if field.auto_serial and creating and self._empty(result.get(field.name)):
-                result[field.name] = self._next_serial(field)
-                base[field.name] = result[field.name]
+            if field.increment == "records":
+                # Numero progressivo di tabella, solo alla creazione e solo se
+                # il campo è vuoto: un valore manuale viene rispettato.
+                if creating and self._empty(result.get(field.name)):
+                    result[field.name] = self._next_serial(field)
+                    base[field.name] = result[field.name]
+            elif field.increment == "updates":
+                # Contatore di revisione del singolo record: parte da 1 alla
+                # creazione e aumenta di uno a ogni modifica.
+                if creating:
+                    if self._empty(result.get(field.name)):
+                        result[field.name] = 1
+                        base[field.name] = result[field.name]
+                else:
+                    current = result.get(field.name)
+                    try:
+                        value = int(current) if current is not None else 0
+                    except (TypeError, ValueError):
+                        value = 0
+                    result[field.name] = value + 1
+                    base[field.name] = result[field.name]
             if field.auto_date:
                 if creating and field.auto_date == "insert":
                     result[field.name] = self._auto_date(field)
@@ -590,3 +609,78 @@ class Rowset:
             self.insert(record)
             count += 1
         return count
+
+
+def re_evaluate(table: Table, db: Database) -> tuple[int, list[ValidationIssue]]:
+    """Riapplica le regole di campo ai record esistenti.
+
+    Ricalcola i campi calcolati (solo per controllo, non sono memorizzati),
+    applica ``case_mode`` ai campi testuali e ricontrolla obbligatorietà,
+    Scelta, dominio e regole.
+
+    I record con errori bloccanti non vengono scritti; gli altri ricevono solo
+    la normalizzazione delle maiuscole. I valori storici fuori elenco o fuori
+    dominio producono gli avvisi ``choice_stale`` e ``domain_stale`` e non
+    bloccano. Restituisce ``(record aggiornati, issue)``.
+    """
+    rowset = Rowset(db, table)
+    rowset.open()
+    issues: list[ValidationIssue] = []
+    writes: list[tuple[dict[str, Any], int]] = []
+    for row in rowset.rows():
+        stored = {name: row.get(name) for name in table.stored_field_names}
+        changed: dict[str, Any] = {}
+        for field in table.stored_fields:
+            if not field.case_mode or not T.is_text_like(field.type):
+                continue
+            value = stored.get(field.name)
+            if value is None:
+                continue
+            text = str(value)
+            shaped = InputRules.apply_case(text, field.case_mode)
+            if shaped != text:
+                changed[field.name] = shaped
+        candidate = dict(stored)
+        candidate.update(changed)
+        report = rowset.validate_report(candidate)
+        blocking: list[ValidationIssue] = []
+        for issue in report.issues:
+            if issue.code in ("choice", "choice_other"):
+                issues.append(
+                    ValidationIssue(
+                        field=issue.field,
+                        message=issue.message,
+                        code="choice_stale",
+                        severity="warning",
+                    )
+                )
+            elif issue.code == "domain":
+                issues.append(
+                    ValidationIssue(
+                        field=issue.field,
+                        message=issue.message,
+                        code="domain_stale",
+                        severity="warning",
+                    )
+                )
+            elif issue.is_error:
+                blocking.append(issue)
+            else:
+                issues.append(issue)
+        if blocking:
+            issues.extend(blocking)
+            continue
+        if changed:
+            writes.append((changed, int(row[INTERNAL_ID])))
+    if writes:
+        with db.transaction():
+            for changed, record_id in writes:
+                assignments = ", ".join(f'"{name}" = ?' for name in changed)
+                params = list(changed.values()) + [record_id]
+                db.execute(
+                    f'UPDATE "{table.name}" SET {assignments} '
+                    f'WHERE "{INTERNAL_ID}" = ?',
+                    params,
+                )
+        touch_choices(table.name)
+    return len(writes), issues

@@ -319,7 +319,7 @@ def _e2e_tables(project: Project) -> tuple[Table, Table]:
             Field("creato", T.DATE, auto_date="insert"),
             Field("note", T.MEMO),
             Field("nome_maiuscolo", T.TEXT, calculated="UPPER([nome])"),
-            Field("progressivo", T.INTEGER, auto_serial=True),
+            Field("progressivo", T.INTEGER, increment="records"),
         ],
         indexes=[Index(fields=["codice"], unique=True), Index(fields=["nome"])],
     )
@@ -353,7 +353,7 @@ def scenario_project_tables(ctx: HarnessContext) -> None:
     project = ctx.new_project("Tabelle")
     clienti, fatture = _e2e_tables(project)
     ctx.check(clienti.field("nome_maiuscolo") is not None, "campo calcolato creato")
-    ctx.check(clienti.field("progressivo").auto_serial, "serie automatica creata")
+    ctx.check(clienti.field("progressivo").increment == "records", "serie automatica creata")
     ctx.check(len(fatture.foreign_keys) == 1, "chiave esterna creata")
     ctx.check(len(project.db.table_names()) >= 2, "tabelle presenti in SQLite")
 

@@ -277,7 +277,7 @@ def run(theme: str = "aurora") -> int:
                 Field("quantita", T.INTEGER, required=True, caption="Quantità"),
                 Field("prezzo", T.DECIMAL, required=True, caption="Prezzo"),
                 Field("totale", T.DECIMAL, calculated="[quantita] * [prezzo]", caption="Totale"),
-                Field("codice", T.INTEGER, auto_serial=True, caption="Codice"),
+                Field("codice", T.INTEGER, increment="records", caption="Codice"),
                 Field("creato", T.DATE, auto_date="insert", caption="Creato"),
             ],
         )

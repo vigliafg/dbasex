@@ -268,6 +268,9 @@ class MainWindow(QMainWindow):
         self.act_print = icons.make_action("Stampa…", "stampa", self)
         self.act_compact = icons.make_action("Compatta database…", "impostazioni", self)
         self.act_integrity = icons.make_action("Verifica integrità…", "ok", self)
+        self.act_reevaluate = icons.make_action(
+            "Riapplica regole di campo…", "ok", self
+        )
         self.act_close = icons.make_action("Chiudi progetto", "chiudi", self)
         self.act_quit = icons.make_action(
             "Esci", "chiudi", self, QKeySequence.StandardKey.Quit
@@ -278,6 +281,7 @@ class MainWindow(QMainWindow):
         self.act_print.triggered.connect(self.print_current)
         self.act_compact.triggered.connect(self.compact_database)
         self.act_integrity.triggered.connect(self.verify_database)
+        self.act_reevaluate.triggered.connect(self.reevaluate_fields)
         self.act_close.triggered.connect(self.close_project)
         self.act_quit.triggered.connect(self.close)
 
@@ -423,6 +427,11 @@ class MainWindow(QMainWindow):
         file_menu.addMenu(maintenance)
         add(maintenance, self.act_compact, "Crea un backup, compatta e ottimizza il database")
         add(maintenance, self.act_integrity, "Verifica l'integrità del database SQLite")
+        add(
+            maintenance,
+            self.act_reevaluate,
+            "Ricalcola i campi e ricontrolla le regole sui record esistenti",
+        )
         file_menu.addSeparator()
         add(file_menu, self.act_close, "Chiudi il progetto e tutte le sue finestre")
         add(file_menu, self.act_quit, "Esci da dBX")
@@ -1473,6 +1482,67 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.warning(self, "Integrità database", result)
         self.statusBar().showMessage(f"Integrità database: {result}", 5000)
+
+    def _active_table_name(self) -> str:
+        editor = self.editors.current_editor() if hasattr(self, "editors") else None
+        table = getattr(editor, "table", None)
+        return str(getattr(table, "name", "") or "")
+
+    def reevaluate_fields(self) -> None:
+        if not self._require_project():
+            return
+        assert self.project is not None
+        names = self.project.names("tables")
+        if not names:
+            QMessageBox.information(
+                self, "Riapplica regole", "Il progetto non ha tabelle."
+            )
+            return
+        active = self._active_table_name()
+        default = active if active in names else names[0]
+        name, ok = QInputDialog.getItem(
+            self,
+            "Riapplica regole di campo",
+            "Tabella:",
+            names,
+            names.index(default),
+            False,
+        )
+        if not ok or not name:
+            return
+        from ..runtime.rowset import re_evaluate
+
+        table = self.project.require_table(name)
+        try:
+            updated, issues = re_evaluate(table, self.project.db)
+        except Exception as exc:
+            QMessageBox.warning(self, "Riapplica regole non riuscita", str(exc))
+            return
+        errors = [issue for issue in issues if issue.is_error]
+        warnings = [issue for issue in issues if not issue.is_error]
+        lines = [f"Record aggiornati: {updated}"]
+        if errors:
+            lines.append(f"Errori bloccanti: {len(errors)}")
+        if warnings:
+            lines.append(f"Avvisi storici: {len(warnings)}")
+        details = [issue.text() for issue in issues[:20]]
+        if details:
+            lines.extend(["", *details])
+            if len(issues) > 20:
+                lines.append(f"… e altre {len(issues) - 20} segnalazioni")
+        message = "\n".join(lines)
+        if errors:
+            QMessageBox.warning(self, "Riapplica regole di campo", message)
+        else:
+            QMessageBox.information(self, "Riapplica regole di campo", message)
+        self.statusBar().showMessage(
+            f"Regole riapplicate su {name}: {updated} record aggiornati", 6000
+        )
+        if name == active:
+            editor = self.editors.current_editor()
+            refresh = getattr(editor, "refresh", None)
+            if callable(refresh):
+                refresh()
 
     def duplicate_project_object(self, category: str, name: str) -> None:
         if not self._require_project():

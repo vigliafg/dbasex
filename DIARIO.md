@@ -1583,3 +1583,31 @@
 - **Decisioni:** dominio inclusivo con `Decimal`, messaggio custom verbatim, ranges che sostituiscono min/max; maschere 9/A/a/spazio con normalizzazione degli slot; maiuscole solo nell'editor; scheda Proprietà con scroll interno.
 - **Decisioni rimandate all'utente:** nessuna bloccante.
 - **RIPRESA:** checkpoint attivo. Dopo `continua`, leggere `PLAN.md`, `PLAN-VALIDAZIONE.md` e questo diario, controllare `git status`/`git log`, e iniziare la **Fase 6 — Incrementi e re-evaluate**; fermarsi prima della Fase 7. Non ripartire da Fase 0–5.
+
+### 2026-11-25 — Piano di validazione — Fase 6 (incrementi e re-evaluate)
+- **Stato:** completata (Fase 6)
+- **Branch/commit:** `main`; commit della sotto-ondata.
+- **Obiettivo:** sostituire `auto_serial` con `increment` (`records`/`updates`), migrare i file legacy in lettura e riscrivere il solo `increment`; aggiungere `re_evaluate` con comando in File → Manutenzione database e avvisi storici `choice_stale`/`domain_stale`.
+- **File toccati:** `dbx/core/metadata.py`, `dbx/core/input_rules.py` (nuovo), `dbx/runtime/rowset.py`, `dbx/designers/table_builder.py`, `dbx/ui/input_rules.py`, `dbx/ui/main_window.py`, `dbx/smoke.py`, `tools/capture_ui.py`, `tools/e2e_scenarios.py`, `tests/test_validation.py`, `tests/test_calculated_fields.py`, `tests/test_ui_calculated.py`, `tests/test_ui_shell.py`, `docs/ui-parity.md`, rendering `27-table-calculated.png`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - **`increment`**: `records` assegna `MAX + 1` all'inserimento solo se il campo è vuoto e rispetta un valore manuale. `updates` è un contatore di revisione del singolo record: parte da 1 alla creazione e aumenta di uno a ogni aggiornamento; il valore fornito dall'utente in un aggiornamento viene sovrascritto, perché è il meccanismo automatico a decidere il numero. “Incremento a ogni modifica” viene quindi letto come revisione per record, non come sequenza globale.
+  - **Migrazione `auto_serial`**: l'attributo è stato rimosso dal dataclass `Field` (unificazione immediata, non alias). `Field.from_dict` legge `auto_serial=true` come `increment="records"`; `to_dict` emette solo `increment`. Tutti i chiamanti interni, smoke, harness e test sono stati portati a `increment`.
+  - **Regole di forma in `core`**: la logica pura di maiuscole/maschere è stata spostata in `dbx/core/input_rules.py`; `dbx/ui/input_rules.py` resta un riesporto compatibile. Serve perché `re_evaluate` vive nel runtime e deve applicare `case_mode` senza importare la UI.
+  - **`re_evaluate(table, db)`**: restituisce `(record aggiornati, issue)`. Ricalcola i calcolati per controllo (non sono memorizzati), applica `case_mode` ai campi testuali e ricontrolla obbligatorietà, Scelta, dominio e regole. Scrive solo le normalizzazioni di maiuscole, con `UPDATE` diretto: non attiva `auto_date` né `increment`, quindi non altera le revisioni.
+  - **Errori e avvisi**: i valori storici fuori elenco o fuori dominio sono `choice_stale`/`domain_stale` di severità `warning` e non vengono riscritti. I record con errori bloccanti (required, rule, tipo, sorgente Scelta) vengono saltati singolarmente; gli altri vengono normalizzati. Deviazione chiarita rispetto a §4.6 (“non scrive se ci sono errori bloccanti”): l'interpretazione è per record, coerente con il DoD “non scrive record con errori bloccanti”.
+  - **Comando**: `File → Manutenzione database → Riapplica regole di campo…` chiede la tabella, preseleziona quella della DataView attiva, mostra un riepilogo con aggiornati/errori/avvisi e aggiorna la vista attiva.
+  - **Table Builder**: la casella “Serie automatica” è sostituita dal combo “Incremento” (`Nessuno`, `A ogni nuovo record`, `A ogni modifica`), abilitato solo per campi Intero non calcolati.
+  - **Nota sugli avvisi**: `validate_report` sospende Scelta/dominio/regole quando ci sono errori di tipo o obbligatorietà; in quel caso gli avvisi storici di quel record non vengono prodotti. È il comportamento già scelto per non accumulare messaggi a cascata.
+- **Test:** `559 passed` (erano 549); smoke headless OK; harness E2E `PASS` con 14/14 scenari, 298/298 controlli e 32 screenshot. `ruff` continua a non essere installato, quindi lint non eseguito.
+- **Screenshot:** rendering canonici rigenerati in Aurora; `27-table-calculated.png` mostra il combo Incremento nella scheda Proprietà. Cattura Dark verificata e poi Aurora ripristinata.
+- **Problemi aperti:** nessun blocco funzionale. Restano da rifinire in Fase 7 documentazione e changelog; gli avvisi storici non hanno una vista dedicata oltre al riepilogo del comando.
+- **Prossimo passo:** **Checkpoint** di questo blocco; dopo `continua`, Fase 7 — rifinitura (CHANGELOG, README, `PLAN.md` §16, chiusura diario).
+
+## Checkpoint validazione — Fase 6 (2026-11-25)
+
+- **Stato fasi:** Fasi 0–6 completate (Fase 3 dinamica assorbita nella 2). Resta la Fase 7 di rifinitura.
+- **Test eseguiti:** `559 passed`; smoke headless OK; harness E2E `PASS` (14/14 scenari, 298 controlli, 32 screenshot); cattura Aurora e Dark OK.
+- **Screenshot:** serie canonica `01`–`37` in Aurora; `27` aggiornato con il combo Incremento.
+- **Decisioni:** `increment` sostituisce `auto_serial` con migrazione in lettura; `records` usa `MAX + 1` all'inserimento, `updates` è un contatore di revisione per record; `re_evaluate` normalizza solo `case_mode`, segnala `choice_stale`/`domain_stale` come avvisi e salta i record con errori bloccanti.
+- **Decisioni rimandate all'utente:** nessuna bloccante.
+- **RIPRESA:** checkpoint attivo. Dopo `continua`, leggere `PLAN.md`, `PLAN-VALIDAZIONE.md` e questo diario, controllare `git status`/`git log`, ed eseguire la **Fase 7 — Rifinitura** (CHANGELOG, README, `PLAN.md` §16, chiusura del diario). Non ripartire da Fase 0–6.
