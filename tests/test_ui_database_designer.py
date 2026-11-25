@@ -21,7 +21,7 @@ def test_designer_shows_graph_and_cards(qapp, demo_project) -> None:
         assert set(designer.graph.nodes) == {"clienti", "fatture"}
         assert len(designer.graph.edges) == 1
         assert set(designer.diagram.nodes) == {"clienti", "fatture"}
-        assert designer.canvas.card_rect("clienti").width() > 200
+        assert 160 <= designer.canvas.card_rect("clienti").width() <= 176
         assert designer.status_label.text().startswith("2 tabelle")
         assert designer.inspector.item("tables") is not None
     finally:

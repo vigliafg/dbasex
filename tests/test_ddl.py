@@ -135,3 +135,11 @@ def test_rebuild_rolls_back_on_failure():
         bad = Table(name="clienti", fields=[Field("nome", "tipo_inventato")])
         apply_migration(db.con, bad, old)
     assert db.scalar("SELECT COUNT(*) FROM clienti") == 1
+
+
+def test_table_name_with_spaces_roundtrips_through_sqlite():
+    table = Table(name="tabella 2", fields=[Field("nome", T.TEXT)])
+    db = Database(":memory:")
+    apply_migration(db.con, table, None)
+    db.execute('INSERT INTO "tabella 2" ("nome") VALUES (?)', ("Ada",))
+    assert db.scalar('SELECT "nome" FROM "tabella 2"') == "Ada"

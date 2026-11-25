@@ -15,7 +15,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Table Expert | — | `dbx/designers/table_expert.py` | fatto (0.4/O1) | Template, campi e indici; crea e apre la tabella in Browse |
 | Query Expert | — | `dbx/designers/query_expert.py` | fatto (0.4/O2) | Join suggeriti dalle FK, campi, criteri AND e ordinamento |
 | Report Expert | — | `dbx/designers/report_expert.py` | fatto (0.4/O2) | Layout tabellare/colonnare/riepilogo, gruppi, stile |
-| Database Designer ER | — | `dbx/designers/database_designer.py` | fatto (0.3/O3) | Diagramma dominante, pannelli laterali stretti, toolbar a due righe; relazioni e modifiche schema; export PNG/SVG |
+| Database Designer ER | — | `dbx/designers/database_designer.py` | fatto (0.3/O3) | Diagramma dominante, card compatte a 168 px, pannelli laterali stretti, toolbar a due righe; relazioni e modifiche schema; export PNG/SVG |
 | Query Designer | `15`, `19`, `20`, `21`, `23`, `29` | `dbx/designers/query_builder.py` | fatto (0.3/O5, QBE 0.4/O4, aggregati 0.7/O5) | Query statiche, INNER/LEFT JOIN, filtri, gruppi OR, QBE read-only e GROUP BY con aggregati |
 | Query Results | `16`, `17`, `30` | `dbx/ui/query_results.py` | fatto (0.3/O6, crosstab 0.7/O6) | Griglia read-only, aggiornamento, export CSV e Crosstab con totali |
 | Form Expert | `22`–`26` | `dbx/designers/form_expert.py` | fatto | Sorgente tabella o query (read-only); miniatura layout strutturale |

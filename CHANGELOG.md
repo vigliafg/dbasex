@@ -33,6 +33,8 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
   valori storici fuori elenco o dominio come avvisi `choice_stale`/`domain_stale`.
 - **Import CSV a scarti**: le righe valide entrano e quelle rifiutate sono elencate con numero di
   riga e motivo.
+- **Nomi tabella con spazi**: `tabella 2` è un nome valido; sono ammessi gli spazi interni singoli,
+  mentre spazi iniziali/finali e doppi spazi restano rifiutati.
 - Rendering `27-table-calculated.png` aggiornato con Maiuscole, Maschera, Incremento e Dominio
   numerico.
 
@@ -45,7 +47,8 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
   con lo stesso adattamento della struttura esistente; il focus iniziale va all'etichetta della
   scheda, così si passa da una finestra all'altra con la tastiera, e la larghezza minima scende
   sotto i 900 px per non debordare nei viewport da 1280 px.
-- **Database Designer**: toolbar su due righe e pannelli laterali più stretti; il diagramma ER occupa
+- **Database Designer**: toolbar su due righe e pannelli laterali più stretti; le card delle tabelle
+  sono ridotte di un terzo (168 px) con testo troncato in modo leggibile, il diagramma ER occupa
   circa il 70% della larghezza, la larghezza minima scende sotto i 900 px e l'area documenti non
   deborda più nei viewport da 1280 px.
 - Il Table Builder espone i gruppi **Valori (Scelta)**, **Dominio numerico** e **Incremento** nella

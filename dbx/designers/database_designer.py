@@ -46,10 +46,12 @@ from ..ui import design, icons
 from ..ui.widgets import PropertyInspector
 from .table_builder import TableBuilderDialog
 
-CARD_WIDTH = 252.0
+CARD_WIDTH = 168.0
 HEADER_HEIGHT = 30.0
 ROW_HEIGHT = 19.0
 CARD_PADDING = 8.0
+CARD_MARKER_WIDTH = 26.0
+CARD_TYPE_WIDTH = 54.0
 GRID_STEP = 20.0
 SNAP = 10.0
 
@@ -286,10 +288,16 @@ class DatabaseCanvas(QWidget):
         title_font.setPointSizeF(8.5)
         painter.setFont(title_font)
         painter.setPen(QColor(palette["header_text"]))
-        painter.drawText(
-            header.adjusted(10, 0, -10, 0),
-            int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+        title_rect = header.adjusted(10, 0, -10, 0)
+        title = QFontMetrics(title_font).elidedText(
             table.display_name(),
+            Qt.TextElideMode.ElideRight,
+            int(title_rect.width()),
+        )
+        painter.drawText(
+            title_rect,
+            int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+            title,
         )
 
         fk_fields: set[str] = set()
@@ -298,6 +306,7 @@ class DatabaseCanvas(QWidget):
         body_font = QFont(self.font())
         body_font.setPointSizeF(7.6)
         painter.setFont(body_font)
+        text_metrics = QFontMetrics(body_font)
         y = rect.top() + HEADER_HEIGHT + CARD_PADDING
         for index, field in enumerate(table.fields):
             row = QRectF(rect.left() + 4, y, rect.width() - 8, ROW_HEIGHT)
@@ -313,17 +322,39 @@ class DatabaseCanvas(QWidget):
                 marker,
             )
             painter.setPen(QColor(palette["text"]))
-            painter.drawText(
-                row.adjusted(34, 0, -70, 0),
-                int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+            name_rect = QRectF(
+                row.left() + CARD_MARKER_WIDTH,
+                row.top(),
+                max(20.0, row.width() - CARD_MARKER_WIDTH - CARD_TYPE_WIDTH - 6.0),
+                row.height(),
+            )
+            name_text = text_metrics.elidedText(
                 field.display_name(),
+                Qt.TextElideMode.ElideRight,
+                int(name_rect.width()),
+            )
+            painter.drawText(
+                name_rect,
+                int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+                name_text,
             )
             type_text = field.type.upper()
             if field.size:
                 type_text += f"({field.size})"
             painter.setPen(QColor(palette["disabled"]))
+            type_rect = QRectF(
+                row.right() - CARD_TYPE_WIDTH - 4.0,
+                row.top(),
+                CARD_TYPE_WIDTH,
+                row.height(),
+            )
+            type_text = text_metrics.elidedText(
+                type_text,
+                Qt.TextElideMode.ElideRight,
+                int(type_rect.width()),
+            )
             painter.drawText(
-                row.adjusted(0, 0, -8, 0),
+                type_rect,
                 int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter),
                 type_text,
             )

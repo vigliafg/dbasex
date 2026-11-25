@@ -49,7 +49,15 @@ def test_rename_rejects_collisions_and_invalid_names(demo_project):
     with pytest.raises(ProjectError):
         rename_table(demo_project, "clienti", "fatture")
     with pytest.raises(Exception):
-        rename_table(demo_project, "clienti", "nome con spazi")
+        rename_table(demo_project, "clienti", "1nome con spazi")
+
+
+def test_rename_accepts_a_table_name_with_spaces(demo_project):
+    rename_table(demo_project, "clienti", "tabella 2")
+    assert demo_project.db.has_table("tabella 2")
+    assert not demo_project.db.has_table("clienti")
+    assert demo_project.table("tabella 2") is not None
+    assert demo_project.db.scalar('SELECT COUNT(*) FROM "tabella 2"') == 3
 
 
 def test_duplicate_table_copies_structure_and_data(demo_project):

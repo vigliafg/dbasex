@@ -1694,3 +1694,18 @@
 - **Screenshot:** invariati.
 - **Problemi aperti:** nessuno.
 - **Prossimo passo:** nessuno; in attesa di nuove richieste.
+
+### 2026-11-25 — Nomi tabella con spazi e card ER compatte
+- **Stato:** completata
+- **Branch/commit:** `main`; commit della modifica.
+- **Obiettivo:** accettare nomi di tabella con spazi interni (`tabella 2`) e ridurre di un terzo la larghezza orizzontale delle card nel diagramma ER.
+- **File toccati:** `dbx/core/metadata.py`, `dbx/core/refactor.py`, `dbx/designers/database_designer.py`, `tests/test_metadata.py`, `tests/test_ddl.py`, `tests/test_rowset.py`, `tests/test_refactor.py`, `tests/test_ui_table_builder.py`, `tests/test_ui_database_designer.py`, `README.md`, `CHANGELOG.md`, `docs/ui-parity.md`, rendering `15-database-designer.png`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - **Nomi tabella:** nuovo `TABLE_IDENT_RE` e `check_table_name` in `metadata.py`; ammette lettere, cifre, underscore e spazi interni singoli, non l’inizio con cifra. Spazi iniziali/finali e doppi spazi restano rifiutati. Il controllo è usato da `Table.validate`, `ForeignKey.ref_table`, `Field.choice_table` e dalle rinomine/duplicazioni in `refactor.py`.
+  - I nomi campo restano senza spazi (`check_identifier` invariato), così le espressioni `[campo]` non cambiano.
+  - SQLite, DDL, Rowset e Query Engine già quotano gli identificatori: nessuna modifica al motore. Il salvataggio su disco usa `slugify`, quindi `tabella 2` diventa `tabella_2.table.json`, mentre il manifest conserva il nome originale.
+  - **Card ER:** `CARD_WIDTH` passa da 252 a 168 px; nome tabella, nome campo e tipo sono troncati con `QFontMetrics.elidedText` per restare leggibili. Aggiornato il test della larghezza.
+- **Test:** `571 passed` (erano 565); smoke headless OK; harness E2E `PASS` con 14/14 scenari e 298/298 controlli. `ruff` non installato, lint non eseguito.
+- **Screenshot:** `15-database-designer.png` rigenerato con card a 168 px.
+- **Problemi aperti:** gli spazi sono ammessi solo interni e singoli; non sono previsti nomi con doppi spazi o spazi iniziali/finali.
+- **Prossimo passo:** nessuno; in attesa di nuove richieste.

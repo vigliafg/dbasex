@@ -12,7 +12,7 @@ import copy
 import re
 from typing import Any
 
-from .metadata import Table, check_identifier
+from .metadata import Table, check_table_name
 from .project import CATEGORY_LABELS, Project, ProjectError
 
 
@@ -165,7 +165,7 @@ def _rewrite_artifact(category: str, artifact: dict[str, Any], old: str, new: st
 def rename_table(project: Project, old: str, new: str) -> None:
     """Rinomina tabella, schema SQLite e riferimenti nei metadati."""
     new = str(new).strip()
-    check_identifier(new, "nome tabella")
+    check_table_name(new, "nome tabella")
     current = project.require_table(old)
     if new.lower() == current.name.lower():
         return
@@ -215,7 +215,7 @@ def unique_name(project: Project, category: str, base: str) -> str:
 
 
 def _duplicate_table(project: Project, name: str, new_name: str) -> str:
-    check_identifier(new_name, "nome tabella")
+    check_table_name(new_name, "nome tabella")
     if project.table(new_name) is not None or project.db.has_table(new_name):
         raise ProjectError(f"Esiste già una tabella chiamata {new_name}")
     source = project.require_table(name)

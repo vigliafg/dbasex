@@ -77,3 +77,38 @@ def test_new_record_defaults():
     )
     record = table.new_record()
     assert record == {"a": 0, "b": "x", "c": 0}
+
+
+def test_table_names_allow_internal_spaces():
+    table = make_table(name="tabella 2")
+    table.validate()
+    clone = Table.from_dict(table.to_dict())
+    clone.validate()
+    assert clone.name == "tabella 2"
+
+    for bad in (" tabella 2", "tabella  2", "tabella 2 ", "1tabella 2"):
+        try:
+            make_table(name=bad).validate()
+        except MetadataError:
+            continue
+        raise AssertionError(f"nome tabella accettato: {bad!r}")
+
+
+def test_references_accept_table_names_with_spaces():
+    child = Table(name="figli", fields=[Field("codice")])
+    child.foreign_keys.append(
+        ForeignKey(
+            columns=["codice"],
+            ref_table="tabella 2",
+            ref_columns=["codice"],
+        )
+    )
+    child.validate()
+    choice = Field(
+        "stato",
+        T.CHOICE,
+        choice_source="table",
+        choice_table="tabella 2",
+        choice_value="codice",
+    )
+    choice.validate()

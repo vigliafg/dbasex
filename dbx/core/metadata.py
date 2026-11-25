@@ -17,6 +17,7 @@ from . import types as T
 from .input_rules import CASE_MODES, MASK_CHARS
 
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+TABLE_IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?: [A-Za-z0-9_]+)*$")
 RESERVED_NAMES = {"_id", "rowid", "oid", "sqlite_master"}
 ON_DELETE_ACTIONS = ("NO ACTION", "CASCADE", "SET NULL", "RESTRICT")
 
@@ -40,6 +41,19 @@ def check_identifier(name: str, what: str = "nome") -> None:
     if not IDENT_RE.match(name):
         raise MetadataError(
             f"{what.capitalize()} non valido: {name!r} (lettere, cifre e underscore, non iniziare con cifra)"
+        )
+    if name.lower() in RESERVED_NAMES:
+        raise MetadataError(f"{what.capitalize()} riservato: {name}")
+
+
+def check_table_name(name: str, what: str = "nome tabella") -> None:
+    """Valida un nome di tabella: come gli identificatori, ma con spazi interni."""
+    if not name or not isinstance(name, str):
+        raise MetadataError(f"{what.capitalize()} mancante")
+    if not TABLE_IDENT_RE.match(name):
+        raise MetadataError(
+            f"{what.capitalize()} non valido: {name!r} "
+            "(lettere, cifre, underscore e spazi interni, non iniziare con cifra)"
         )
     if name.lower() in RESERVED_NAMES:
         raise MetadataError(f"{what.capitalize()} riservato: {name}")
@@ -177,7 +191,7 @@ class Field:
                 raise MetadataError(
                     f"La Scelta {self.name} richiede tabella e colonna del valore"
                 )
-            check_identifier(self.choice_table, "tabella della Scelta")
+            check_table_name(self.choice_table, "tabella della Scelta")
             check_identifier(self.choice_value, "colonna della Scelta")
             if self.choice_label:
                 check_identifier(self.choice_label, "colonna etichetta della Scelta")
@@ -445,7 +459,7 @@ class ForeignKey:
     def validate(self, table: "Table") -> None:
         if not self.columns:
             raise MetadataError("Relazione senza colonne")
-        check_identifier(self.ref_table, "tabella di riferimento")
+        check_table_name(self.ref_table, "tabella di riferimento")
         if not self.ref_columns:
             raise MetadataError(f"Relazione {self.ref_table}: campo di riferimento mancante")
         if len(self.columns) != len(self.ref_columns):
@@ -514,7 +528,7 @@ class Table:
         return self.caption or self.name
 
     def validate(self) -> None:
-        check_identifier(self.name, "nome tabella")
+        check_table_name(self.name, "nome tabella")
         if not self.fields:
             raise MetadataError(f"La tabella {self.name} non ha campi")
         seen: set[str] = set()

@@ -326,3 +326,21 @@ def test_structure_tab_closes_from_the_tab_bar(qapp, demo_project) -> None:
         assert window.editors.find("structure:clienti") is None
     finally:
         window.close()
+
+
+def test_table_builder_accepts_a_name_with_spaces(qapp, demo_project) -> None:
+    window = MainWindow(demo_project)
+    try:
+        window.show()
+        window.open_new_table_structure()
+        qapp.processEvents()
+        tab = window.editors.find("structure:new")
+        assert tab is not None
+        dialog = tab.widget().dialog
+        dialog.name_edit.setText("tabella 2")
+        dialog._apply()
+        qapp.processEvents()
+        assert demo_project.table("tabella 2") is not None
+        assert window.editors.find("structure:tabella 2") is not None
+    finally:
+        window.close()

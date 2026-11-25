@@ -99,3 +99,14 @@ def test_filter_and_order(rowset):
     rowset.open(where="anni >= ?", params=(30,), order="nome")
     assert [r["nome"] for r in rowset.rows()] == ["Anna", "Bruno"]
     assert rowset.count() == 2
+
+
+def test_table_name_with_spaces_supports_rowset_writes():
+    db = Database(":memory:")
+    table = Table(name="tabella 2", fields=[Field("nome", T.TEXT)])
+    apply_migration(db.con, table, None)
+    rowset = Rowset(db, table)
+    record = rowset.insert({"nome": "Ada"})
+    assert rowset.load(record)["nome"] == "Ada"
+    rowset.update(record, {"nome": "Bob"})
+    assert rowset.load(record)["nome"] == "Bob"
