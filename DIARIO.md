@@ -1669,3 +1669,16 @@
 - **Screenshot:** rendering canonici rigenerati in Aurora; `15-database-designer.png` mostra toolbar a due righe e diagramma ER a circa il 70%; `04-table-structure.png` riflette la nuova larghezza minima.
 - **Problemi aperti:** il focus è stato interpretato come campo Name; i pannelli laterali non hanno un toggle esplicito, solo il trascinamento del splitter.
 - **Prossimo passo:** nessuno; in attesa di nuove richieste.
+
+### 2026-11-25 — Focus sull'etichetta della scheda
+- **Stato:** completata
+- **Branch/commit:** `main`; commit della correzione.
+- **Obiettivo:** correggere l’interpretazione di “etichetta superiore”: non è il campo Name, ma l’etichetta della scheda del workspace che permette di passare da una finestra all’altra.
+- **File toccati:** `dbx/ui/editor_host.py`, `dbx/ui/main_window.py`, `tests/test_ui_table_builder.py`, `CHANGELOG.md`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - Aggiunto `EditorHost.focus_tab_bar()`, che porta il focus sulla `tabBar` della scheda corrente.
+  - All’apertura o all’attivazione di una struttura (esistente o nuova) il focus va all’etichetta della scheda, non al campo Name. Restano invariati il contenuto dell’editor e il comportamento del doppio clic.
+- **Test:** `564 passed`; smoke headless OK; harness E2E `PASS` (14/14 scenari, 298/298 controlli).
+- **Screenshot:** invariati; il focus sulla scheda non modifica i rendering canonici.
+- **Problemi aperti:** nessuno.
+- **Prossimo passo:** nessuno; in attesa di nuove richieste.

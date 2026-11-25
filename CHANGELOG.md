@@ -42,8 +42,9 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
   elenca le tabelle e apre la loro struttura con doppio clic; la Browse resta disponibile come
   **Sfoglia dati** nel menu contestuale.
 - **Table Builder**: la nuova tabella si apre nella scheda del workspace, non in un dialogo modale,
-  con lo stesso adattamento della struttura esistente; il focus iniziale va al campo **Name** e la
-  larghezza minima scende sotto i 900 px per non debordare nei viewport da 1280 px.
+  con lo stesso adattamento della struttura esistente; il focus iniziale va all'etichetta della
+  scheda, così si passa da una finestra all'altra con la tastiera, e la larghezza minima scende
+  sotto i 900 px per non debordare nei viewport da 1280 px.
 - **Database Designer**: toolbar su due righe e pannelli laterali più stretti; il diagramma ER occupa
   circa il 70% della larghezza, la larghezza minima scende sotto i 900 px e l'area documenti non
   deborda più nei viewport da 1280 px.

@@ -1313,6 +1313,7 @@ class MainWindow(QMainWindow):
         existing = self.editors.find(key)
         if existing is not None:
             self.editors.activate(existing)
+            self.editors.focus_tab_bar()
             return
         dialog = TableBuilderDialog(self.project, table, self, embedded=True)
         page = DialogEditor(dialog, self)
@@ -1326,7 +1327,7 @@ class MainWindow(QMainWindow):
             page,
             icon=icons.icon("modifica"),
         )
-        dialog.name_edit.setFocus(Qt.FocusReason.OtherFocusReason)
+        self.editors.focus_tab_bar()
 
     def open_new_table_structure(self) -> None:
         """Apre la struttura di una nuova tabella nella scheda, non in un popup."""
@@ -1337,6 +1338,7 @@ class MainWindow(QMainWindow):
         existing = self.editors.find(key)
         if existing is not None:
             self.editors.activate(existing)
+            self.editors.focus_tab_bar()
             return
         dialog = TableBuilderDialog(self.project, None, self, embedded=True)
         dialog.setWindowTitle("Nuova tabella — struttura")
@@ -1352,7 +1354,7 @@ class MainWindow(QMainWindow):
             icon=icons.icon("modifica"),
         )
         page.finished.connect(lambda: self.editors.close_tab(tab))
-        dialog.name_edit.setFocus(Qt.FocusReason.OtherFocusReason)
+        self.editors.focus_tab_bar()
 
     def _on_structure_changed(self, name: str, page: DialogEditor) -> None:
         self._on_table_structure_changed(name)

@@ -277,7 +277,7 @@ def test_new_table_from_navigator_opens_embedded_structure(qapp, demo_project) -
         dialog = tab.widget().dialog
         assert isinstance(dialog, TableBuilderDialog)
         assert dialog.embedded is True
-        assert dialog.name_edit.hasFocus()
+        assert window.editors.tabs.tabBar().hasFocus()
         dialog.name_edit.setText("nuova_tabella_test")
         dialog._apply()
         qapp.processEvents()

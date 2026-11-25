@@ -240,6 +240,10 @@ class EditorHost(QWidget):
         page.finished.connect(lambda: self.remove(key))
         return tab
 
+    def focus_tab_bar(self) -> None:
+        """Porta il focus sull'etichetta della scheda corrente."""
+        self.tabs.tabBar().setFocus(Qt.FocusReason.OtherFocusReason)
+
     # ------------------------------------------------------------------ comandi
     def activate(self, tab: EditorTab) -> None:
         if tab in self._items:
