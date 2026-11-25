@@ -970,6 +970,13 @@ dieci mancanze più frequenti per un personal database desktop.
 | O10 — Automazione | Parametri script, variabili globali, transazioni esplicite | — |
 | O11 — QA e release 0.9.0 | Test, screenshot, documentazione, tag | **G** |
 
+### Piano di validazione dei campi (2026-11-25)
+
+Sotto-piano approvato: [`PLAN-VALIDAZIONE.md`](PLAN-VALIDAZIONE.md). Estende
+`Rowset` come unico punto di enforcement con issue strutturate, obbligatorietà
+condizionale, campo Scelta, dominio numerico, maschere e `increment`. Le fasi
+sono eseguite in sotto-ondate con diario e checkpoint ogni tre fasi.
+
 ### Stato di avanzamento 0.6.0–0.9.0
 
 | Ondata | Stato | Checkpoint |

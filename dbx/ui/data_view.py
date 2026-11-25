@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPlainTextEdit,
+    QStyledItemDelegate,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -32,9 +33,16 @@ from ..core.metadata import Table
 from ..core.search import SearchError, SearchRequest, build_where, replace_in_rowset
 from ..io.csv_io import CsvError, export_rowset
 from ..runtime.rowset import Rowset, RowsetError
+from ..runtime.validation import (
+    ValidationError,
+    ValidationIssue,
+    match_choice,
+    resolve_choices,
+)
 from . import design, icons
 from .find_dialog import FindDialog, ReplaceDialog
 from .import_wizard import ImportCsvDialog
+from .validation_ui import clear_error, mark_error
 
 DEFAULT_OPTIONS = {
     "alternate": True,
@@ -42,13 +50,74 @@ DEFAULT_OPTIONS = {
     "confirm_delete": True,
 }
 
+CHOICE_ROLE = int(Qt.ItemDataRole.UserRole) + 1
+
+
+def choice_label(field, value, db) -> str:
+    """Etichetta da mostrare per il valore memorizzato di un campo Scelta."""
+    if value in (None, ""):
+        return ""
+    try:
+        options = resolve_choices(field, db)
+    except Exception:
+        return str(value)
+    option = match_choice(field, str(value), options)
+    return option.label if option is not None else str(value)
+
+
+class ChoiceCellDelegate(QStyledItemDelegate):
+    """Combo per le celle di un campo Scelta: label visibile, valore salvato."""
+
+    def __init__(self, db, table: Table, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.db = db
+        self.table = table
+
+    def createEditor(self, parent, option, index):  # noqa: N802 - API Qt
+        field = self.table.fields[index.column()]
+        combo = QComboBox(parent)
+        combo.setEditable(bool(field.choice_allow_other))
+        if field.choice_allow_blank:
+            combo.addItem("", "")
+        try:
+            options = resolve_choices(field, self.db)
+        except Exception:
+            options = []
+        for item in options:
+            combo.addItem(item.label, item.value)
+        return combo
+
+    def setEditorData(self, editor: QComboBox, index) -> None:  # noqa: N802 - API Qt
+        value = index.data(CHOICE_ROLE)
+        position = editor.findData("" if value is None else value)
+        if position >= 0:
+            editor.setCurrentIndex(position)
+        elif editor.isEditable():
+            editor.setEditText("" if value is None else str(value))
+
+    def setModelData(self, editor: QComboBox, model, index) -> None:  # noqa: N802 - API Qt
+        value = editor.currentData()
+        if value is None and editor.isEditable():
+            value = editor.currentText()
+        value = "" if value is None else str(value)
+        model.setData(index, editor.currentText(), Qt.ItemDataRole.DisplayRole)
+        model.setData(index, value, CHOICE_ROLE)
+
 
 class RecordDialog(QDialog):
     """Inserimento di un nuovo record con validazione."""
 
-    def __init__(self, table: Table, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        table: Table,
+        parent: QWidget | None = None,
+        validator=None,
+        db=None,
+    ) -> None:
         super().__init__(parent)
         self.table = table
+        self.validator = validator
+        self.db = db
         self.setWindowTitle(f"Nuovo record — {table.display_name()}")
         layout = QVBoxLayout(self)
         form = QFormLayout()
@@ -57,6 +126,17 @@ class RecordDialog(QDialog):
             if field.type == T.MEMO:
                 editor: QWidget = QPlainTextEdit()
                 editor.setFixedHeight(70)
+            elif field.type == T.CHOICE:
+                editor = QComboBox()
+                editor.setEditable(bool(field.choice_allow_other))
+                if field.choice_allow_blank:
+                    editor.addItem("", "")
+                try:
+                    options = resolve_choices(field, db)
+                except Exception:
+                    options = []
+                for item in options:
+                    editor.addItem(item.label, item.value)
             else:
                 editor = QLineEdit()
                 if field.type in (T.DATE, T.DATETIME):
@@ -76,10 +156,49 @@ class RecordDialog(QDialog):
         layout.addWidget(buttons)
         self.resize(460, min(680, 80 * max(1, len(table.stored_fields)) + 80))
 
+    def accept(self) -> None:  # noqa: D102 - API Qt
+        if self.validator is not None:
+            try:
+                self.validator(self.values())
+            except ValidationError as exc:
+                self.apply_issues(exc.issues)
+                QMessageBox.warning(self, "Dati non validi", str(exc))
+                return
+            except RowsetError as exc:
+                QMessageBox.warning(self, "Dati non validi", str(exc))
+                return
+        self.clear_issues()
+        super().accept()
+
+    def clear_issues(self) -> None:
+        for editor in self.editors.values():
+            clear_error(editor)
+            editor.setToolTip("")
+
+    def apply_issues(self, issues: list[ValidationIssue]) -> None:
+        self.clear_issues()
+        focus: QWidget | None = None
+        for issue in issues:
+            editor = self.editors.get(issue.field)
+            if editor is None:
+                continue
+            mark_error(editor, issue.message)
+            focus = focus or editor
+        if focus is not None:
+            focus.setFocus()
+            if isinstance(focus, QLineEdit):
+                focus.selectAll()
+
     def values(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
         for field in self.table.stored_fields:
             editor = self.editors[field.name]
+            if isinstance(editor, QComboBox):
+                value = editor.currentData()
+                if value is None and editor.isEditable():
+                    value = editor.currentText()
+                result[field.name] = "" if value is None else value
+                continue
             if isinstance(editor, QPlainTextEdit):
                 text = editor.toPlainText()
             elif isinstance(editor, QLineEdit):
@@ -227,6 +346,7 @@ class DataView(QWidget):
         self.grid.itemChanged.connect(self._on_item_changed)
         self.grid.currentCellChanged.connect(self._on_current_cell_changed)
         self.grid.horizontalHeader().sectionResized.connect(self._on_section_resized)
+        self.choice_delegate = ChoiceCellDelegate(self.rowset.db, self.table, self)
         layout.addWidget(self.grid, 1)
 
         self.status = QLabel("")
@@ -275,6 +395,7 @@ class DataView(QWidget):
         previous_order = self._order_field()
         self.table = self.project.require_table(self.table.name)
         self.rowset = Rowset(self.project.db, self.table)
+        self.choice_delegate.table = self.table
         self.order_combo.blockSignals(True)
         self.order_combo.clear()
         self.order_combo.addItem("(naturale)", "")
@@ -314,10 +435,14 @@ class DataView(QWidget):
             self.rowset.find(INTERNAL_ID, current_id)
         self._loading = True
         self.grid.setRowCount(len(self.rowset))
+        for col, field in enumerate(self.table.fields):
+            if field.type == T.CHOICE:
+                self.grid.setItemDelegateForColumn(col, self.choice_delegate)
         for row_index, record in enumerate(self.rowset.rows()):
             for col, field in enumerate(self.table.fields):
                 value = record.get(field.name)
-                item = QTableWidgetItem(T.format_value(value, field.type, field.fmt))
+                item = QTableWidgetItem("")
+                self._write_cell(item, field, value)
                 item.setData(Qt.ItemDataRole.UserRole, record.get(INTERNAL_ID))
                 if field.type == T.BLOB:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
@@ -332,6 +457,13 @@ class DataView(QWidget):
         self._restoring = False
         self._sync_selection()
         self._update_status()
+
+    def _write_cell(self, item: QTableWidgetItem, field, value: Any) -> None:
+        if field.type == T.CHOICE:
+            item.setText(choice_label(field, value, self.rowset.db))
+            item.setData(CHOICE_ROLE, "" if value is None else str(value))
+        else:
+            item.setText(T.format_value(value, field.type, field.fmt))
 
     def apply_filter(self) -> None:
         self._filter = self.search_edit.text().strip()
@@ -451,26 +583,56 @@ class DataView(QWidget):
         if not field.stored:
             return
         try:
-            value = T.parse_input(item.text(), field.type)
-            record[field.name] = value
-            self.rowset.update(int(record_id), record)
-        except (ValueError, RowsetError) as exc:
-            QMessageBox.warning(self, "Modifica non valida", str(exc))
+            if field.type == T.CHOICE:
+                raw = item.data(CHOICE_ROLE)
+                value = "" if raw is None else raw
+            else:
+                value = T.parse_input(item.text(), field.type)
+            self.rowset.validate_field(int(record_id), field.name, value)
+            self.rowset.update(
+                int(record_id),
+                {field.name: value},
+                only={field.name},
+            )
+        except ValidationError as exc:
             self._loading = True
-            item.setText(T.format_value(record.get(field.name), field.type, field.fmt))
+            self._write_cell(item, field, record.get(field.name))
+            message = "; ".join(issue.message for issue in exc.issues)
+            mark_error(item, message)
             self._loading = False
+            self.status.setText(f"Campo non valido — {message}")
+            self.status_changed.emit(self.status.text())
             return
+        except (ValueError, RowsetError) as exc:
+            self._loading = True
+            self._write_cell(item, field, record.get(field.name))
+            mark_error(item, str(exc))
+            self._loading = False
+            self.status.setText(f"Modifica non valida — {exc}")
+            self.status_changed.emit(self.status.text())
+            return
+        updated = self.rowset.load(int(record_id)) or record
         self._loading = True
-        item.setText(T.format_value(record.get(field.name), field.type, field.fmt))
+        self._write_cell(item, field, updated.get(field.name))
+        clear_error(item)
+        item.setToolTip("")
         self._loading = False
         self._update_status()
 
     def new_record(self) -> None:
-        dialog = RecordDialog(self.table, self)
+        dialog = RecordDialog(
+            self.table,
+            self,
+            validator=self.rowset.check_insert,
+            db=self.rowset.db,
+        )
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         try:
             self.rowset.insert(dialog.values())
+        except ValidationError as exc:
+            QMessageBox.warning(self, "Inserimento non riuscito", str(exc))
+            return
         except RowsetError as exc:
             QMessageBox.warning(self, "Inserimento non riuscito", str(exc))
             return

@@ -82,7 +82,9 @@ def test_import_wizard_inserts_records(qapp, demo_project, tmp_path, monkeypatch
     dialog.close()
 
 
-def test_import_wizard_reports_bad_row(qapp, demo_project, tmp_path, monkeypatch):
+def test_import_wizard_reports_bad_row_and_keeps_valid_rows(
+    qapp, demo_project, tmp_path, monkeypatch
+):
     from PyQt6.QtWidgets import QMessageBox
 
     from dbx.ui.import_wizard import ImportCsvDialog
@@ -95,6 +97,10 @@ def test_import_wizard_reports_bad_row(qapp, demo_project, tmp_path, monkeypatch
     dialog.path_edit.setText(str(path))
     dialog.reload_preview()
     dialog.run_import()
-    assert dialog.imported == 0
+    assert dialog.imported == 1
+    assert dialog.rejected and "Riga 3" in dialog.rejected[0]
     assert warnings and "Riga 3" in warnings[0]
+    assert demo_project.db.scalar(
+        'SELECT COUNT(*) FROM "clienti" WHERE "codice" = ?', ("C92",)
+    ) == 1
     dialog.close()

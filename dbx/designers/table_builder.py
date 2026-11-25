@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QFormLayout,
     QFrame,
     QGridLayout,
+    QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QInputDialog,
@@ -406,6 +407,14 @@ class TableBuilderDialog(QDialog):
         self.field_caption_edit = QLineEdit()
         self.fmt_edit = QLineEdit()
         self.rule_edit = QLineEdit()
+        self.rule_message_edit = QLineEdit()
+        self.rule_message_edit.setPlaceholderText("Messaggio mostrato se la regola è falsa")
+        self.required_expr_edit = QLineEdit()
+        self.required_expr_edit.setPlaceholderText("es. [attivo] = .T.")
+        self.required_expr_edit.setToolTip("Se non vuota, rende il campo obbligatorio solo quando è vera")
+        self.skip_expr_edit = QLineEdit()
+        self.skip_expr_edit.setPlaceholderText("es. [tipo] = 'note'")
+        self.skip_expr_edit.setToolTip("Se vera, il campo è saltato e non obbligatorio")
         self.lookup_edit = QLineEdit()
         self.lookup_edit.setPlaceholderText("tabella.campo")
         self.calculated_edit = QLineEdit()
@@ -427,6 +436,9 @@ class TableBuilderDialog(QDialog):
             self.field_caption_edit,
             self.fmt_edit,
             self.rule_edit,
+            self.rule_message_edit,
+            self.required_expr_edit,
+            self.skip_expr_edit,
             self.lookup_edit,
             self.calculated_edit,
             self.auto_enter_edit,
@@ -439,12 +451,16 @@ class TableBuilderDialog(QDialog):
         form.addRow("Didascalia", self.field_caption_edit)
         form.addRow("Formato", self.fmt_edit)
         form.addRow("Regola", self.rule_edit)
+        form.addRow("Messaggio regola", self.rule_message_edit)
+        form.addRow("Obbligatorio se", self.required_expr_edit)
+        form.addRow("Salta se", self.skip_expr_edit)
         form.addRow("Lookup", self.lookup_edit)
         form.addRow("Calcolato", self.calculated_edit)
         form.addRow("Auto-enter", self.auto_enter_edit)
         form.addRow("", self.auto_serial_check)
         form.addRow("Data automatica", self.auto_date_combo)
         layout.addLayout(form)
+        layout.addWidget(self._build_choice_group())
         layout.addStretch(1)
 
         self.required_check.toggled.connect(self._store_field_meta)
@@ -455,12 +471,110 @@ class TableBuilderDialog(QDialog):
             self.field_caption_edit,
             self.fmt_edit,
             self.rule_edit,
+            self.rule_message_edit,
+            self.required_expr_edit,
+            self.skip_expr_edit,
             self.lookup_edit,
             self.calculated_edit,
             self.auto_enter_edit,
         ):
             edit.textChanged.connect(self._store_field_meta)
         return page
+
+    def _build_choice_group(self) -> QGroupBox:
+        group = QGroupBox("Valori (Scelta)")
+        self.choice_group = group
+        layout = QVBoxLayout(group)
+        form = QFormLayout()
+        self.choice_source_combo = QComboBox()
+        self.choice_source_combo.addItem("Solo lista fissa", "static")
+        self.choice_source_combo.addItem("Solo tabella", "table-replace")
+        self.choice_source_combo.addItem("Lista + tabella", "table-append")
+        form.addRow("Sorgente", self.choice_source_combo)
+        self.choice_table_combo = QComboBox()
+        self.choice_table_combo.setEditable(True)
+        form.addRow("Tabella", self.choice_table_combo)
+        self.choice_value_edit = QLineEdit()
+        self.choice_value_edit.setPlaceholderText("colonna del valore")
+        form.addRow("Colonna valore", self.choice_value_edit)
+        self.choice_label_edit = QLineEdit()
+        self.choice_label_edit.setPlaceholderText("colonna etichetta (opzionale)")
+        form.addRow("Colonna etichetta", self.choice_label_edit)
+        layout.addLayout(form)
+        self.choice_case_check = QCheckBox("Distingui maiuscole")
+        self.choice_case_check.setChecked(True)
+        self.choice_blank_check = QCheckBox("Vuoto ammesso")
+        self.choice_blank_check.setChecked(True)
+        self.choice_other_check = QCheckBox("Testo libero ammesso (con avviso)")
+        for box in (self.choice_case_check, self.choice_blank_check, self.choice_other_check):
+            layout.addWidget(box)
+        self.choice_values_grid = QTableWidget(0, 2)
+        self.choice_values_grid.setHorizontalHeaderLabels(["Valore", "Etichetta"])
+        self.choice_values_grid.verticalHeader().setVisible(False)
+        self.choice_values_grid.horizontalHeader().setStretchLastSection(True)
+        self.choice_values_grid.setColumnWidth(0, 120)
+        layout.addWidget(self.choice_values_grid)
+        bar = QHBoxLayout()
+        bar.addWidget(
+            icons.make_button(
+                "Aggiungi valore",
+                "nuovo",
+                lambda: self._add_choice_row("", ""),
+                self,
+            )
+        )
+        bar.addWidget(
+            icons.make_button(
+                "Rimuovi valore",
+                "elimina",
+                lambda: self._remove_row(self.choice_values_grid),
+                self,
+            )
+        )
+        bar.addStretch(1)
+        layout.addLayout(bar)
+        for widget in (
+            self.choice_case_check,
+            self.choice_blank_check,
+            self.choice_other_check,
+        ):
+            widget.stateChanged.connect(self._store_field_meta)
+        for widget in (self.choice_source_combo, self.choice_table_combo):
+            widget.currentIndexChanged.connect(self._store_field_meta)
+        for edit in (self.choice_value_edit, self.choice_label_edit):
+            edit.textChanged.connect(self._store_field_meta)
+        self.choice_values_grid.itemChanged.connect(self._store_field_meta)
+        return group
+
+    def _add_choice_row(self, value: str, label: str) -> None:
+        row = self.choice_values_grid.rowCount()
+        self.choice_values_grid.insertRow(row)
+        self.choice_values_grid.setItem(row, 0, QTableWidgetItem(value))
+        self.choice_values_grid.setItem(row, 1, QTableWidgetItem(label))
+        self._store_field_meta()
+
+    def _choice_rows(self) -> list[dict[str, str]]:
+        result: list[dict[str, str]] = []
+        for row in range(self.choice_values_grid.rowCount()):
+            value_item = self.choice_values_grid.item(row, 0)
+            label_item = self.choice_values_grid.item(row, 1)
+            value = value_item.text().strip() if value_item else ""
+            if not value:
+                continue
+            label = label_item.text().strip() if label_item else ""
+            result.append({"value": value, "label": label})
+        return result
+
+    def _fill_choice_tables(self) -> None:
+        current = self.choice_table_combo.currentText()
+        self.choice_table_combo.blockSignals(True)
+        self.choice_table_combo.clear()
+        self.choice_table_combo.addItem("")
+        for name in getattr(self, "_table_names", []):
+            self.choice_table_combo.addItem(name)
+        position = self.choice_table_combo.findText(current)
+        self.choice_table_combo.setCurrentIndex(max(0, position))
+        self.choice_table_combo.blockSignals(False)
 
     # ---------------------------------------------------------------- caricamento
     def _load(self) -> None:
@@ -476,6 +590,7 @@ class TableBuilderDialog(QDialog):
         self._meta = {}
         self._original_names = {}
         self._index_touched.clear()
+        self._table_names = list(self.project.tables()) if self.project else []
         self._reload_fields(self.table.fields)
         self._loading = False
         if self.fields_grid.rowCount():
@@ -488,7 +603,19 @@ class TableBuilderDialog(QDialog):
             "caption": field.caption,
             "fmt": field.fmt,
             "rule": field.rule,
+            "rule_message": field.rule_message,
+            "required_expr": field.required_expr,
+            "skip_expr": field.skip_expr,
             "lookup": field.lookup,
+            "choices": [dict(item) for item in field.choices],
+            "choice_source": field.choice_source,
+            "choice_table": field.choice_table,
+            "choice_value": field.choice_value,
+            "choice_label": field.choice_label,
+            "choice_combine": field.choice_combine,
+            "choice_case_sensitive": field.choice_case_sensitive,
+            "choice_allow_blank": field.choice_allow_blank,
+            "choice_allow_other": field.choice_allow_other,
             "calculated": field.calculated,
             "auto_enter": field.auto_enter,
             "auto_serial": field.auto_serial,
@@ -674,6 +801,25 @@ class TableBuilderDialog(QDialog):
             fmt = str(meta.get("fmt", ""))
             if field_type == T.DECIMAL and decimal_item is not None and decimal_item.text().strip():
                 fmt = fmt_from_decimals(decimals)
+            choice_kwargs: dict[str, Any] = {}
+            if field_type == T.CHOICE:
+                choice_kwargs = {
+                    "choices": [
+                        dict(item)
+                        for item in meta.get("choices", [])
+                        if isinstance(item, dict)
+                    ],
+                    "choice_source": str(meta.get("choice_source", "")),
+                    "choice_table": str(meta.get("choice_table", "")),
+                    "choice_value": str(meta.get("choice_value", "")),
+                    "choice_label": str(meta.get("choice_label", "")),
+                    "choice_combine": str(meta.get("choice_combine", "append")),
+                    "choice_case_sensitive": bool(
+                        meta.get("choice_case_sensitive", True)
+                    ),
+                    "choice_allow_blank": bool(meta.get("choice_allow_blank", True)),
+                    "choice_allow_other": bool(meta.get("choice_allow_other", False)),
+                }
             fields.append(
                 Field(
                     name=(name_item.text() if name_item else "").strip(),
@@ -684,6 +830,9 @@ class TableBuilderDialog(QDialog):
                     caption=str(meta.get("caption", "")),
                     fmt=fmt,
                     rule=str(meta.get("rule", "")),
+                    rule_message=str(meta.get("rule_message", "")),
+                    required_expr=str(meta.get("required_expr", "")),
+                    skip_expr=str(meta.get("skip_expr", "")),
                     lookup=str(meta.get("lookup", "")),
                     calculated=str(meta.get("calculated", "")),
                     auto_enter=str(meta.get("auto_enter", "")),
@@ -691,6 +840,7 @@ class TableBuilderDialog(QDialog):
                     auto_date=str(meta.get("auto_date", "")),
                     pk=bool(meta.get("pk", False)),
                     id=field_id,
+                    **choice_kwargs,
                 )
             )
         return fields
@@ -857,6 +1007,15 @@ class TableBuilderDialog(QDialog):
         return relations
 
     # ------------------------------------------------------------- proprietà
+    def _update_field_groups(self, row: int) -> None:
+        number = self.fields_grid.item(row, COL_FIELD) if row >= 0 else None
+        field_id = number.data(Qt.ItemDataRole.UserRole) if number else None
+        meta = self._meta.get(str(field_id), {}) if isinstance(field_id, str) else {}
+        type_item = self.fields_grid.item(row, COL_TYPE) if row >= 0 else None
+        type_name = str(type_item.data(Qt.ItemDataRole.UserRole) or T.TEXT) if type_item else T.TEXT
+        editable = bool(meta) and self.exclusive_button.isChecked()
+        self.choice_group.setEnabled(editable and type_name == T.CHOICE)
+
     def _load_field_meta(self, row: int) -> None:
         number = self.fields_grid.item(row, COL_FIELD)
         name_item = self.fields_grid.item(row, COL_NAME)
@@ -871,12 +1030,47 @@ class TableBuilderDialog(QDialog):
         self.field_caption_edit.setText(str(meta.get("caption", "")))
         self.fmt_edit.setText(str(meta.get("fmt", "")))
         self.rule_edit.setText(str(meta.get("rule", "")))
+        self.rule_message_edit.setText(str(meta.get("rule_message", "")))
+        self.required_expr_edit.setText(str(meta.get("required_expr", "")))
+        self.skip_expr_edit.setText(str(meta.get("skip_expr", "")))
         self.lookup_edit.setText(str(meta.get("lookup", "")))
         self.calculated_edit.setText(str(meta.get("calculated", "")))
         self.auto_enter_edit.setText(str(meta.get("auto_enter", "")))
         self.auto_serial_check.setChecked(bool(meta.get("auto_serial", False)))
         position = self.auto_date_combo.findData(str(meta.get("auto_date", "")))
         self.auto_date_combo.setCurrentIndex(max(0, position))
+        self._fill_choice_tables()
+        self.choice_table_combo.setCurrentText(str(meta.get("choice_table", "")))
+        self.choice_value_edit.setText(str(meta.get("choice_value", "")))
+        self.choice_label_edit.setText(str(meta.get("choice_label", "")))
+        source = str(meta.get("choice_source", ""))
+        if not source:
+            mode = "static"
+        else:
+            mode = (
+                "table-append"
+                if str(meta.get("choice_combine", "append")) == "append"
+                else "table-replace"
+            )
+        mode_position = self.choice_source_combo.findData(mode)
+        self.choice_source_combo.setCurrentIndex(max(0, mode_position))
+        self.choice_case_check.setChecked(bool(meta.get("choice_case_sensitive", True)))
+        self.choice_blank_check.setChecked(bool(meta.get("choice_allow_blank", True)))
+        self.choice_other_check.setChecked(bool(meta.get("choice_allow_other", False)))
+        self.choice_values_grid.blockSignals(True)
+        self.choice_values_grid.setRowCount(0)
+        for item in meta.get("choices", []):
+            if not isinstance(item, dict):
+                continue
+            row = self.choice_values_grid.rowCount()
+            self.choice_values_grid.insertRow(row)
+            self.choice_values_grid.setItem(
+                row, 0, QTableWidgetItem(str(item.get("value", "")))
+            )
+            self.choice_values_grid.setItem(
+                row, 1, QTableWidgetItem(str(item.get("label", "")))
+            )
+        self.choice_values_grid.blockSignals(False)
         enabled = bool(meta)
         for widget in (
             self.required_check,
@@ -884,6 +1078,9 @@ class TableBuilderDialog(QDialog):
             self.field_caption_edit,
             self.fmt_edit,
             self.rule_edit,
+            self.rule_message_edit,
+            self.required_expr_edit,
+            self.skip_expr_edit,
             self.lookup_edit,
             self.calculated_edit,
             self.auto_enter_edit,
@@ -891,6 +1088,7 @@ class TableBuilderDialog(QDialog):
             self.auto_date_combo,
         ):
             widget.setEnabled(enabled and self.exclusive_button.isChecked())
+        self._update_field_groups(row)
         self._meta_loading = False
 
     def _clear_field_meta(self) -> None:
@@ -902,6 +1100,9 @@ class TableBuilderDialog(QDialog):
             self.field_caption_edit,
             self.fmt_edit,
             self.rule_edit,
+            self.rule_message_edit,
+            self.required_expr_edit,
+            self.skip_expr_edit,
             self.lookup_edit,
             self.calculated_edit,
             self.auto_enter_edit,
@@ -909,6 +1110,17 @@ class TableBuilderDialog(QDialog):
             edit.clear()
         self.auto_serial_check.setChecked(False)
         self.auto_date_combo.setCurrentIndex(0)
+        self.choice_values_grid.blockSignals(True)
+        self.choice_values_grid.setRowCount(0)
+        self.choice_values_grid.blockSignals(False)
+        for edit in (self.choice_value_edit, self.choice_label_edit):
+            edit.clear()
+        self.choice_table_combo.setCurrentText("")
+        self.choice_source_combo.setCurrentIndex(0)
+        self.choice_case_check.setChecked(True)
+        self.choice_blank_check.setChecked(True)
+        self.choice_other_check.setChecked(False)
+        self._update_field_groups(-1)
         self._meta_loading = False
 
     def _store_field_meta(self, *_args) -> None:
@@ -925,7 +1137,23 @@ class TableBuilderDialog(QDialog):
             "caption": self.field_caption_edit.text(),
             "fmt": self.fmt_edit.text(),
             "rule": self.rule_edit.text(),
+            "rule_message": self.rule_message_edit.text(),
+            "required_expr": self.required_expr_edit.text(),
+            "skip_expr": self.skip_expr_edit.text(),
             "lookup": self.lookup_edit.text(),
+            "choices": self._choice_rows(),
+            "choice_source": ""
+            if str(self.choice_source_combo.currentData() or "static") == "static"
+            else "table",
+            "choice_table": self.choice_table_combo.currentText().strip(),
+            "choice_value": self.choice_value_edit.text().strip(),
+            "choice_label": self.choice_label_edit.text().strip(),
+            "choice_combine": "replace"
+            if str(self.choice_source_combo.currentData() or "") == "table-replace"
+            else "append",
+            "choice_case_sensitive": self.choice_case_check.isChecked(),
+            "choice_allow_blank": self.choice_blank_check.isChecked(),
+            "choice_allow_other": self.choice_other_check.isChecked(),
             "calculated": self.calculated_edit.text(),
             "auto_enter": self.auto_enter_edit.text(),
             "auto_serial": self.auto_serial_check.isChecked(),
@@ -945,6 +1173,7 @@ class TableBuilderDialog(QDialog):
             return
         self._highlight_current_row(row)
         self._load_field_meta(row)
+        self._update_field_groups(row)
 
     def _on_item_changed(self, item: QTableWidgetItem) -> None:
         if self._loading:
@@ -954,6 +1183,8 @@ class TableBuilderDialog(QDialog):
         field_id = number.data(Qt.ItemDataRole.UserRole) if number else None
         if item.column() == COL_INDEX and isinstance(field_id, str):
             self._index_touched.add(field_id)
+        if item.column() == COL_TYPE and isinstance(field_id, str):
+            self._update_field_groups(row)
         if item.column() == COL_DECIMAL and isinstance(field_id, str):
             meta = self._meta.setdefault(field_id, {})
             try:
@@ -1015,6 +1246,7 @@ class TableBuilderDialog(QDialog):
         row = self.fields_grid.currentRow()
         if row >= 0:
             self._load_field_meta(row)
+            self._update_field_groups(row)
         self.grid_hint.setText(
             "Modifica esclusiva attiva" if checked else "Sola lettura: struttura bloccata"
         )

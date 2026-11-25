@@ -47,6 +47,7 @@ class ImportCsvDialog(QDialog):
         self.project = project
         self.table: Table = project.require_table(table_name)
         self.imported = 0
+        self.rejected: list[str] = []
         self._rows: list[list[str]] = []
         self._mapping: list[str | None] = []
         self._headers: list[str] = []
@@ -262,33 +263,47 @@ class ImportCsvDialog(QDialog):
             if not records:
                 QMessageBox.information(self, "Importa CSV", "Nessuna riga da importare.")
                 return
-            count = self._insert_records(records, self.clear_box.isChecked())
+            count, rejected = self._insert_records(records, self.clear_box.isChecked())
         except (CsvError, RowsetError) as exc:
             QMessageBox.warning(self, "Importazione non riuscita", str(exc))
             return
         self.imported = count
-        QMessageBox.information(
-            self, "Importa CSV", f"Importati {count} record in «{self.table.display_name()}»."
-        )
+        self.rejected = rejected
+        details = "\n".join(rejected[:10])
+        if rejected:
+            extra = (
+                f"\n… e altri {len(rejected) - 10} scarti." if len(rejected) > 10 else ""
+            )
+            QMessageBox.warning(
+                self,
+                "Importa CSV",
+                f"Importati {count} record in «{self.table.display_name()}».\n"
+                f"{len(rejected)} righe scartate:\n{details}{extra}",
+            )
+        else:
+            QMessageBox.information(
+                self, "Importa CSV", f"Importati {count} record in «{self.table.display_name()}»."
+            )
+        if count == 0 and rejected:
+            return
         self.accept()
 
-    def _insert_records(self, records: list[dict], clear: bool) -> int:
+    def _insert_records(self, records: list[dict], clear: bool) -> tuple[int, list[str]]:
         rowset = Rowset(self.project.db, self.table)
         count = 0
-        try:
-            with self.project.db.transaction():
-                if clear:
-                    self.project.db.execute(f'DELETE FROM "{self.table.name}"')
-                for index, record in enumerate(records):
-                    try:
-                        rowset.insert(record)
-                    except RowsetError as exc:
-                        raise CsvError(f"Riga {index + 2}: {exc}") from exc
-                    count += 1
-        except Exception:
-            # Il rowset in memoria è solo di lavoro: il rollback ripristina il database.
-            raise
-        return count
+        rejected: list[str] = []
+        with self.project.db.transaction():
+            if clear:
+                self.project.db.execute(f'DELETE FROM "{self.table.name}"')
+            for index, record in enumerate(records):
+                try:
+                    rowset.insert(record)
+                except RowsetError as exc:
+                    reason = str(exc).replace("\n", "; ")
+                    rejected.append(f"Riga {index + 2}: {reason}")
+                    continue
+                count += 1
+        return count, rejected
 
 
 __all__ = ["ImportCsvDialog"]

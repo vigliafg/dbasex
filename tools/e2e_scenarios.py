@@ -496,8 +496,8 @@ def scenario_search_csv(ctx: HarnessContext) -> None:
             importer.current_mapping(),
             importer.header_box.isChecked(),
         )
-        count = importer._insert_records(records, False)
-        ctx.check(count == 2, "import CSV in tabella esistente")
+        count, rejected = importer._insert_records(records, False)
+        ctx.check(count == 2 and not rejected, "import CSV in tabella esistente")
         ctx.check(
             [row["nome_maiuscolo"] for row in Rowset(project.db, imported).open().rows()]
             == ["ALFA", "BETA"],

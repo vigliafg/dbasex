@@ -74,7 +74,7 @@ def type_family(type_name: str) -> str:
         return "number"
     if type_name in (T.DATE, T.DATETIME):
         return "date"
-    if type_name in (T.TEXT, T.MEMO):
+    if T.is_text_like(type_name):
         return "text"
     return type_name
 

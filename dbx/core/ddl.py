@@ -38,7 +38,7 @@ def default_literal(field: Field) -> str:
             return _sql_literal(T.to_storage(field.default, field.type))
         except ValueError:
             return "NULL"
-    if field.required:
+    if field.not_null:
         if field.type in (T.INTEGER, T.BOOLEAN):
             return "0"
         if field.type == T.DECIMAL:
@@ -51,7 +51,7 @@ def default_literal(field: Field) -> str:
 
 def column_sql(field: Field) -> str:
     parts = [quote(field.name), T.sql_type(field.type)]
-    if field.required:
+    if field.not_null:
         parts.append("NOT NULL")
     if field.pk:
         parts.append("UNIQUE")
@@ -107,7 +107,7 @@ def _field_signature(field: Field) -> tuple:
         field.name.lower(),
         field.type,
         field.size,
-        field.required,
+        field.not_null,
         field.default,
         field.pk,
     )
@@ -146,7 +146,7 @@ def _find_source(new_field: Field, old_table: Table | None) -> str | None:
 def _copy_expression(new_field: Field, old_table: Table | None) -> str:
     source = _find_source(new_field, old_table)
     if source is not None:
-        if new_field.type in (T.TEXT, T.MEMO, T.BLOB):
+        if T.is_text_like(new_field.type) or new_field.type == T.BLOB:
             return quote(source)
         return f"CAST({quote(source)} AS {T.affinity(new_field.type)})"
     return default_literal(new_field)

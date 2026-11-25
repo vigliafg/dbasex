@@ -9,10 +9,16 @@ from ..core.db import Database
 from ..core.ddl import INTERNAL_ID
 from ..core.expressions import Expression, ExpressionError
 from ..core.metadata import Table
-
-
-class RowsetError(RuntimeError):
-    """Errore di lettura/scrittura o di validazione."""
+from .validation import (
+    ChoiceSourceError,
+    RowsetError,
+    ValidationError,
+    ValidationIssue,
+    ValidationReport,
+    match_choice,
+    resolve_choices,
+    touch_choices,
+)
 
 
 class Rowset:
@@ -21,6 +27,7 @@ class Rowset:
     def __init__(self, db: Database, table: Table) -> None:
         self.db = db
         self.table = table
+        self.last_warnings: list[ValidationIssue] = []
         self._rows: list[dict[str, Any]] = []
         self._position = -1
         self._where = ""
@@ -232,47 +239,214 @@ class Rowset:
             {key: T.from_storage(row[key], self._type_of(key)) for key in row.keys()}
         )
 
-    def validate(self, values: dict[str, Any]) -> dict[str, Any]:
-        """Converte e valida i valori, restituendo i dati pronti per lo storage."""
+    # --------------------------------------------------------------- validazione
+    def _is_skipped(self, field, record: dict[str, Any]) -> bool:
+        """Il campo è escluso dall'obbligatorietà (``skip_expr`` vera)."""
+        source = str(getattr(field, "skip_expr", "") or "")
+        if not source:
+            return False
+        return Expression(source).truth(record, table=self.table.name)
+
+    def _is_required(self, field, record: dict[str, Any]) -> bool:
+        """Obbligatorietà booleana o condizionale (``required_expr`` vince)."""
+        source = str(getattr(field, "required_expr", "") or "")
+        if not source:
+            return bool(field.required)
+        return Expression(source).truth(record, table=self.table.name)
+
+    def _check_value(
+        self,
+        report: ValidationReport,
+        field,
+        stored: Any,
+    ) -> Any:
+        """Controlla Scelta e Dominio; restituisce il valore canonico o None."""
+        if field.type == T.CHOICE:
+            return self._check_choice(report, field, stored)
+        return None
+
+    def _check_choice(
+        self,
+        report: ValidationReport,
+        field,
+        stored: Any,
+    ) -> Any:
+        empty = self._empty(stored)
+        if empty:
+            if not bool(getattr(field, "choice_allow_blank", True)):
+                report.add(
+                    field.name,
+                    f"{field.display_name()}: valore vuoto non ammesso",
+                    "choice",
+                )
+            return None
+        try:
+            options = resolve_choices(field, self.db)
+        except ChoiceSourceError as exc:
+            report.add(
+                field.name,
+                f"{field.display_name()}: {exc}",
+                "choice_source",
+            )
+            return None
+        option = match_choice(field, str(stored), options)
+        if option is not None:
+            return option.value
+        if bool(getattr(field, "choice_allow_other", False)):
+            report.add(
+                field.name,
+                f"{field.display_name()}: valore fuori elenco",
+                "choice_other",
+                severity="warning",
+            )
+            return None
+        report.add(
+            field.name,
+            f"{field.display_name()}: valore non ammesso ({stored})",
+            "choice",
+        )
+        return None
+
+    def validate_report(
+        self,
+        values: dict[str, Any],
+        *,
+        only: set[str] | None = None,
+    ) -> ValidationReport:
+        """Converte e valida i valori, restituendo valori pronti e issue.
+
+        ``only=None`` valida tutto il record; un insieme di nomi limita
+        obbligatorietà, Scelta, Dominio e regole ai campi indicati, ma converte
+        comunque tutti i campi perché le espressioni li possono leggere.
+        """
+        report = ValidationReport()
         prepared: dict[str, Any] = {}
-        errors: list[str] = []
-        expression_record = dict(values)
+        record = dict(values)
         for field in self.table.stored_fields:
             raw = values.get(field.name)
             try:
                 stored = T.to_storage(raw, field.type)
             except ValueError as exc:
-                errors.append(f"{field.display_name()}: {exc}")
+                report.add(field.name, f"{field.display_name()}: {exc}", "type")
                 continue
-            empty_text = isinstance(stored, str) and stored.strip() == ""
-            if field.required and (stored is None or empty_text):
-                errors.append(f"{field.display_name()} è obbligatorio")
             prepared[field.name] = stored
-            expression_record[field.name] = T.from_storage(stored, field.type)
-        if not errors:
+            record[field.name] = T.from_storage(stored, field.type)
+        targets = (
+            {field.name for field in self.table.stored_fields}
+            if only is None
+            else set(only)
+        )
+        skipped: dict[str, bool] = {}
+        for field in self.table.stored_fields:
+            if field.name not in prepared or field.name not in targets:
+                continue
+            try:
+                skip = self._is_skipped(field, record)
+                skipped[field.name] = skip
+                if skip:
+                    continue
+                required = self._is_required(field, record)
+            except ExpressionError as exc:
+                report.add(
+                    field.name,
+                    f"{field.display_name()}: condizione non valida ({exc})",
+                    "rule",
+                )
+                continue
+            if required and self._empty(prepared[field.name]):
+                report.add(
+                    field.name,
+                    f"{field.display_name()} è obbligatorio",
+                    "required",
+                )
+        if not report.errors:
+            for field in self.table.stored_fields:
+                if (
+                    field.name in prepared
+                    and field.name in targets
+                    and not skipped.get(field.name)
+                ):
+                    canonical = self._check_value(report, field, prepared[field.name])
+                    if canonical is not None:
+                        prepared[field.name] = canonical
+                        record[field.name] = T.from_storage(canonical, field.type)
+        if not report.errors:
             for name, expression in self._calculated:
                 try:
-                    expression_record[name] = expression.evaluate(
-                        expression_record, table=self.table.name
-                    )
+                    record[name] = expression.evaluate(record, table=self.table.name)
                 except ExpressionError as exc:
-                    errors.append(f"Calcolo di {name} non valido: {exc}")
-        if not errors:
+                    report.add(name, f"Calcolo di {name} non valido: {exc}", "rule")
+        if not report.errors:
             for field in self.table.fields:
-                if not field.rule:
+                if not field.rule or field.name not in targets:
                     continue
                 try:
-                    if not Expression(field.rule).truth(expression_record, table=self.table.name):
-                        errors.append(
-                            f"{field.display_name()}: regola di validazione non soddisfatta ({field.rule})"
-                        )
+                    if not Expression(field.rule).truth(record, table=self.table.name):
+                        message = str(getattr(field, "rule_message", "") or "").strip()
+                        if not message:
+                            message = (
+                                f"{field.display_name()}: regola di validazione "
+                                f"non soddisfatta ({field.rule})"
+                            )
+                        report.add(field.name, message, "rule")
                 except ExpressionError as exc:
-                    errors.append(f"{field.display_name()}: regola non valida ({exc})")
-        if errors:
-            raise RowsetError("\n".join(errors))
+                    report.add(
+                        field.name,
+                        f"{field.display_name()}: regola non valida ({exc})",
+                        "rule",
+                    )
+        report.values = prepared
+        return report
+
+    def validate(
+        self,
+        values: dict[str, Any],
+        *,
+        only: set[str] | None = None,
+    ) -> dict[str, Any]:
+        """Valida i valori e restituisce i dati pronti per lo storage."""
+        report = self.validate_report(values, only=only)
+        self.last_warnings = list(report.warnings)
+        report.raise_if_errors()
+        return report.values
+
+    def _prepare(self, values: dict[str, Any]) -> dict[str, Any]:
+        """Conversione senza controlli, per le scritture esplicitamente fidate."""
+        prepared: dict[str, Any] = {}
+        for field in self.table.stored_fields:
+            try:
+                prepared[field.name] = T.to_storage(values.get(field.name), field.type)
+            except ValueError as exc:
+                raise RowsetError(f"{field.display_name()}: {exc}") from exc
         return prepared
 
+    def check_insert(self, values: dict[str, Any]) -> dict[str, Any]:
+        """Simula un inserimento (auto-enter incluso) senza scrivere."""
+        values = self._apply_auto_enter(values, creating=True)
+        return self.validate(values)
+
+    def validate_field(
+        self,
+        record_id: int,
+        field_name: str,
+        value: Any,
+    ) -> dict[str, Any]:
+        """Valida un solo campo di un record esistente, senza scrivere.
+
+        È la primitiva della griglia: converte tutto il record ma applica
+        obbligatorietà, Scelta, Dominio e regole al solo campo indicato.
+        """
+        if self.table.field(field_name) is None:
+            raise RowsetError(f"Campo inesistente: {field_name}")
+        record = self.load(record_id)
+        if record is None:
+            raise RowsetError(f"Record {record_id} inesistente")
+        record[field_name] = value
+        return self.validate(record, only={field_name})
+
+
     def _check_unique(self, prepared: dict[str, Any], record_id: int | None) -> None:
+        issues: list[ValidationIssue] = []
         for index in self.table.indexes:
             if not index.unique:
                 continue
@@ -291,14 +465,27 @@ class Rowset:
             except Exception as exc:
                 raise RowsetError(f"Controllo di unicità non riuscito: {exc}") from exc
             if existing:
-                raise RowsetError(
-                    "Valori duplicati per l'indice univoco %s su %s"
-                    % (index.resolved_name(self.table.name), ", ".join(index.fields))
+                issues.append(
+                    ValidationIssue(
+                        field=index.fields[0],
+                        message=(
+                            "Valori duplicati per l'indice univoco %s su %s"
+                            % (index.resolved_name(self.table.name), ", ".join(index.fields))
+                        ),
+                        code="unique",
+                    )
                 )
+        if issues:
+            raise ValidationError(issues)
 
-    def insert(self, values: dict[str, Any]) -> int:
+    def insert(
+        self,
+        values: dict[str, Any],
+        *,
+        validate: bool = True,
+    ) -> int:
         values = self._apply_auto_enter(values, creating=True)
-        prepared = self.validate(values)
+        prepared = self.validate(values) if validate else self._prepare(values)
         self._check_unique(prepared, None)
         names = self.table.stored_field_names
         placeholders = ", ".join("?" for _ in names)
@@ -311,6 +498,7 @@ class Rowset:
         except Exception as exc:
             raise RowsetError(f"Inserimento non riuscito: {exc}") from exc
         record_id = int(cursor.lastrowid)
+        touch_choices(self.table.name)
         record = {INTERNAL_ID: record_id}
         for field in self.table.stored_fields:
             record[field.name] = T.from_storage(prepared[field.name], field.type)
@@ -319,7 +507,14 @@ class Rowset:
         self._position = len(self._rows) - 1
         return record_id
 
-    def update(self, record_id: int, values: dict[str, Any]) -> int:
+    def update(
+        self,
+        record_id: int,
+        values: dict[str, Any],
+        *,
+        only: set[str] | None = None,
+        validate: bool = True,
+    ) -> int:
         # Le modifiche parziali non azzerano i campi non indicati.
         columns = ", ".join(f'"{c}"' for c in self.columns)
         existing = self.db.con.execute(
@@ -334,7 +529,7 @@ class Rowset:
             merged.update(values)
             values = merged
         values = self._apply_auto_enter(values, creating=False)
-        prepared = self.validate(values)
+        prepared = self.validate(values, only=only) if validate else self._prepare(values)
         self._check_unique(prepared, record_id)
         names = self.table.stored_field_names
         assignments = ", ".join(f'"{name}" = ?' for name in names)
@@ -343,6 +538,7 @@ class Rowset:
             self.db.execute(sql, [prepared[name] for name in names] + [record_id])
         except Exception as exc:
             raise RowsetError(f"Aggiornamento non riuscito: {exc}") from exc
+        touch_choices(self.table.name)
         record = {INTERNAL_ID: record_id}
         for field in self.table.stored_fields:
             record[field.name] = T.from_storage(prepared[field.name], field.type)
@@ -373,6 +569,7 @@ class Rowset:
             self.db.execute(f'DELETE FROM "{self.table.name}" WHERE "{INTERNAL_ID}" = ?', (record_id,))
         except Exception as exc:
             raise RowsetError(f"Eliminazione non riuscita: {exc}") from exc
+        touch_choices(self.table.name)
         self._rows = [row for row in self._rows if row.get(INTERNAL_ID) != record_id]
         if not self._rows:
             self._position = -1

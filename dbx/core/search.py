@@ -244,13 +244,13 @@ def replaceable_fields(table: Table, field: str = "") -> list:
             raise SearchError(f"Campo inesistente: {field}")
         if not candidate.stored:
             raise SearchError(f"Il campo {candidate.display_name()} è calcolato e non modificabile")
-        if candidate.type not in (T.TEXT, T.MEMO):
+        if not T.is_text_like(candidate.type):
             raise SearchError(f"Il campo {candidate.display_name()} non è testuale")
         return [candidate]
     return [
         item
         for item in table.fields
-        if item.stored and item.type in (T.TEXT, T.MEMO)
+        if item.stored and T.is_text_like(item.type)
     ]
 
 

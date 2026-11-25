@@ -99,8 +99,6 @@ def test_data_view_filter_and_order_status(qapp, demo_project) -> None:
 
 def test_data_view_inplace_edit_and_rollback(qapp, demo_project, monkeypatch) -> None:
     view = DataView(demo_project, "fatture")
-    messages: list[str] = []
-    monkeypatch.setattr(QMessageBox, "warning", lambda *_args, **_kwargs: messages.append("warning"))
     try:
         column = [field.name for field in view.table.fields].index("importo")
         item = view.grid.item(0, column)
@@ -109,7 +107,8 @@ def test_data_view_inplace_edit_and_rollback(qapp, demo_project, monkeypatch) ->
         record = view.rowset.load(int(record_id))
         assert record is not None and float(record["importo"]) == 999.5
         item.setText("non numerico")
-        assert messages, "la modifica non valida deve mostrare un avviso"
+        assert "non valida" in view.status.text()
+        assert item.toolTip(), "la cella non valida deve essere evidenziata con un tooltip"
         assert item.text() == "999.5"
         record = view.rowset.load(int(record_id))
         assert record is not None and float(record["importo"]) == 999.5

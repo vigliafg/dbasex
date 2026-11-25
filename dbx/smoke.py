@@ -362,7 +362,7 @@ def run_smoke() -> int:
     importer = ImportCsvDialog(project, "import_smoke")
     importer.path_edit.setText(str(csv_path))
     importer.reload_preview()
-    imported = importer._insert_records(
+    imported, rejected = importer._insert_records(
         records_from_table(
             importer._rows,
             imported_table,
@@ -371,7 +371,7 @@ def run_smoke() -> int:
         ),
         False,
     )
-    assert imported == 2
+    assert imported == 2 and not rejected
     from .runtime.rowset import Rowset as SmokeRowset
 
     computed = SmokeRowset(project.db, project.require_table("import_smoke")).open().rows()

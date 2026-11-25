@@ -16,9 +16,10 @@ DATE = "date"
 DATETIME = "datetime"
 BOOLEAN = "boolean"
 MEMO = "memo"
+CHOICE = "choice"
 BLOB = "blob"
 
-ALL_TYPES = (TEXT, INTEGER, DECIMAL, DATE, DATETIME, BOOLEAN, MEMO, BLOB)
+ALL_TYPES = (TEXT, INTEGER, DECIMAL, DATE, DATETIME, BOOLEAN, MEMO, CHOICE, BLOB)
 
 TYPE_LABELS = {
     TEXT: "Testo",
@@ -28,6 +29,7 @@ TYPE_LABELS = {
     DATETIME: "Data/ora",
     BOOLEAN: "Logico (Sì/No)",
     MEMO: "Memo",
+    CHOICE: "Scelta",
     BLOB: "Allegato",
 }
 
@@ -39,6 +41,7 @@ TYPE_HINTS = {
     DATETIME: "Data e ora",
     BOOLEAN: "Vero/Falso memorizzato come 0/1",
     MEMO: "Testo lungo",
+    CHOICE: "Valore scelto da un elenco (memorizzato come testo)",
     BLOB: "Dati binari (immagini, allegati)",
 }
 
@@ -50,6 +53,7 @@ _SQL_TYPES = {
     DATETIME: "TEXT",
     BOOLEAN: "INTEGER",
     MEMO: "TEXT",
+    CHOICE: "TEXT",
     BLOB: "BLOB",
 }
 
@@ -93,6 +97,12 @@ def is_numeric(type_name: str) -> bool:
 
 def is_date_like(type_name: str) -> bool:
     return type_name in (DATE, DATETIME)
+
+
+def is_text_like(type_name: str) -> bool:
+    """Tipi memorizzati e trattati come testo (inclusa la Scelta)."""
+    return type_name in (TEXT, MEMO, CHOICE)
+
 
 
 def _parse_date(value: Any) -> date:
@@ -143,7 +153,7 @@ def to_storage(value: Any, type_name: str) -> Any:
     """Converte un valore Python/UI nella rappresentazione memorizzata su SQLite."""
     if value is None:
         return None
-    if isinstance(value, str) and value.strip() == "" and type_name not in (TEXT, MEMO):
+    if isinstance(value, str) and value.strip() == "" and not is_text_like(type_name):
         return None
     if type_name == INTEGER:
         if isinstance(value, bool):
@@ -255,7 +265,7 @@ def parse_input(text: str, type_name: str) -> Any:
     text = "" if text is None else str(text)
     if text.strip() == "":
         return None
-    if type_name == TEXT or type_name == MEMO:
+    if is_text_like(type_name):
         return text
     return to_storage(text, type_name)
 

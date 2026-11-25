@@ -63,7 +63,19 @@ class Field:
     fmt: str = ""
     pk: bool = False
     lookup: str = ""
+    choices: list[dict[str, Any]] = dc_field(default_factory=list)
+    choice_source: str = ""
+    choice_table: str = ""
+    choice_value: str = ""
+    choice_label: str = ""
+    choice_combine: str = "append"
+    choice_case_sensitive: bool = True
+    choice_allow_blank: bool = True
+    choice_allow_other: bool = False
     rule: str = ""
+    rule_message: str = ""
+    required_expr: str = ""
+    skip_expr: str = ""
     calculated: str = ""
     auto_enter: str = ""
     auto_serial: bool = False
@@ -85,6 +97,12 @@ class Field:
             raise MetadataError(
                 f"Momento automatico non valido per {self.name}: {self.auto_date!r}"
             )
+        for source, label in (
+            (self.required_expr, "obbligatorietà condizionale"),
+            (self.skip_expr, "condizione di salto"),
+        ):
+            if str(source).strip():
+                _check_expression(str(source), f"{label} di {self.name}")
         mechanisms = [
             bool(self.calculated.strip()),
             bool(self.auto_enter.strip()),
@@ -118,11 +136,63 @@ class Field:
             raise MetadataError(
                 f"Il campo calcolato {self.name} non può avere una regola di validazione"
             )
+        self._validate_choice()
+
+    def _validate_choice(self) -> None:
+        configured = bool(
+            self.choices
+            or self.choice_source
+            or self.choice_table
+            or self.choice_value
+            or self.choice_label
+        )
+        if configured and self.type != T.CHOICE:
+            raise MetadataError(
+                f"Il campo {self.name} ha una configurazione Scelta ma il tipo non è Scelta"
+            )
+        if self.type != T.CHOICE:
+            return
+        if self.calculated:
+            raise MetadataError(f"Il campo Scelta {self.name} non può essere calcolato")
+        if self.choice_source not in ("", "table"):
+            raise MetadataError(
+                f"Sorgente Scelta non valida per {self.name}: {self.choice_source!r}"
+            )
+        if self.choice_source == "table":
+            if not self.choice_table or not self.choice_value:
+                raise MetadataError(
+                    f"La Scelta {self.name} richiede tabella e colonna del valore"
+                )
+            check_identifier(self.choice_table, "tabella della Scelta")
+            check_identifier(self.choice_value, "colonna della Scelta")
+            if self.choice_label:
+                check_identifier(self.choice_label, "colonna etichetta della Scelta")
+        if self.choice_combine not in ("append", "replace"):
+            raise MetadataError(
+                f"Combinazione Scelta non valida per {self.name}: {self.choice_combine!r}"
+            )
+        seen: set[str] = set()
+        for item in self.choices:
+            if not isinstance(item, dict):
+                raise MetadataError(
+                    f"Voce Scelta non valida per {self.name}: atteso un oggetto valore/etichetta"
+                )
+            value = str(item.get("value", ""))
+            if value == "":
+                raise MetadataError(f"Voce Scelta senza valore per {self.name}")
+            if value in seen:
+                raise MetadataError(f"Voce Scelta duplicata per {self.name}: {value}")
+            seen.add(value)
 
     @property
     def stored(self) -> bool:
         """Il campo ha una colonna fisica; i calcolati sono solo virtuali."""
         return not bool(self.calculated)
+
+    @property
+    def not_null(self) -> bool:
+        """Obbligatorietà incondizionata: la colonna può essere NOT NULL."""
+        return bool(self.required and not self.required_expr and not self.skip_expr)
 
     def display_name(self) -> str:
         return self.caption or self.name.replace("_", " ").capitalize()
@@ -139,7 +209,19 @@ class Field:
             "fmt": self.fmt,
             "pk": self.pk,
             "lookup": self.lookup,
+            "choices": [dict(item) for item in self.choices],
+            "choice_source": self.choice_source,
+            "choice_table": self.choice_table,
+            "choice_value": self.choice_value,
+            "choice_label": self.choice_label,
+            "choice_combine": self.choice_combine,
+            "choice_case_sensitive": self.choice_case_sensitive,
+            "choice_allow_blank": self.choice_allow_blank,
+            "choice_allow_other": self.choice_allow_other,
             "rule": self.rule,
+            "rule_message": self.rule_message,
+            "required_expr": self.required_expr,
+            "skip_expr": self.skip_expr,
             "calculated": self.calculated,
             "auto_enter": self.auto_enter,
             "auto_serial": self.auto_serial,
@@ -148,17 +230,54 @@ class Field:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Field":
+        type_name = str(data.get("type", T.TEXT))
+        lookup = str(data.get("lookup", ""))
+        choice_source = str(data.get("choice_source", ""))
+        choice_table = str(data.get("choice_table", ""))
+        choice_value = str(data.get("choice_value", ""))
+        choice_combine = str(data.get("choice_combine", "append"))
+        choice_allow_other = bool(data.get("choice_allow_other", False))
+        # Migrazione trasparente del vecchio lookup testuale in Scelta.
+        if (
+            type_name == T.TEXT
+            and lookup
+            and "." in lookup
+            and not choice_source
+        ):
+            table_part, field_part = (part.strip() for part in lookup.split(".", 1))
+            if table_part and field_part:
+                type_name = T.CHOICE
+                choice_source = "table"
+                choice_table = table_part
+                choice_value = field_part
+                choice_combine = "replace"
+                choice_allow_other = True
+                lookup = ""
         return cls(
             name=str(data.get("name", "")),
-            type=str(data.get("type", T.TEXT)),
+            type=type_name,
             size=int(data.get("size", 0) or 0),
             required=bool(data.get("required", False)),
             default=str(data.get("default", "")),
             caption=str(data.get("caption", "")),
             fmt=str(data.get("fmt", "")),
             pk=bool(data.get("pk", False)),
-            lookup=str(data.get("lookup", "")),
+            lookup=lookup,
+            choices=[
+                dict(item) for item in data.get("choices", []) if isinstance(item, dict)
+            ],
+            choice_source=choice_source,
+            choice_table=choice_table,
+            choice_value=choice_value,
+            choice_label=str(data.get("choice_label", "")),
+            choice_combine=choice_combine,
+            choice_case_sensitive=bool(data.get("choice_case_sensitive", True)),
+            choice_allow_blank=bool(data.get("choice_allow_blank", True)),
+            choice_allow_other=choice_allow_other,
             rule=str(data.get("rule", "")),
+            rule_message=str(data.get("rule_message", "")),
+            required_expr=str(data.get("required_expr", "")),
+            skip_expr=str(data.get("skip_expr", "")),
             calculated=str(data.get("calculated", "")),
             auto_enter=str(data.get("auto_enter", "")),
             auto_serial=bool(data.get("auto_serial", False)),

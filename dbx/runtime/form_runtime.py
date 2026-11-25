@@ -46,8 +46,10 @@ from ..core.metadata import Table
 from ..core.query_engine import QueryError, query_table, run_query
 from ..core.query_model import QuerySpec
 from ..ui import icons
+from ..ui.validation_ui import clear_error, mark_error
 from .query_rowset import QueryRowset
 from .rowset import Rowset, RowsetError
+from .validation import ValidationError, ValidationIssue, resolve_choices
 
 
 class FieldBinder:
@@ -79,7 +81,12 @@ class FieldBinder:
             index = widget.findData(value)
             if index < 0:
                 index = widget.findText("" if value is None else str(value))
-            widget.setCurrentIndex(index if index >= 0 else -1)
+            if index >= 0:
+                widget.setCurrentIndex(index)
+            elif widget.isEditable() and value not in (None, ""):
+                widget.setEditText(str(value))
+            else:
+                widget.setCurrentIndex(0 if widget.count() else -1)
         elif isinstance(widget, QDateEdit):
             if value and hasattr(value, "year"):
                 widget.setDate(value)
@@ -99,7 +106,10 @@ class FieldBinder:
         if isinstance(widget, QDoubleSpinBox):
             return widget.value()
         if isinstance(widget, QComboBox):
-            return widget.currentData()
+            data = widget.currentData()
+            if data is None and widget.isEditable():
+                return widget.currentText()
+            return data
         if isinstance(widget, QDateEdit):
             return widget.date().toString("yyyy-MM-dd")
         return None
@@ -292,9 +302,17 @@ class FormRuntime(QWidget):
                 font.setPointSize(control.font_size)
                 widget.setFont(font)
         elif kind in ("field", "memo", "date"):
-            widget = QPlainTextEdit() if kind == "memo" else QLineEdit()
-            if kind == "date":
-                widget.setPlaceholderText("AAAA-MM-GG oppure GG/MM/AAAA")
+            bound_field = self.table.field(control.field)
+            if (
+                kind == "field"
+                and bound_field is not None
+                and bound_field.type == T.CHOICE
+            ):
+                widget = self._choice_combo(bound_field)
+            else:
+                widget = QPlainTextEdit() if kind == "memo" else QLineEdit()
+                if kind == "date":
+                    widget.setPlaceholderText("AAAA-MM-GG oppure GG/MM/AAAA")
             self._bind(control, widget)
         elif kind == "checkbox":
             widget = QCheckBox(control.text)
@@ -373,6 +391,19 @@ class FormRuntime(QWidget):
 
     def _bind(self, control: FormControl, widget: QWidget) -> None:
         self.binders.append(FieldBinder(control, widget, self.table))
+
+    def _choice_combo(self, field) -> QComboBox:
+        combo = QComboBox()
+        combo.setEditable(bool(field.choice_allow_other))
+        if field.choice_allow_blank:
+            combo.addItem("", "")
+        try:
+            options = resolve_choices(field, self.project.db)
+        except Exception:
+            options = []
+        for item in options:
+            combo.addItem(item.label, item.value)
+        return combo
 
     # -------------------------------------------------------------- vista lista
     def _list_field_names(self) -> list[str]:
@@ -527,6 +558,7 @@ class FormRuntime(QWidget):
     # ------------------------------------------------------------- load/save
     def load_current(self) -> None:
         record = self.rowset.current
+        self.clear_issues()
         for binder in self.binders:
             binder.set_value(record.get(binder.control.field) if record else None)
         error = self._refresh_grids(record)
@@ -534,6 +566,26 @@ class FormRuntime(QWidget):
         self._update_status()
         if error:
             self._status.setText(error)
+
+    def clear_issues(self) -> None:
+        for binder in self.binders:
+            clear_error(binder.widget)
+            binder.widget.setToolTip("")
+
+    def apply_issues(self, issues: list[ValidationIssue]) -> None:
+        """Evidenzia i controlli collegati ai campi non validi."""
+        self.clear_issues()
+        focus: QWidget | None = None
+        for issue in issues:
+            for binder in self.binders:
+                if binder.control.field != issue.field:
+                    continue
+                mark_error(binder.widget, issue.message)
+                focus = focus or binder.widget
+        if focus is not None:
+            focus.setFocus()
+            if isinstance(focus, QLineEdit):
+                focus.selectAll()
 
     def _refresh_grids(self, record: dict[str, Any] | None) -> str | None:
         error: str | None = None
@@ -598,6 +650,12 @@ class FormRuntime(QWidget):
             return False
         try:
             record_id = self.rowset.save(self.collect())
+        except ValidationError as exc:
+            self.apply_issues(exc.issues)
+            message = "; ".join(issue.message for issue in exc.issues)
+            self._status.setText(f"Salvataggio non riuscito — {message}")
+            QMessageBox.warning(self, "Salvataggio non riuscito", message)
+            return False
         except RowsetError as exc:
             self._status.setText(f"Salvataggio non riuscito: {exc}")
             QMessageBox.warning(self, "Salvataggio non riuscito", str(exc))

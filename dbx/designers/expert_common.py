@@ -165,7 +165,7 @@ class FieldEditor(QWidget):
             decimals = (
                 int(decimals_spin.value()) if isinstance(decimals_spin, QSpinBox) else 0
             )
-            if type_name not in (T.TEXT, T.MEMO):
+            if not T.is_text_like(type_name):
                 size = 0
             result.append(
                 Field(
@@ -235,7 +235,7 @@ class FieldEditor(QWidget):
         size_spin = self.table.cellWidget(row, COL_SIZE)
         decimals_spin = self.table.cellWidget(row, COL_DECIMALS)
         if isinstance(size_spin, QSpinBox):
-            size_spin.setEnabled(type_name in (T.TEXT, T.MEMO))
+            size_spin.setEnabled(T.is_text_like(type_name))
         if isinstance(decimals_spin, QSpinBox):
             decimals_spin.setEnabled(type_name in (T.DECIMAL,))
 

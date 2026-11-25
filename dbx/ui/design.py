@@ -636,7 +636,8 @@ QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus,
 QPlainTextEdit:focus, QTextEdit:focus {
     border: 1px solid $accent;
 }
-QLineEdit[state="error"] {
+QLineEdit[state="error"], QComboBox[state="error"], QPlainTextEdit[state="error"],
+QSpinBox[state="error"], QDoubleSpinBox[state="error"] {
     border: 2px solid $error;
     background: $input_bg;
 }

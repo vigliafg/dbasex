@@ -1518,3 +1518,40 @@
 - **Problemi aperti:** con molti gruppi l'elenco richiede scorrimento; il rapporto 1:4 viene
   riapplicato a ogni apertura/attivazione, quindi un trascinamento manuale del divisore non persiste.
 - **Prossimo passo:** valutare la persistenza del rapporto e un filtro rapido per gruppo.
+
+### 2026-11-25 — Piano di validazione — avvio (Fasi 0–2)
+- **Stato:** in corso
+- **Branch/commit:** `main`; worktree pulito tranne `PLAN-VALIDAZIONE.md`.
+- **Obiettivo:** eseguire il piano di validazione in sotto-ondate: Fase 0 fondamenta, Fase 1 obbligatorietà e messaggi, Fase 2 Scelta statica; poi checkpoint e compattazione del contesto.
+- **File previsti (Fasi 0–2):** `dbx/runtime/validation.py` (nuovo), `dbx/runtime/rowset.py`, `dbx/core/types.py`, `dbx/core/metadata.py`, `dbx/core/ddl.py`, `dbx/core/search.py`, `dbx/core/query_model.py`, `dbx/ui/data_view.py`, `dbx/runtime/form_runtime.py`, `dbx/ui/import_wizard.py`, `dbx/designers/table_builder.py`, test, `PLAN.md`, `DIARIO.md`.
+- **Nota:** il piano resta in `PLAN-VALIDAZIONE.md`; le decisioni approvate sono già fissate nel documento (append, lookup→choice, confronto esatto, allow_other spento, dominio a due modalità, import a scarti, auto_serial→increment).
+
+### 2026-11-25 — Piano di validazione — Fasi 0–2 (fondamenta, obbligatorietà, Scelta)
+- **Stato:** completata (Fasi 0, 1, 2; Fase 3 dinamica assorbita nella 2)
+- **Branch/commit:** `main`; commit della sotto-ondata.
+- **Obiettivo:** introdurre issue strutturate e `Rowset` come unico punto di enforcement, obbligatorietà condizionale e messaggi, campo **Scelta** statico e dinamico con label/valore distinti.
+- **File toccati:** `dbx/runtime/validation.py` (nuovo), `dbx/ui/validation_ui.py` (nuovo), `dbx/runtime/rowset.py`, `dbx/core/types.py`, `dbx/core/metadata.py`, `dbx/core/ddl.py`, `dbx/core/search.py`, `dbx/core/query_model.py`, `dbx/designers/expert_common.py`, `dbx/designers/table_builder.py`, `dbx/ui/data_view.py`, `dbx/runtime/form_runtime.py`, `dbx/ui/import_wizard.py`, `dbx/ui/design.py`, `dbx/smoke.py`, `tools/e2e_scenarios.py`, `tests/test_validation.py` (nuovo), `tests/test_ui_validation.py` (nuovo), `tests/test_csv_import.py`, `tests/test_ui_workspace.py`, `PLAN.md`, `PLAN-VALIDAZIONE.md`, rendering, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - `RowsetError` è definito in `validation.py` e riesportato da `rowset.py`: i chiamanti esistenti non cambiano; `ValidationError` estende `RowsetError` ed espone `issues`.
+  - `Rowset.validate(values, only=...)` converte tutti i campi ma applica obbligatorietà, Scelta, Dominio e regole ai soli campi indicati; `validate_field` è la primitiva della griglia e non scrive; `update(..., only=...)` e `insert(..., validate=False)` completano l'API. `update` continua a restituire l'id del record.
+  - **DDL:** `NOT NULL` viene emesso solo per obbligatorietà incondizionata (`required` senza `required_expr`/`skip_expr`); la firma del campo include questa nullability, così aggiungere una condizione di salto forza la ricostruzione della colonna. Era necessario per rispettare “un campo saltato non è obbligatorio”.
+  - Griglia: la cella non valida viene ripristinata, evidenziata e descritta nella status line; **niente dialog modale** per il singolo campo (come §6.2 del piano). Il dialog resta per inserimento/salvataggio fallito.
+  - `RecordDialog` valida in anteprima con `Rowset.check_insert` prima di chiudere; `FormRuntime.save` evidenzia i controlli tramite `ValidationIssue`. L'evidenziazione usa il token `error` del tema e il selettore QSS `[state="error"]`, esteso a combo, text edit e spin box.
+  - **Import CSV:** le righe valide entrano e gli scarti sono elencati con numero di riga e motivo (decisione 6); il test e lo smoke sono stati aggiornati al nuovo comportamento voluto. Se nessuna riga è importabile il dialogo resta aperto.
+  - **Scelta:** tipo logico `choice` su `TEXT`, con `is_text_like` usato da ricerca, query, DDL ed esperti. `resolve_choices` unisce statici e dinamici (`append`/`replace`), confronto esatto o casefold, limite 1000, cache invalidata dalle scritture (`touch_choices`) e fail-closed sulla sorgente mancante (`choice_source`).
+  - **Fase 3 assorbita:** la sorgente dinamica, la cache, il limite e gli errori sono stati implementati insieme alla Scelta per non avere due passaggi sul medesimo codice. Restano da fare Dominio, input guidato, incrementi e re-evaluate.
+  - Table Builder: gruppo **Valori (Scelta)** con sorgente, tabella, colonne, combinazione, opzioni e lista statica; si abilita solo per campi Scelta non calcolati. Il gruppo è un `QGroupBox` semplice, non richiudibile: deviazione estetica rispetto al piano, da rifinire con Dominio.
+  - `lookup` testuale viene letto come Scelta con sorgente tabella (`replace`, testo libero ammesso) e riscritto senza `lookup`; nessun dato storico convertito.
+- **Test:** `527 passed`; smoke headless OK con import e calcolati; harness E2E `PASS` con 14/14 scenari, 298/298 controlli e 32 screenshot; catture Aurora e Dark OK. `ruff` non è installato nell'ambiente, quindi il controllo lint non è stato eseguito.
+- **Screenshot:** rendering canonici `01`–`37` rigenerati in Aurora; `04-table-structure.png` mostra il gruppo Valori, `27`/`28` includono la Scelta. Cattura Dark verificata, non committata.
+- **Problemi aperti:** gruppo Valori non richiudibile; dominio numerico e input guidato ancora assenti; `increment` e re-evaluate in Fase 6; la Scelta non impedisce una chiave primaria con sorgente sulla stessa tabella (solo regola di schema, senza warning).
+- **Prossimo passo:** **Checkpoint** di questo blocco; dopo `continua`, Fase 4 — dominio numerico, Fase 5 — input guidato (maschere e maiuscole), poi fermarsi di nuovo.
+
+## Checkpoint validazione — Fasi 0–2 (2026-11-25)
+
+- **Stato fasi:** Fase 0, 1, 2 completate; Fase 3 (Scelta dinamica) assorbita nella 2. Restano Fasi 4–7.
+- **Test eseguiti:** `527 passed`; smoke headless OK; harness E2E `PASS` (14/14 scenari, 298 controlli); cattura Aurora e Dark OK.
+- **Screenshot:** serie canonica `01`–`37` in Aurora.
+- **Decisioni:** `ValidationError`/`RowsetError` convivono; `NOT NULL` solo per obbligatorietà incondizionata; errore di cella senza dialog; import a scarti; Scelta con cache e fail-closed.
+- **Decisioni rimandate all'utente:** nessuna bloccante.
+- **RIPRESA:** checkpoint attivo. Dopo `continua`, leggere `PLAN.md`, `PLAN-VALIDAZIONE.md` e questo diario, controllare `git status`/`git log`, e iniziare la **Fase 4 — Dominio numerico**, poi la **Fase 5 — Input guidato**; fermarsi prima della Fase 6. Non ripartire da Fase 0–3.
