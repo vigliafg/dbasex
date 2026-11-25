@@ -11,7 +11,7 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 | Navigator | `01`, `42`, `43` | `dbx/ui/navigator.py` | fatto | Immagini/Suoni/Cataloghi/Personalizzati disabilitate |
 | Command Window | `01`, `02`, `04` | `dbx/ui/command_window.py` | fatto | Comandi limitati a HELP/TABELLE/USE/RECORD/CLEAR/espressioni |
 | Browse / Table | `07`, `11`, `18` | `dbx/ui/data_view.py` | fatto | Find mode, sostituzione e import CSV (0.6) |
-| Table Structure | `08`, `09`, `13`, `14`, `27` | `dbx/designers/table_builder.py` | fatto | Campi calcolati e auto-enter nella scheda Proprietà; stampa minimale |
+| Table Structure | `08`, `09`, `13`, `14`, `27` | `dbx/designers/table_builder.py` | fatto | Campi calcolati, auto-enter, Scelta, dominio numerico e maschere nella scheda Proprietà (con scorrimento interno); stampa minimale |
 | Table Expert | — | `dbx/designers/table_expert.py` | fatto (0.4/O1) | Template, campi e indici; crea e apre la tabella in Browse |
 | Query Expert | — | `dbx/designers/query_expert.py` | fatto (0.4/O2) | Join suggeriti dalle FK, campi, criteri AND e ordinamento |
 | Report Expert | — | `dbx/designers/report_expert.py` | fatto (0.4/O2) | Layout tabellare/colonnare/riepilogo, gruppi, stile |
@@ -48,8 +48,9 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - `24-script-step-picker.png` mostra il catalogo azioni categorizzato del Program Editor.
 - `25-find-dialog.png` mostra il Find mode con criteri AND/OR, “Ometti” e ricerche salvate.
 - `26-import-csv.png` mostra l'importazione CSV con anteprima e mappatura delle colonne.
-- `27-table-calculated.png` mostra la proprietà Calcolato del Table Structure;
-  `28-browse-calculated.png` mostra totale e serie calcolati nella Browse.
+- `27-table-calculated.png` mostra la proprietà Calcolato del Table Structure, con
+  i campi Maiuscole/Maschera e il gruppo Dominio numerico; `28-browse-calculated.png`
+  mostra totale e serie calcolati nella Browse.
 - La 0.9.0 introduce parametri script, variabili globali e transazioni esplicite.
 - La 0.8.0 introduce etichette/mail merge, grafici nei report, vista Lista e portali.
 - La 0.7.0 introduce campi calcolati virtuali, auto-enter, aggregati `GROUP BY` e Crosstab

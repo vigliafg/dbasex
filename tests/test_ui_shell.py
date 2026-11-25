@@ -58,7 +58,13 @@ def test_main_window_fits_short_screen_with_dialog(qapp, demo_project) -> None:
         assert window.height() == 600
         assert window.centralWidget().geometry().bottom() < window.statusBar().geometry().top()
         editor = window.editors.find("test:structure").widget()
-        assert editor.scroll.verticalScrollBar().maximum() > 0
+        # La scheda Proprietà ha uno scorrimento interno: il dialogo può
+        # adattarsi allo schermo e il contenuto lungo resta raggiungibile.
+        properties = dialog.tabs.widget(2)
+        assert (
+            editor.scroll.verticalScrollBar().maximum() > 0
+            or properties.verticalScrollBar().maximum() > 0
+        )
     finally:
         window.close()
 

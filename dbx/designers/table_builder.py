@@ -25,6 +25,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPlainTextEdit,
+    QScrollArea,
     QSplitter,
     QStyledItemDelegate,
     QTableWidget,
@@ -406,6 +407,15 @@ class TableBuilderDialog(QDialog):
         self.default_edit = QLineEdit()
         self.field_caption_edit = QLineEdit()
         self.fmt_edit = QLineEdit()
+        self.case_mode_combo = QComboBox()
+        self.case_mode_combo.addItem("(nessuna)", "")
+        self.case_mode_combo.addItem("MAIUSCOLO", "upper")
+        self.case_mode_combo.addItem("minuscolo", "lower")
+        self.case_mode_combo.addItem("Iniziali Maiuscole", "title")
+        self.case_mode_combo.addItem("Inizio frase", "sentence")
+        self.mask_edit = QLineEdit()
+        self.mask_edit.setPlaceholderText("es. 999 AAA")
+        self.mask_edit.setToolTip("9 = cifra, A = lettera, a = lettera minuscola; spazio = spazio")
         self.rule_edit = QLineEdit()
         self.rule_message_edit = QLineEdit()
         self.rule_message_edit.setPlaceholderText("Messaggio mostrato se la regola è falsa")
@@ -435,6 +445,8 @@ class TableBuilderDialog(QDialog):
             self.default_edit,
             self.field_caption_edit,
             self.fmt_edit,
+            self.case_mode_combo,
+            self.mask_edit,
             self.rule_edit,
             self.rule_message_edit,
             self.required_expr_edit,
@@ -450,6 +462,8 @@ class TableBuilderDialog(QDialog):
         form.addRow("Default", self.default_edit)
         form.addRow("Didascalia", self.field_caption_edit)
         form.addRow("Formato", self.fmt_edit)
+        form.addRow("Maiuscole", self.case_mode_combo)
+        form.addRow("Maschera", self.mask_edit)
         form.addRow("Regola", self.rule_edit)
         form.addRow("Messaggio regola", self.rule_message_edit)
         form.addRow("Obbligatorio se", self.required_expr_edit)
@@ -461,15 +475,18 @@ class TableBuilderDialog(QDialog):
         form.addRow("Data automatica", self.auto_date_combo)
         layout.addLayout(form)
         layout.addWidget(self._build_choice_group())
+        layout.addWidget(self._build_domain_group())
         layout.addStretch(1)
 
         self.required_check.toggled.connect(self._store_field_meta)
         self.auto_serial_check.toggled.connect(self._store_field_meta)
         self.auto_date_combo.currentIndexChanged.connect(self._store_field_meta)
+        self.case_mode_combo.currentIndexChanged.connect(self._store_field_meta)
         for edit in (
             self.default_edit,
             self.field_caption_edit,
             self.fmt_edit,
+            self.mask_edit,
             self.rule_edit,
             self.rule_message_edit,
             self.required_expr_edit,
@@ -479,7 +496,11 @@ class TableBuilderDialog(QDialog):
             self.auto_enter_edit,
         ):
             edit.textChanged.connect(self._store_field_meta)
-        return page
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidget(page)
+        return scroll
 
     def _build_choice_group(self) -> QGroupBox:
         group = QGroupBox("Valori (Scelta)")
@@ -546,6 +567,112 @@ class TableBuilderDialog(QDialog):
         self.choice_values_grid.itemChanged.connect(self._store_field_meta)
         return group
 
+    def _build_domain_group(self) -> QGroupBox:
+        group = QGroupBox("Dominio numerico")
+        self.domain_group = group
+        layout = QVBoxLayout(group)
+        mode_form = QFormLayout()
+        self.domain_mode_combo = QComboBox()
+        self.domain_mode_combo.addItem("Nessuno", "")
+        self.domain_mode_combo.addItem("Minimo–massimo", "range")
+        self.domain_mode_combo.addItem("Intervalli", "ranges")
+        mode_form.addRow("Modo", self.domain_mode_combo)
+        layout.addLayout(mode_form)
+
+        self.domain_bounds_widget = QWidget()
+        bounds = QFormLayout(self.domain_bounds_widget)
+        bounds.setContentsMargins(0, 0, 0, 0)
+        self.domain_min_edit = QLineEdit()
+        self.domain_min_edit.setPlaceholderText("minimo incluso")
+        self.domain_max_edit = QLineEdit()
+        self.domain_max_edit.setPlaceholderText("massimo incluso")
+        bounds.addRow("Minimo", self.domain_min_edit)
+        bounds.addRow("Massimo", self.domain_max_edit)
+        layout.addWidget(self.domain_bounds_widget)
+
+        self.domain_ranges_widget = QWidget()
+        ranges_layout = QVBoxLayout(self.domain_ranges_widget)
+        ranges_layout.setContentsMargins(0, 0, 0, 0)
+        self.domain_ranges_grid = QTableWidget(0, 2)
+        self.domain_ranges_grid.setHorizontalHeaderLabels(["Minimo", "Massimo"])
+        self.domain_ranges_grid.verticalHeader().setVisible(False)
+        self.domain_ranges_grid.horizontalHeader().setStretchLastSection(True)
+        ranges_layout.addWidget(self.domain_ranges_grid)
+        bar = QHBoxLayout()
+        bar.addWidget(
+            icons.make_button(
+                "Aggiungi intervallo",
+                "nuovo",
+                lambda: self._add_domain_range("", ""),
+                self,
+            )
+        )
+        bar.addWidget(
+            icons.make_button(
+                "Rimuovi intervallo",
+                "elimina",
+                lambda: self._remove_row(self.domain_ranges_grid),
+                self,
+            )
+        )
+        bar.addStretch(1)
+        ranges_layout.addLayout(bar)
+        layout.addWidget(self.domain_ranges_widget)
+
+        message_form = QFormLayout()
+        self.domain_message_edit = QLineEdit()
+        self.domain_message_edit.setPlaceholderText("messaggio personalizzato (opzionale)")
+        message_form.addRow("Messaggio", self.domain_message_edit)
+        layout.addLayout(message_form)
+
+        self.domain_mode_combo.currentIndexChanged.connect(self._on_domain_mode_changed)
+        for edit in (self.domain_min_edit, self.domain_max_edit, self.domain_message_edit):
+            edit.textChanged.connect(self._store_field_meta)
+        self.domain_ranges_grid.itemChanged.connect(self._store_field_meta)
+        return group
+
+    def _on_domain_mode_changed(self, *_args) -> None:
+        self._update_domain_mode()
+        self._store_field_meta()
+
+    def _update_domain_mode(self) -> None:
+        mode = str(self.domain_mode_combo.currentData() or "")
+        self.domain_bounds_widget.setVisible(mode == "range")
+        self.domain_ranges_widget.setVisible(mode == "ranges")
+        self.domain_message_edit.setEnabled(mode != "")
+
+    def _add_domain_range(self, low: str, high: str) -> None:
+        row = self.domain_ranges_grid.rowCount()
+        self.domain_ranges_grid.insertRow(row)
+        self.domain_ranges_grid.setItem(row, 0, QTableWidgetItem(low))
+        self.domain_ranges_grid.setItem(row, 1, QTableWidgetItem(high))
+        self._store_field_meta()
+
+    def _domain_ranges(self) -> list[list[str]]:
+        result: list[list[str]] = []
+        for row in range(self.domain_ranges_grid.rowCount()):
+            low_item = self.domain_ranges_grid.item(row, 0)
+            high_item = self.domain_ranges_grid.item(row, 1)
+            low = low_item.text().strip() if low_item else ""
+            high = high_item.text().strip() if high_item else ""
+            if not low and not high:
+                continue
+            result.append([low, high])
+        return result
+
+    def _remove_row(self, grid: QTableWidget) -> None:
+        row = grid.currentRow()
+        if row < 0 and grid.rowCount():
+            row = grid.rowCount() - 1
+        if row >= 0:
+            grid.removeRow(row)
+        if grid is getattr(self, "choice_values_grid", None) or grid is getattr(
+            self, "domain_ranges_grid", None
+        ):
+            self._store_field_meta()
+        else:
+            self._update_preview()
+
     def _add_choice_row(self, value: str, label: str) -> None:
         row = self.choice_values_grid.rowCount()
         self.choice_values_grid.insertRow(row)
@@ -602,6 +729,8 @@ class TableBuilderDialog(QDialog):
             "default": field.default,
             "caption": field.caption,
             "fmt": field.fmt,
+            "case_mode": field.case_mode,
+            "mask": field.mask,
             "rule": field.rule,
             "rule_message": field.rule_message,
             "required_expr": field.required_expr,
@@ -616,6 +745,10 @@ class TableBuilderDialog(QDialog):
             "choice_case_sensitive": field.choice_case_sensitive,
             "choice_allow_blank": field.choice_allow_blank,
             "choice_allow_other": field.choice_allow_other,
+            "domain_min": field.domain_min,
+            "domain_max": field.domain_max,
+            "domain_ranges": [list(item) for item in field.domain_ranges],
+            "domain_message": field.domain_message,
             "calculated": field.calculated,
             "auto_enter": field.auto_enter,
             "auto_serial": field.auto_serial,
@@ -820,6 +953,18 @@ class TableBuilderDialog(QDialog):
                     "choice_allow_blank": bool(meta.get("choice_allow_blank", True)),
                     "choice_allow_other": bool(meta.get("choice_allow_other", False)),
                 }
+            domain_kwargs: dict[str, Any] = {}
+            if T.is_numeric(field_type):
+                domain_kwargs = {
+                    "domain_min": str(meta.get("domain_min", "")),
+                    "domain_max": str(meta.get("domain_max", "")),
+                    "domain_ranges": [
+                        [str(item[0]), str(item[1])]
+                        for item in meta.get("domain_ranges", [])
+                        if isinstance(item, (list, tuple)) and len(item) == 2
+                    ],
+                    "domain_message": str(meta.get("domain_message", "")),
+                }
             fields.append(
                 Field(
                     name=(name_item.text() if name_item else "").strip(),
@@ -829,6 +974,8 @@ class TableBuilderDialog(QDialog):
                     default=str(meta.get("default", "")),
                     caption=str(meta.get("caption", "")),
                     fmt=fmt,
+                    case_mode=str(meta.get("case_mode", "")),
+                    mask=str(meta.get("mask", "")),
                     rule=str(meta.get("rule", "")),
                     rule_message=str(meta.get("rule_message", "")),
                     required_expr=str(meta.get("required_expr", "")),
@@ -841,6 +988,7 @@ class TableBuilderDialog(QDialog):
                     pk=bool(meta.get("pk", False)),
                     id=field_id,
                     **choice_kwargs,
+                    **domain_kwargs,
                 )
             )
         return fields
@@ -1014,7 +1162,16 @@ class TableBuilderDialog(QDialog):
         type_item = self.fields_grid.item(row, COL_TYPE) if row >= 0 else None
         type_name = str(type_item.data(Qt.ItemDataRole.UserRole) or T.TEXT) if type_item else T.TEXT
         editable = bool(meta) and self.exclusive_button.isChecked()
-        self.choice_group.setEnabled(editable and type_name == T.CHOICE)
+        calculated = bool(str(meta.get("calculated", "")).strip())
+        self.choice_group.setEnabled(
+            editable and type_name == T.CHOICE and not calculated
+        )
+        self.domain_group.setEnabled(
+            editable and T.is_numeric(type_name) and not calculated
+        )
+        text_input = type_name == T.TEXT and not calculated
+        self.case_mode_combo.setEnabled(editable and text_input)
+        self.mask_edit.setEnabled(editable and text_input)
 
     def _load_field_meta(self, row: int) -> None:
         number = self.fields_grid.item(row, COL_FIELD)
@@ -1029,6 +1186,10 @@ class TableBuilderDialog(QDialog):
         self.default_edit.setText(str(meta.get("default", "")))
         self.field_caption_edit.setText(str(meta.get("caption", "")))
         self.fmt_edit.setText(str(meta.get("fmt", "")))
+        self.case_mode_combo.setCurrentIndex(
+            max(0, self.case_mode_combo.findData(str(meta.get("case_mode", ""))))
+        )
+        self.mask_edit.setText(str(meta.get("mask", "")))
         self.rule_edit.setText(str(meta.get("rule", "")))
         self.rule_message_edit.setText(str(meta.get("rule_message", "")))
         self.required_expr_edit.setText(str(meta.get("required_expr", "")))
@@ -1071,12 +1232,37 @@ class TableBuilderDialog(QDialog):
                 row, 1, QTableWidgetItem(str(item.get("label", "")))
             )
         self.choice_values_grid.blockSignals(False)
+        self.domain_min_edit.setText(str(meta.get("domain_min", "")))
+        self.domain_max_edit.setText(str(meta.get("domain_max", "")))
+        self.domain_message_edit.setText(str(meta.get("domain_message", "")))
+        self.domain_ranges_grid.blockSignals(True)
+        self.domain_ranges_grid.setRowCount(0)
+        for item in meta.get("domain_ranges", []):
+            if not isinstance(item, (list, tuple)) or len(item) != 2:
+                continue
+            row = self.domain_ranges_grid.rowCount()
+            self.domain_ranges_grid.insertRow(row)
+            self.domain_ranges_grid.setItem(row, 0, QTableWidgetItem(str(item[0])))
+            self.domain_ranges_grid.setItem(row, 1, QTableWidgetItem(str(item[1])))
+        self.domain_ranges_grid.blockSignals(False)
+        if meta.get("domain_ranges"):
+            domain_mode = "ranges"
+        elif str(meta.get("domain_min", "")) or str(meta.get("domain_max", "")):
+            domain_mode = "range"
+        else:
+            domain_mode = ""
+        self.domain_mode_combo.setCurrentIndex(
+            max(0, self.domain_mode_combo.findData(domain_mode))
+        )
+        self._update_domain_mode()
         enabled = bool(meta)
         for widget in (
             self.required_check,
             self.default_edit,
             self.field_caption_edit,
             self.fmt_edit,
+            self.case_mode_combo,
+            self.mask_edit,
             self.rule_edit,
             self.rule_message_edit,
             self.required_expr_edit,
@@ -1099,6 +1285,7 @@ class TableBuilderDialog(QDialog):
             self.default_edit,
             self.field_caption_edit,
             self.fmt_edit,
+            self.mask_edit,
             self.rule_edit,
             self.rule_message_edit,
             self.required_expr_edit,
@@ -1110,6 +1297,8 @@ class TableBuilderDialog(QDialog):
             edit.clear()
         self.auto_serial_check.setChecked(False)
         self.auto_date_combo.setCurrentIndex(0)
+        self.case_mode_combo.setCurrentIndex(0)
+        self.mask_edit.clear()
         self.choice_values_grid.blockSignals(True)
         self.choice_values_grid.setRowCount(0)
         self.choice_values_grid.blockSignals(False)
@@ -1120,6 +1309,14 @@ class TableBuilderDialog(QDialog):
         self.choice_case_check.setChecked(True)
         self.choice_blank_check.setChecked(True)
         self.choice_other_check.setChecked(False)
+        self.domain_min_edit.clear()
+        self.domain_max_edit.clear()
+        self.domain_message_edit.clear()
+        self.domain_ranges_grid.blockSignals(True)
+        self.domain_ranges_grid.setRowCount(0)
+        self.domain_ranges_grid.blockSignals(False)
+        self.domain_mode_combo.setCurrentIndex(0)
+        self._update_domain_mode()
         self._update_field_groups(-1)
         self._meta_loading = False
 
@@ -1136,6 +1333,8 @@ class TableBuilderDialog(QDialog):
             "default": self.default_edit.text(),
             "caption": self.field_caption_edit.text(),
             "fmt": self.fmt_edit.text(),
+            "case_mode": str(self.case_mode_combo.currentData() or ""),
+            "mask": self.mask_edit.text().strip(),
             "rule": self.rule_edit.text(),
             "rule_message": self.rule_message_edit.text(),
             "required_expr": self.required_expr_edit.text(),
@@ -1154,12 +1353,25 @@ class TableBuilderDialog(QDialog):
             "choice_case_sensitive": self.choice_case_check.isChecked(),
             "choice_allow_blank": self.choice_blank_check.isChecked(),
             "choice_allow_other": self.choice_other_check.isChecked(),
+            "domain_min": self.domain_min_edit.text().strip()
+            if str(self.domain_mode_combo.currentData() or "") == "range"
+            else "",
+            "domain_max": self.domain_max_edit.text().strip()
+            if str(self.domain_mode_combo.currentData() or "") == "range"
+            else "",
+            "domain_ranges": self._domain_ranges()
+            if str(self.domain_mode_combo.currentData() or "") == "ranges"
+            else [],
+            "domain_message": self.domain_message_edit.text().strip()
+            if str(self.domain_mode_combo.currentData() or "")
+            else "",
             "calculated": self.calculated_edit.text(),
             "auto_enter": self.auto_enter_edit.text(),
             "auto_serial": self.auto_serial_check.isChecked(),
             "auto_date": str(self.auto_date_combo.currentData() or ""),
             "pk": bool(self._meta.get(field_id, {}).get("pk", False)),
         }
+        self._update_field_groups(row)
         self._update_preview()
 
     # ------------------------------------------------------------------ eventi

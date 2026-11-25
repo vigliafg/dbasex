@@ -48,6 +48,8 @@ from ..core.query_model import QuerySpec
 from ..ui import icons
 from ..ui.validation_ui import clear_error, mark_error
 from .query_rowset import QueryRowset
+from ..ui.input_editors import attach_input_rules
+from ..ui.input_rules import InputRules
 from .rowset import Rowset, RowsetError
 from .validation import ValidationError, ValidationIssue, resolve_choices
 
@@ -96,7 +98,8 @@ class FieldBinder:
         if isinstance(widget, QLineEdit):
             if self.field is None:
                 return widget.text()
-            return T.parse_input(widget.text(), self.field.type)
+            text = InputRules.shape(self.field, widget.text())
+            return T.parse_input(text, self.field.type)
         if isinstance(widget, QPlainTextEdit):
             return widget.toPlainText()
         if isinstance(widget, QCheckBox):
@@ -313,6 +316,12 @@ class FormRuntime(QWidget):
                 widget = QPlainTextEdit() if kind == "memo" else QLineEdit()
                 if kind == "date":
                     widget.setPlaceholderText("AAAA-MM-GG oppure GG/MM/AAAA")
+                if isinstance(widget, QLineEdit) and bound_field is not None:
+                    attach_input_rules(
+                        widget,
+                        bound_field,
+                        on_complete=lambda ed=widget: self._focus_next(ed),
+                    )
             self._bind(control, widget)
         elif kind == "checkbox":
             widget = QCheckBox(control.text)
@@ -391,6 +400,21 @@ class FormRuntime(QWidget):
 
     def _bind(self, control: FormControl, widget: QWidget) -> None:
         self.binders.append(FieldBinder(control, widget, self.table))
+
+    def _focus_next(self, widget: QWidget) -> None:
+        """Passa il focus al controllo successivo quando il campo è completo."""
+        widgets = [binder.widget for binder in self.binders]
+        try:
+            position = widgets.index(widget)
+            visible = widget.isVisible()
+        except (ValueError, RuntimeError):
+            return
+        if not visible:
+            return
+        for candidate in widgets[position + 1 :]:
+            if candidate.isVisible() and candidate.isEnabled():
+                candidate.setFocus()
+                return
 
     def _choice_combo(self, field) -> QComboBox:
         combo = QComboBox()

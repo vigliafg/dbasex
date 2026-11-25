@@ -9,6 +9,7 @@ dell'editor.
 from __future__ import annotations
 
 from dataclasses import dataclass, field as dc_field
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 
@@ -225,6 +226,93 @@ def match_choice(field, value: str, options: list[ChoiceOption]) -> ChoiceOption
     return None
 
 
+# ------------------------------------------------------------ Dominio numerico
+def _domain_decimal(value: Any) -> Decimal | None:
+    """Converte un estremo in ``Decimal`` evitando artefatti binari."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return Decimal(text)
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _domain_text(value: Decimal) -> str:
+    text = format(value, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def domain_intervals(field) -> list[tuple[Decimal | None, Decimal | None]]:
+    """Intervalli inclusivi del dominio; un estremo ``None`` è aperto.
+
+    Se ``domain_ranges`` è valorizzato sostituisce ``domain_min``/``domain_max``.
+    """
+    ranges = getattr(field, "domain_ranges", None) or []
+    if ranges:
+        result: list[tuple[Decimal | None, Decimal | None]] = []
+        for item in ranges:
+            if not isinstance(item, (list, tuple)) or len(item) != 2:
+                continue
+            result.append((_domain_decimal(item[0]), _domain_decimal(item[1])))
+        return result
+    low = _domain_decimal(getattr(field, "domain_min", ""))
+    high = _domain_decimal(getattr(field, "domain_max", ""))
+    if low is None and high is None:
+        return []
+    return [(low, high)]
+
+
+def _domain_message(field, intervals: list[tuple[Decimal | None, Decimal | None]]) -> str:
+    custom = str(getattr(field, "domain_message", "") or "").strip()
+    if custom:
+        return custom
+    if getattr(field, "domain_ranges", None):
+        return (
+            f"{field.display_name()}: il valore non è in un intervallo ammesso"
+        )
+    low, high = intervals[0]
+    if low is not None and high is not None:
+        return (
+            f"{field.display_name()}: il valore deve essere compreso tra "
+            f"{_domain_text(low)} e {_domain_text(high)}"
+        )
+    if low is not None:
+        return f"{field.display_name()}: il valore deve essere almeno {_domain_text(low)}"
+    return f"{field.display_name()}: il valore deve essere al massimo {_domain_text(high)}"
+
+
+def domain_error(field, value: Any) -> ValidationIssue | None:
+    """Controlla il dominio numerico inclusivo; vuoto ammesso."""
+    if value is None:
+        return None
+    if isinstance(value, str) and not value.strip():
+        return None
+    intervals = domain_intervals(field)
+    if not intervals:
+        return None
+    try:
+        number = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return ValidationIssue(
+            field=field.name,
+            message=_domain_message(field, intervals),
+            code="domain",
+        )
+    for low, high in intervals:
+        if (low is None or number >= low) and (high is None or number <= high):
+            return None
+    return ValidationIssue(
+        field=field.name,
+        message=_domain_message(field, intervals),
+        code="domain",
+    )
+
+
 __all__ = [
     "RowsetError",
     "ValidationIssue",
@@ -236,4 +324,6 @@ __all__ = [
     "resolve_choices",
     "match_choice",
     "touch_choices",
+    "domain_intervals",
+    "domain_error",
 ]

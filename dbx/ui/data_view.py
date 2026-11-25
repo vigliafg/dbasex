@@ -7,6 +7,7 @@ from typing import Any
 from PyQt6.QtCore import QTimer, Qt, pyqtSignal
 from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
+    QAbstractItemDelegate,
     QAbstractItemView,
     QCheckBox,
     QComboBox,
@@ -42,6 +43,8 @@ from ..runtime.validation import (
 from . import design, icons
 from .find_dialog import FindDialog, ReplaceDialog
 from .import_wizard import ImportCsvDialog
+from .input_editors import attach_input_rules
+from .input_rules import InputRules
 from .validation_ui import clear_error, mark_error
 
 DEFAULT_OPTIONS = {
@@ -104,6 +107,46 @@ class ChoiceCellDelegate(QStyledItemDelegate):
         model.setData(index, value, CHOICE_ROLE)
 
 
+class InputCellDelegate(QStyledItemDelegate):
+    """Applica maschera e maiuscole alle celle di testo."""
+
+    def __init__(self, table: Table, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.table = table
+
+    def _field(self, index):
+        return self.table.fields[index.column()]
+
+    def createEditor(self, parent, option, index):  # noqa: N802 - API Qt
+        field = self._field(index)
+        editor = QLineEdit(parent)
+        attach_input_rules(
+            editor, field, on_complete=lambda ed=editor: self._commit_next(ed)
+        )
+        return editor
+
+    def _commit_next(self, editor: QLineEdit) -> None:
+        try:
+            visible = editor.isVisible()
+        except RuntimeError:
+            return
+        if not visible:
+            return
+        self.commitData.emit(editor)
+        self.closeEditor.emit(
+            editor, QAbstractItemDelegate.EndEditHint.EditNextItem
+        )
+
+    def setEditorData(self, editor: QLineEdit, index) -> None:  # noqa: N802 - API Qt
+        value = index.data(Qt.ItemDataRole.EditRole)
+        editor.setText("" if value is None else str(value))
+        editor.selectAll()
+
+    def setModelData(self, editor: QLineEdit, model, index) -> None:  # noqa: N802 - API Qt
+        value = InputRules.shape(self._field(index), editor.text())
+        model.setData(index, value, Qt.ItemDataRole.EditRole)
+
+
 class RecordDialog(QDialog):
     """Inserimento di un nuovo record con validazione."""
 
@@ -143,6 +186,9 @@ class RecordDialog(QDialog):
                     editor.setPlaceholderText("AAAA-MM-GG")
                 elif field.type == T.BOOLEAN:
                     editor.setPlaceholderText("Sì/No")
+                attach_input_rules(
+                    editor, field, on_complete=lambda ed=editor: self._focus_next(ed)
+                )
             if field.required:
                 editor.setToolTip("Campo obbligatorio")
             self.editors[field.name] = editor
@@ -189,6 +235,20 @@ class RecordDialog(QDialog):
             if isinstance(focus, QLineEdit):
                 focus.selectAll()
 
+    def _focus_next(self, editor: QWidget) -> None:
+        widgets = list(self.editors.values())
+        try:
+            position = widgets.index(editor)
+            visible = editor.isVisible()
+        except (ValueError, RuntimeError):
+            return
+        if not visible:
+            return
+        for candidate in widgets[position + 1 :]:
+            if candidate.isVisible() and candidate.isEnabled():
+                candidate.setFocus()
+                return
+
     def values(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
         for field in self.table.stored_fields:
@@ -202,7 +262,7 @@ class RecordDialog(QDialog):
             if isinstance(editor, QPlainTextEdit):
                 text = editor.toPlainText()
             elif isinstance(editor, QLineEdit):
-                text = editor.text()
+                text = InputRules.shape(field, editor.text())
             else:  # pragma: no cover
                 text = ""
             result[field.name] = T.parse_input(text, field.type) if field.type != T.MEMO else (text or None)
@@ -347,6 +407,7 @@ class DataView(QWidget):
         self.grid.currentCellChanged.connect(self._on_current_cell_changed)
         self.grid.horizontalHeader().sectionResized.connect(self._on_section_resized)
         self.choice_delegate = ChoiceCellDelegate(self.rowset.db, self.table, self)
+        self.input_delegate = InputCellDelegate(self.table, self)
         layout.addWidget(self.grid, 1)
 
         self.status = QLabel("")
@@ -396,6 +457,7 @@ class DataView(QWidget):
         self.table = self.project.require_table(self.table.name)
         self.rowset = Rowset(self.project.db, self.table)
         self.choice_delegate.table = self.table
+        self.input_delegate.table = self.table
         self.order_combo.blockSignals(True)
         self.order_combo.clear()
         self.order_combo.addItem("(naturale)", "")
@@ -438,6 +500,10 @@ class DataView(QWidget):
         for col, field in enumerate(self.table.fields):
             if field.type == T.CHOICE:
                 self.grid.setItemDelegateForColumn(col, self.choice_delegate)
+            elif field.mask or field.case_mode:
+                self.grid.setItemDelegateForColumn(col, self.input_delegate)
+            else:
+                self.grid.setItemDelegateForColumn(col, None)
         for row_index, record in enumerate(self.rowset.rows()):
             for col, field in enumerate(self.table.fields):
                 value = record.get(field.name)

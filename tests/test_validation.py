@@ -333,3 +333,117 @@ def test_choice_schema_rejects_bad_configuration():
         Field("x", T.CHOICE, choices=[{"value": "A"}, {"value": "A"}]).validate()
     with pytest.raises(MetadataError):
         Field("x", T.CHOICE, calculated="[a]").validate()
+
+
+# ------------------------------------------------------------------ Dominio
+from dbx.runtime.validation import domain_error, domain_intervals  # noqa: E402
+
+
+def numeric_rowset(**field_kwargs) -> Rowset:
+    db = Database(":memory:")
+    table = Table(
+        name="misure",
+        fields=[
+            Field("nome", T.TEXT),
+            Field("valore", T.DECIMAL, **field_kwargs),
+        ],
+    )
+    apply_migration(db.con, table, None)
+    return Rowset(db, table)
+
+
+def test_domain_min_max_is_inclusive():
+    rowset = numeric_rowset(domain_min="0", domain_max="50")
+    for value in ("0", "50", "12.5"):
+        record_id = rowset.insert({"nome": "x", "valore": value})
+        assert rowset.load(record_id)["valore"] in (0.0, 50.0, 12.5)
+    for value in ("-0.01", "50.01"):
+        with pytest.raises(ValidationError) as exc:
+            rowset.insert({"nome": "x", "valore": value})
+        assert [issue.code for issue in exc.value.issues] == ["domain"]
+
+
+def test_domain_empty_value_passes():
+    rowset = numeric_rowset(domain_min="1", domain_max="2")
+    record_id = rowset.insert({"nome": "x", "valore": ""})
+    assert rowset.load(record_id)["valore"] is None
+    field = rowset.table.field("valore")
+    assert domain_error(field, None) is None
+    assert domain_error(field, "") is None
+
+
+def test_domain_open_endpoints():
+    field = Field("valore", T.DECIMAL, domain_min="10")
+    assert domain_error(field, 9.99) is not None
+    assert domain_error(field, 10) is None
+    assert domain_error(field, 1_000_000) is None
+    field = Field("valore", T.DECIMAL, domain_max="10")
+    assert domain_error(field, 10.01) is not None
+    assert domain_error(field, -1_000) is None
+
+
+def test_domain_ranges_are_a_union():
+    rowset = numeric_rowset(domain_ranges=[["1", "10"], ["20", "30"]])
+    for value in ("1", "10", "20", "30"):
+        assert rowset.insert({"nome": "x", "valore": value})
+    for value in ("0", "11", "19", "31"):
+        with pytest.raises(ValidationError) as exc:
+            rowset.insert({"nome": "x", "valore": value})
+        assert exc.value.issues[0].code == "domain"
+    field = rowset.table.field("valore")
+    assert domain_intervals(field) == [
+        (__import__("decimal").Decimal("1"), __import__("decimal").Decimal("10")),
+        (__import__("decimal").Decimal("20"), __import__("decimal").Decimal("30")),
+    ]
+
+
+def test_domain_decimal_comparison_has_no_binary_artifacts():
+    field = Field("valore", T.DECIMAL, domain_min="0", domain_max="0.3")
+    assert domain_error(field, 0.3) is None
+    assert domain_error(field, 0.30000000000000004) is not None
+
+
+def test_domain_custom_message_is_used_verbatim():
+    field = Field(
+        "valore",
+        T.DECIMAL,
+        domain_min="0",
+        domain_max="50",
+        domain_message="Lo sconto deve essere tra 0 e 50",
+    )
+    issue = domain_error(field, 51)
+    assert issue is not None and issue.message == "Lo sconto deve essere tra 0 e 50"
+    default = domain_error(Field("valore", T.DECIMAL, domain_min="0", domain_max="50"), 51)
+    assert default is not None and "compreso tra 0 e 50" in default.message
+
+
+def test_domain_schema_rules():
+    with pytest.raises(MetadataError):
+        Field("x", T.TEXT, domain_min="0").validate()
+    with pytest.raises(MetadataError):
+        Field("x", T.CHOICE, domain_min="0").validate()
+    with pytest.raises(MetadataError):
+        Field("x", T.INTEGER, domain_min="10", domain_max="1").validate()
+    with pytest.raises(MetadataError):
+        Field("x", T.INTEGER, domain_min="abc").validate()
+    with pytest.raises(MetadataError):
+        Field("x", T.INTEGER, domain_ranges=[["1", "10"], ["20"]]).validate()
+    with pytest.raises(MetadataError):
+        Field("x", T.INTEGER, domain_ranges=[["10", "1"]]).validate()
+    with pytest.raises(MetadataError):
+        Field("x", T.INTEGER, domain_min="0", calculated="[y]").validate()
+
+
+def test_domain_roundtrip_serialization():
+    field = Field(
+        "valore",
+        T.DECIMAL,
+        domain_min="0",
+        domain_max="50",
+        domain_message="Fuori dominio",
+    )
+    assert Field.from_dict(field.to_dict()) == field
+    ranged = Field("valore", T.INTEGER, domain_ranges=[["1", "10"], ["20", "30"]])
+    assert Field.from_dict(ranged.to_dict()) == ranged
+    legacy = Field.from_dict({"name": "valore", "type": T.INTEGER})
+    assert legacy.domain_min == "" and legacy.domain_ranges == []

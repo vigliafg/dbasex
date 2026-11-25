@@ -1555,3 +1555,31 @@
 - **Decisioni:** `ValidationError`/`RowsetError` convivono; `NOT NULL` solo per obbligatorietà incondizionata; errore di cella senza dialog; import a scarti; Scelta con cache e fail-closed.
 - **Decisioni rimandate all'utente:** nessuna bloccante.
 - **RIPRESA:** checkpoint attivo. Dopo `continua`, leggere `PLAN.md`, `PLAN-VALIDAZIONE.md` e questo diario, controllare `git status`/`git log`, e iniziare la **Fase 4 — Dominio numerico**, poi la **Fase 5 — Input guidato**; fermarsi prima della Fase 6. Non ripartire da Fase 0–3.
+
+### 2026-11-25 — Piano di validazione — Fasi 4–5 (dominio numerico, input guidato)
+- **Stato:** completata (Fase 4 e Fase 5)
+- **Branch/commit:** `main`; commit della sotto-ondata.
+- **Obiettivo:** dominio numerico inclusivo con min/max o intervalli multipli; regole di forma dell'input con maschera, normalizzazione maiuscole e auto-advance, senza toccare i valori già letti dal database.
+- **File toccati:** `dbx/core/metadata.py`, `dbx/runtime/validation.py`, `dbx/runtime/rowset.py`, `dbx/designers/table_builder.py`, `dbx/ui/input_rules.py` (nuovo), `dbx/ui/input_editors.py` (nuovo), `dbx/ui/data_view.py`, `dbx/runtime/form_runtime.py`, `tests/test_validation.py`, `tests/test_input_rules.py` (nuovo), `tests/test_ui_validation.py`, `tests/test_ui_shell.py`, `docs/ui-parity.md`, rendering `27-table-calculated.png`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - **Dominio:** `domain_min`/`domain_max`/`domain_ranges`/`domain_message` sono additivi; estremi inclusivi, estremo vuoto = aperto, `domain_ranges` sostituisce min/max, confronto con `Decimal(str(value))`. Il dominio vale solo per `INTEGER`/`DECIMAL`, non calcolati e non Scelta. Il messaggio personalizzato è mostrato **verbatim**; quello predefinito è prefissato con il nome del campo e distingue intervallo, solo minimo e solo massimo.
+  - **Nessun warning per `domain_ranges` + min/max:** il piano prevedeva un warning di schema, ma l'ambiente non ha un canale di warning nei metadati. Il Table Builder rende i due modi esclusivi; un JSON scritto a mano con entrambi usa gli intervalli e ignora min/max, senza errore. Deviazione documentata.
+  - **Maschera:** caratteri ammessi solo `9` (cifra), `A` (lettera, normalizzata maiuscola), `a` (lettera, normalizzata minuscola) e spazio letterale; solo campi `TEXT`, non Scelta e non calcolati. `MaskValidator` blocca i caratteri non ammessi durante la digitazione; `InputRules.check` accetta valori parziali e normalizza gli slot.
+  - **Maiuscole:** `case_mode` in `{"", "upper", "lower", "title", "sentence"}`. La normalizzazione avviene nell'editor (griglia, nuovo record, Form Runtime) e non in `Rowset`: i valori letti dal database restano invariati, come richiesto dal confine D2.
+  - **Auto-advance:** quando la maschera è completa (o il campo raggiunge `size`) il focus passa al controllo successivo. Nella griglia il delegate chiude l'editor sulla cella seguente; in nuovo record e Form Runtime il focus avanza sul binder successivo. Il timer di rinvio è figlio dell'editor, così un editor distrutto non lascia callback pendenti (corretto un caso di crash rilevato dai test UI).
+  - **Tabelle di proprietà:** la scheda Proprietà del Table Builder è ora dentro un `QScrollArea` interno, perché con Scelta, dominio, maschere e regole il contenuto supera l'altezza dello schermo. I gruppi restano `QGroupBox` semplici, non richiudibili: deviazione estetica già dichiarata.
+  - **Bug latente corretto:** il Table Builder chiamava `_remove_row` per Indici, Relazioni e Valori ma il metodo non esisteva; è stato aggiunto con comportamento per griglia (store dei metadati per Scelta/Dominio, anteprima per Indici/Relazioni).
+  - `tests/test_ui_shell.py` aggiornato: con lo scorrimento interno della scheda Proprietà il dialogo può adattarsi allo schermo; il test verifica che il contenuto lungo sia raggiungibile tramite lo scroll esterno **o** quello interno.
+- **Test:** `549 passed` (erano 527); smoke headless OK; harness E2E `PASS` con 14/14 scenari, 298/298 controlli e 32 screenshot. `ruff` continua a non essere installato, quindi lint non eseguito.
+- **Screenshot:** rendering canonici rigenerati in Aurora; `27-table-calculated.png` mostra Maiuscole, Maschera e il gruppo Dominio numerico con scorrimento. Cattura Dark verificata e poi Aurora ripristinata.
+- **Problemi aperti:** gruppo Dominio non richiudibile; il warning di schema per ranges+min/max non è emesso; `domain_stale`/`choice_stale` e re-evaluate restano in Fase 6; l'auto-advance basato sulla sola `size` si attiva quando il campo ha anche maschera o `case_mode`.
+- **Prossimo passo:** **Checkpoint** di questo blocco; dopo `continua`, Fase 6 — incrementi (`records`/`updates`, migrazione `auto_serial`) e re-evaluate, poi fermarsi di nuovo.
+
+## Checkpoint validazione — Fasi 4–5 (2026-11-25)
+
+- **Stato fasi:** Fasi 0–5 completate (Fase 3 dinamica assorbita nella 2). Restano Fasi 6–7.
+- **Test eseguiti:** `549 passed`; smoke headless OK; harness E2E `PASS` (14/14 scenari, 298 controlli, 32 screenshot); cattura Aurora e Dark OK.
+- **Screenshot:** serie canonica `01`–`37` in Aurora; `27` aggiornato con input e dominio.
+- **Decisioni:** dominio inclusivo con `Decimal`, messaggio custom verbatim, ranges che sostituiscono min/max; maschere 9/A/a/spazio con normalizzazione degli slot; maiuscole solo nell'editor; scheda Proprietà con scroll interno.
+- **Decisioni rimandate all'utente:** nessuna bloccante.
+- **RIPRESA:** checkpoint attivo. Dopo `continua`, leggere `PLAN.md`, `PLAN-VALIDAZIONE.md` e questo diario, controllare `git status`/`git log`, e iniziare la **Fase 6 — Incrementi e re-evaluate**; fermarsi prima della Fase 7. Non ripartire da Fase 0–5.

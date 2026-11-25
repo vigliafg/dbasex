@@ -15,6 +15,7 @@ from .validation import (
     ValidationError,
     ValidationIssue,
     ValidationReport,
+    domain_error,
     match_choice,
     resolve_choices,
     touch_choices,
@@ -263,6 +264,10 @@ class Rowset:
         """Controlla Scelta e Dominio; restituisce il valore canonico o None."""
         if field.type == T.CHOICE:
             return self._check_choice(report, field, stored)
+        if T.is_numeric(field.type):
+            issue = domain_error(field, stored)
+            if issue is not None:
+                report.issues.append(issue)
         return None
 
     def _check_choice(

@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 import uuid
 from dataclasses import dataclass, field as dc_field
+from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable
 
 from . import types as T
@@ -17,6 +18,8 @@ from . import types as T
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 RESERVED_NAMES = {"_id", "rowid", "oid", "sqlite_master"}
 ON_DELETE_ACTIONS = ("NO ACTION", "CASCADE", "SET NULL", "RESTRICT")
+CASE_MODES = ("", "upper", "lower", "title", "sentence")
+MASK_CHARS = frozenset("9Aa ")
 
 
 class MetadataError(ValueError):
@@ -72,6 +75,12 @@ class Field:
     choice_case_sensitive: bool = True
     choice_allow_blank: bool = True
     choice_allow_other: bool = False
+    case_mode: str = ""
+    mask: str = ""
+    domain_min: str = ""
+    domain_max: str = ""
+    domain_ranges: list[list[str]] = dc_field(default_factory=list)
+    domain_message: str = ""
     rule: str = ""
     rule_message: str = ""
     required_expr: str = ""
@@ -137,6 +146,8 @@ class Field:
                 f"Il campo calcolato {self.name} non può avere una regola di validazione"
             )
         self._validate_choice()
+        self._validate_input()
+        self._validate_domain()
 
     def _validate_choice(self) -> None:
         configured = bool(
@@ -184,6 +195,85 @@ class Field:
                 raise MetadataError(f"Voce Scelta duplicata per {self.name}: {value}")
             seen.add(value)
 
+    def _validate_input(self) -> None:
+        if self.case_mode not in CASE_MODES:
+            raise MetadataError(
+                f"Modalità maiuscole non valida per {self.name}: {self.case_mode!r}"
+            )
+        if not self.mask:
+            return
+        if self.type != T.TEXT:
+            raise MetadataError(
+                f"La maschera di {self.name} richiede il tipo Testo"
+            )
+        if self.calculated:
+            raise MetadataError(
+                f"Il campo calcolato {self.name} non può avere una maschera"
+            )
+        invalid = sorted(set(self.mask) - MASK_CHARS)
+        if invalid:
+            raise MetadataError(
+                f"Maschera non valida per {self.name}: caratteri ammessi 9, A, a e spazio "
+                f"(trovati {''.join(invalid)!r})"
+            )
+
+    @staticmethod
+    def _parse_domain_value(value: Any, what: str, field_name: str) -> Decimal | None:
+        text = str(value if value is not None else "").strip()
+        if not text:
+            return None
+        try:
+            return Decimal(text)
+        except (InvalidOperation, ValueError) as exc:
+            raise MetadataError(
+                f"Estremo del dominio non valido per {field_name} ({what}): {text!r}"
+            ) from exc
+
+    def _validate_domain(self) -> None:
+        configured = bool(
+            self.domain_min
+            or self.domain_max
+            or self.domain_ranges
+            or self.domain_message
+        )
+        if not configured:
+            return
+        if not T.is_numeric(self.type):
+            raise MetadataError(
+                f"Il dominio numerico di {self.name} richiede il tipo Intero o Decimale"
+            )
+        if self.calculated:
+            raise MetadataError(
+                f"Il campo calcolato {self.name} non può avere un dominio numerico"
+            )
+        low = self._parse_domain_value(self.domain_min, "minimo", self.name)
+        high = self._parse_domain_value(self.domain_max, "massimo", self.name)
+        if low is not None and high is not None and low > high:
+            raise MetadataError(
+                f"Dominio non valido per {self.name}: il minimo supera il massimo"
+            )
+        for position, item in enumerate(self.domain_ranges, start=1):
+            if not isinstance(item, (list, tuple)) or len(item) != 2:
+                raise MetadataError(
+                    f"Intervallo {position} non valido per {self.name}: "
+                    "sono richiesti minimo e massimo"
+                )
+            interval_low = self._parse_domain_value(
+                item[0], f"intervallo {position} minimo", self.name
+            )
+            interval_high = self._parse_domain_value(
+                item[1], f"intervallo {position} massimo", self.name
+            )
+            if (
+                interval_low is not None
+                and interval_high is not None
+                and interval_low > interval_high
+            ):
+                raise MetadataError(
+                    f"Intervallo {position} non valido per {self.name}: "
+                    "il minimo supera il massimo"
+                )
+
     @property
     def stored(self) -> bool:
         """Il campo ha una colonna fisica; i calcolati sono solo virtuali."""
@@ -218,6 +308,12 @@ class Field:
             "choice_case_sensitive": self.choice_case_sensitive,
             "choice_allow_blank": self.choice_allow_blank,
             "choice_allow_other": self.choice_allow_other,
+            "case_mode": self.case_mode,
+            "mask": self.mask,
+            "domain_min": self.domain_min,
+            "domain_max": self.domain_max,
+            "domain_ranges": [list(item) for item in self.domain_ranges],
+            "domain_message": self.domain_message,
             "rule": self.rule,
             "rule_message": self.rule_message,
             "required_expr": self.required_expr,
@@ -274,6 +370,16 @@ class Field:
             choice_case_sensitive=bool(data.get("choice_case_sensitive", True)),
             choice_allow_blank=bool(data.get("choice_allow_blank", True)),
             choice_allow_other=choice_allow_other,
+            case_mode=str(data.get("case_mode", "")),
+            mask=str(data.get("mask", "")),
+            domain_min=str(data.get("domain_min", "")),
+            domain_max=str(data.get("domain_max", "")),
+            domain_ranges=[
+                [str(item[0]), str(item[1])]
+                for item in data.get("domain_ranges", []) or []
+                if isinstance(item, (list, tuple)) and len(item) == 2
+            ],
+            domain_message=str(data.get("domain_message", "")),
             rule=str(data.get("rule", "")),
             rule_message=str(data.get("rule_message", "")),
             required_expr=str(data.get("required_expr", "")),
