@@ -807,7 +807,22 @@ class QueryDesignerWidget(QWidget):
             if not isinstance(function_combo, QComboBox) or not isinstance(field_combo, QComboBox):
                 continue
             ref = str(field_combo.currentData() or "")
-            table, field = (ref.split(".", 1) + [""])[:2] if ref else ("", "")
+            if ref:
+                table, field = (ref.split(".", 1) + [""])[:2]
+            else:
+                # COUNT(*) non ha un campo: conserva la tabella dell'aggregato,
+                # altrimenti la query perde la sorgente e non è più valida.
+                previous = (
+                    self.spec.aggregates[row]
+                    if row < len(self.spec.aggregates)
+                    else None
+                )
+                table = (
+                    previous.table
+                    if previous is not None and previous.table
+                    else self.spec.base
+                )
+                field = ""
             aggregates.append(
                 QueryAggregate(
                     function=str(function_combo.currentData() or "count"),

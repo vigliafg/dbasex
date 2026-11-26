@@ -220,6 +220,94 @@ for _id, (_area, _label) in _MANUAL.items():
 
 
 # --------------------------------------------------------------------------- #
+# Catalogo manuale della fase 2 — query e form (E4)
+# --------------------------------------------------------------------------- #
+_MANUAL_QUERY_FORM: dict[str, tuple[str, str]] = {
+    # Query
+    "QRY-NEW": ("queries", "Nuova query guidata"),
+    "QRY-FIELD-INCLUDE": ("queries", "Inclusione dei campi"),
+    "QRY-FIELD-ALIAS": ("queries", "Alias di output"),
+    "QRY-JOIN-SUGGEST": ("queries", "Join suggerito dalle foreign key"),
+    "QRY-FILTER-AND": ("queries", "Filtri AND"),
+    "QRY-FILTER-OR": ("queries", "Filtri OR"),
+    "QRY-FILTER-GROUPS": ("queries", "Gruppi di filtro"),
+    "QRY-SORT-MULTI": ("queries", "Ordinamento multiplo"),
+    "QRY-GROUP-BY": ("queries", "Raggruppamento GROUP BY"),
+    "QRY-SQL-PREVIEW": ("queries", "Anteprima SQL"),
+    "QRY-SQL-PARAMS": ("queries", "SQL parametrizzato"),
+    "QRY-VALIDATE": ("queries", "Validazione della query"),
+    "QRY-SAVE-REOPEN": ("queries", "Salvataggio e riapertura"),
+    "QRY-SAVE-REJECT": ("queries", "Rifiuto di query invalida"),
+    "QRY-QBE-IMAGE": ("queries", "Query image QBE"),
+    "QRY-QBE-INCLUDE": ("queries", "Riga Includi QBE"),
+    "QRY-QBE-ROWS": ("queries", "Righe di criterio QBE"),
+    "QRY-QBE-EXAMPLE": ("queries", "Example element QBE"),
+    "QRY-QBE-EXAMPLE-WARN": ("queries", "Avvisi example element"),
+    "QRY-QBE-BETWEEN": ("queries", "Intervallo QBE"),
+    "QRY-QBE-LIKE": ("queries", "Jolly QBE"),
+    "QRY-QBE-NULL": ("queries", "Vuoto e non vuoto QBE"),
+    "QRY-QBE-OR": ("queries", "Righe OR QBE"),
+    "QRY-RESULTS-GRID": ("queries", "Griglia Query Results"),
+    "QRY-RESULTS-FORMAT": ("queries", "Formati dei tipi nei risultati"),
+    "QRY-RESULTS-REFRESH": ("queries", "Aggiornamento dei risultati"),
+    "QRY-RESULTS-EXPORT": ("queries", "Export CSV dei risultati"),
+    "QRY-CROSSTAB": ("queries", "Tabella incrociata"),
+    "QRY-CROSSTAB-TOTALS": ("queries", "Totali della crosstab"),
+    "QRY-CROSSTAB-EMPTY": ("queries", "Crosstab senza righe"),
+    "QRY-CROSSTAB-ERROR": ("queries", "Crosstab su colonna non numerica"),
+    "QRY-CROSSTAB-CSV": ("queries", "Export CSV della crosstab"),
+    "QRY-EXPERT": ("queries", "Query Expert"),
+    "QRY-EXPERT-RELATIONS": ("queries", "Relazioni suggerite dall'esperto"),
+    "QRY-EXPERT-CRITERIA": ("queries", "Criteri dell'esperto"),
+    "QRY-EXPERT-SORT": ("queries", "Ordinamento dell'esperto"),
+    # Form Expert e Designer
+    "FRM-EXPERT-5STEPS": ("forms", "Form Expert in cinque passi"),
+    "FRM-EXPERT-FIELDS": ("forms", "Scelta dei campi nell'esperto"),
+    "FRM-EXPERT-BLANK": ("forms", "Form vuoto dall'esperto"),
+    "FRM-EXPERT-LAYOUTS": ("forms", "Layout dell'esperto"),
+    "FRM-EXPERT-STYLE": ("forms", "Font e stile dell'esperto"),
+    "FRM-EXPERT-COLORS": ("forms", "Colori dell'esperto"),
+    "FRM-DESIGNER-PALETTE": ("forms", "Palette Controls"),
+    "FRM-PALETTE-FIELD": ("forms", "Palette Field"),
+    "FRM-AUTOLABEL": ("forms", "Etichetta automatica"),
+    "FRM-FIELD-KINDS": ("forms", "Tipo controllo dal campo"),
+    "FRM-GRID-SNAP": ("forms", "Griglia e snap a 8 px"),
+    "FRM-HANDLES": ("forms", "Otto maniglie di ridimensionamento"),
+    "FRM-KEYBOARD": ("forms", "Frecce e passo fine"),
+    "FRM-MULTISELECT": ("forms", "Selezione multipla"),
+    "FRM-CLIPBOARD": ("forms", "Copia, taglia e incolla"),
+    "FRM-UNDO-REDO": ("forms", "Annulla e ripeti"),
+    "FRM-ALIGN": ("forms", "Allineamento"),
+    "FRM-DISTRIBUTE": ("forms", "Distribuzione"),
+    "FRM-ZORDER": ("forms", "Porta avanti e indietro"),
+    "FRM-PAGES": ("forms", "Pagine del form"),
+    "FRM-INSPECTOR": ("forms", "Object Inspector"),
+    "FRM-INSPECTOR-FORM": ("forms", "Proprietà del form"),
+    "FRM-INSPECTOR-DATA": ("forms", "Proprietà data e comportamento"),
+    "FRM-METHODS": ("forms", "Metodi save e close"),
+    "FRM-RUNTIME-CRUD": ("forms", "CRUD nel runtime"),
+    "FRM-RUNTIME-NAV": ("forms", "Navigazione nel runtime"),
+    "FRM-RUNTIME-STATUS": ("forms", "Stato del runtime"),
+    "FRM-RUNTIME-VALIDATION": ("forms", "Validazione nel runtime"),
+    "FRM-RUNTIME-MESSAGES": ("forms", "Messaggi del runtime"),
+    "FRM-LIST-VIEW": ("forms", "Vista Lista"),
+    "FRM-LIST-FIELDS": ("forms", "Campi della vista Lista"),
+    "FRM-LIST-SELECT": ("forms", "Apertura record dalla lista"),
+    "FRM-PORTAL-LINK": ("forms", "Portale padre/figlio"),
+    "FRM-PORTAL-ORDER": ("forms", "Ordine del portale"),
+    "FRM-PORTAL-FILTER": ("forms", "Filtro del portale"),
+    "FRM-QUERY-READONLY": ("forms", "Form su query in sola lettura"),
+    "FRM-QUERY-CALC": ("forms", "Colonne aggregate nel form"),
+    "FRM-QUERY-NAV": ("forms", "Navigazione del form su query"),
+    "FRM-ROUNDTRIP": ("forms", "Round-trip del form"),
+    "FRM-LEGACY-JSON": ("forms", "Compatibilità JSON legacy"),
+}
+
+for _id, (_area, _label) in _MANUAL_QUERY_FORM.items():
+    add(_id, _area, _label, 2)
+
+
+# --------------------------------------------------------------------------- #
 # Validazione e copertura
 # --------------------------------------------------------------------------- #
 @dataclass(frozen=True)

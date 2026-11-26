@@ -70,3 +70,18 @@ def test_phase_two_and_three_features_exist_for_future_waves() -> None:
     phase_three = coverage(scenarios, phase=3)
     assert phase_two.required > coverage(scenarios, phase=1).required
     assert phase_three.required >= phase_two.required
+
+
+def test_query_and_form_features_are_covered() -> None:
+    """E4 chiude il catalogo di query e form della fase 2."""
+
+    scenarios = load()
+    declared = {feature_id for scenario in scenarios for feature_id in scenario.features}
+    required = {
+        feature.id
+        for feature in FEATURES.values()
+        if feature.area in ("queries", "forms") and feature.phase <= 2
+    }
+    missing = sorted(required - declared)
+    assert required
+    assert missing == []

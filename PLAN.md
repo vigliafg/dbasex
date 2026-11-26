@@ -1013,7 +1013,7 @@ resta la superficie di modifica delle relazioni.
 ## 17. Piano E2E intensivo (2026-11-26)
 
 Piano dedicato: [`PLAN-E2E.md`](PLAN-E2E.md). Obiettivo: **133 workflow E2E** granulari, catalogo
-delle funzioni derivato dal codice e gate di copertura. Stato: E1 (harness 2.0), E2 (tabelle) ed
-E3 (Browse, import, ER, manutenzione) completate; Checkpoint A raggiunto con **59 scenari** e
-**654 controlli** verdi. E4–E6 (query, form, report, etichette, script, shell, journey e
+delle funzioni derivato dal codice e gate di copertura. Stato: E1 (harness 2.0), E2 (tabelle), E3 (Browse, import, ER, manutenzione) ed E4 (query, QBE,
+risultati, Crosstab, form) completate; **91 scenari** e **1.071 controlli** verdi, con catalogo di
+fase 1 completo e query/form di fase 2 completi. E5–E6 (report, etichette, script, shell, journey e
 prestazioni) restano da eseguire dopo il comando `continua`.

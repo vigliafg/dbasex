@@ -2,10 +2,10 @@
 
 Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 
-- Scenari registrati: **45**
+- Scenari registrati: **77**
 - Feature di fase 1: **111/111**
-- Feature di fase 2: **111/220**
-- Feature di fase 3: **111/284**
+- Feature di fase 2: **237/296**
+- Feature di fase 3: **237/360**
 
 ## Fase 1 — coperta
 
@@ -127,6 +127,8 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 
 | Feature | Area | Fase |
 |---|---|---:|
+| `FRM-ALIGN` | forms | 2 |
+| `FRM-AUTOLABEL` | forms | 2 |
 | `FRM-BUTTON-CLOSE` | forms | 2 |
 | `FRM-BUTTON-DELETE` | forms | 2 |
 | `FRM-BUTTON-FIRST` | forms | 2 |
@@ -135,6 +137,7 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `FRM-BUTTON-NEXT` | forms | 2 |
 | `FRM-BUTTON-PREVIOUS` | forms | 2 |
 | `FRM-BUTTON-SAVE` | forms | 2 |
+| `FRM-CLIPBOARD` | forms | 2 |
 | `FRM-CONTROL-BUTTON` | forms | 2 |
 | `FRM-CONTROL-CHECKBOX` | forms | 2 |
 | `FRM-CONTROL-COMBO` | forms | 2 |
@@ -147,13 +150,50 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `FRM-CONTROL-MEMO` | forms | 2 |
 | `FRM-CONTROL-NUMBER` | forms | 2 |
 | `FRM-CONTROL-RECT` | forms | 2 |
+| `FRM-DESIGNER-PALETTE` | forms | 2 |
+| `FRM-DISTRIBUTE` | forms | 2 |
 | `FRM-EVENT-ONCLICK` | forms | 2 |
 | `FRM-EVENT-ONCLOSE` | forms | 2 |
 | `FRM-EVENT-ONENTER` | forms | 2 |
 | `FRM-EVENT-ONEXIT` | forms | 2 |
 | `FRM-EVENT-ONOPEN` | forms | 2 |
+| `FRM-EXPERT-5STEPS` | forms | 2 |
+| `FRM-EXPERT-BLANK` | forms | 2 |
+| `FRM-EXPERT-COLORS` | forms | 2 |
+| `FRM-EXPERT-FIELDS` | forms | 2 |
+| `FRM-EXPERT-LAYOUTS` | forms | 2 |
+| `FRM-EXPERT-STYLE` | forms | 2 |
+| `FRM-FIELD-KINDS` | forms | 2 |
+| `FRM-GRID-SNAP` | forms | 2 |
+| `FRM-HANDLES` | forms | 2 |
+| `FRM-INSPECTOR` | forms | 2 |
+| `FRM-INSPECTOR-DATA` | forms | 2 |
+| `FRM-INSPECTOR-FORM` | forms | 2 |
+| `FRM-KEYBOARD` | forms | 2 |
+| `FRM-LEGACY-JSON` | forms | 2 |
+| `FRM-LIST-FIELDS` | forms | 2 |
+| `FRM-LIST-SELECT` | forms | 2 |
+| `FRM-LIST-VIEW` | forms | 2 |
 | `FRM-METHOD-CLOSE` | forms | 2 |
 | `FRM-METHOD-SAVE` | forms | 2 |
+| `FRM-METHODS` | forms | 2 |
+| `FRM-MULTISELECT` | forms | 2 |
+| `FRM-PAGES` | forms | 2 |
+| `FRM-PALETTE-FIELD` | forms | 2 |
+| `FRM-PORTAL-FILTER` | forms | 2 |
+| `FRM-PORTAL-LINK` | forms | 2 |
+| `FRM-PORTAL-ORDER` | forms | 2 |
+| `FRM-QUERY-CALC` | forms | 2 |
+| `FRM-QUERY-NAV` | forms | 2 |
+| `FRM-QUERY-READONLY` | forms | 2 |
+| `FRM-ROUNDTRIP` | forms | 2 |
+| `FRM-RUNTIME-CRUD` | forms | 2 |
+| `FRM-RUNTIME-MESSAGES` | forms | 2 |
+| `FRM-RUNTIME-NAV` | forms | 2 |
+| `FRM-RUNTIME-STATUS` | forms | 2 |
+| `FRM-RUNTIME-VALIDATION` | forms | 2 |
+| `FRM-UNDO-REDO` | forms | 2 |
+| `FRM-ZORDER` | forms | 2 |
 | `LBL-ALIGN-CENTER` | labels | 2 |
 | `LBL-ALIGN-LEFT` | labels | 2 |
 | `LBL-ALIGN-RIGHT` | labels | 2 |
@@ -166,8 +206,25 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `QRY-AGG-MAX` | queries | 2 |
 | `QRY-AGG-MIN` | queries | 2 |
 | `QRY-AGG-SUM` | queries | 2 |
+| `QRY-CROSSTAB` | queries | 2 |
+| `QRY-CROSSTAB-CSV` | queries | 2 |
+| `QRY-CROSSTAB-EMPTY` | queries | 2 |
+| `QRY-CROSSTAB-ERROR` | queries | 2 |
+| `QRY-CROSSTAB-TOTALS` | queries | 2 |
+| `QRY-EXPERT` | queries | 2 |
+| `QRY-EXPERT-CRITERIA` | queries | 2 |
+| `QRY-EXPERT-RELATIONS` | queries | 2 |
+| `QRY-EXPERT-SORT` | queries | 2 |
+| `QRY-FIELD-ALIAS` | queries | 2 |
+| `QRY-FIELD-INCLUDE` | queries | 2 |
+| `QRY-FILTER-AND` | queries | 2 |
+| `QRY-FILTER-GROUPS` | queries | 2 |
+| `QRY-FILTER-OR` | queries | 2 |
+| `QRY-GROUP-BY` | queries | 2 |
 | `QRY-JOIN-INNER` | queries | 2 |
 | `QRY-JOIN-LEFT` | queries | 2 |
+| `QRY-JOIN-SUGGEST` | queries | 2 |
+| `QRY-NEW` | queries | 2 |
 | `QRY-OP-BETWEEN` | queries | 2 |
 | `QRY-OP-CONTAINS` | queries | 2 |
 | `QRY-OP-ENDS` | queries | 2 |
@@ -182,8 +239,27 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `QRY-OP-NULL` | queries | 2 |
 | `QRY-OP-REF` | queries | 2 |
 | `QRY-OP-STARTS` | queries | 2 |
+| `QRY-QBE-BETWEEN` | queries | 2 |
+| `QRY-QBE-EXAMPLE` | queries | 2 |
+| `QRY-QBE-EXAMPLE-WARN` | queries | 2 |
+| `QRY-QBE-IMAGE` | queries | 2 |
+| `QRY-QBE-INCLUDE` | queries | 2 |
+| `QRY-QBE-LIKE` | queries | 2 |
+| `QRY-QBE-NULL` | queries | 2 |
+| `QRY-QBE-OR` | queries | 2 |
+| `QRY-QBE-ROWS` | queries | 2 |
+| `QRY-RESULTS-EXPORT` | queries | 2 |
+| `QRY-RESULTS-FORMAT` | queries | 2 |
+| `QRY-RESULTS-GRID` | queries | 2 |
+| `QRY-RESULTS-REFRESH` | queries | 2 |
+| `QRY-SAVE-REJECT` | queries | 2 |
+| `QRY-SAVE-REOPEN` | queries | 2 |
 | `QRY-SORT-ASC` | queries | 2 |
 | `QRY-SORT-DESC` | queries | 2 |
+| `QRY-SORT-MULTI` | queries | 2 |
+| `QRY-SQL-PARAMS` | queries | 2 |
+| `QRY-SQL-PREVIEW` | queries | 2 |
+| `QRY-VALIDATE` | queries | 2 |
 | `REP-BAND-DETAIL` | reports | 2 |
 | `REP-BAND-GROUP_FOOTER` | reports | 2 |
 | `REP-BAND-GROUP_HEADER` | reports | 2 |

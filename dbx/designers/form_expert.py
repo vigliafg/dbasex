@@ -574,7 +574,7 @@ class FormExpert(ExpertWizard):
                         forecolor=style["forecolor"],
                     )
                 )
-                control = self._field_control(field, left + 116, top, 180, control_height)
+                control = self._field_control(field, left + 116, top, 180, control_height, style)
                 page.controls.append(control)
             y = 44 + rows * row_height + 8
         elif layout == "labels_above":
@@ -597,7 +597,7 @@ class FormExpert(ExpertWizard):
                         forecolor=style["forecolor"],
                     )
                 )
-                page.controls.append(self._field_control(field, 12, y + 17, 540, control_height))
+                page.controls.append(self._field_control(field, 12, y + 17, 540, control_height, style))
                 y += row_height + 16
         else:
             for field_name in fields:
@@ -619,7 +619,7 @@ class FormExpert(ExpertWizard):
                         forecolor=style["forecolor"],
                     )
                 )
-                page.controls.append(self._field_control(field, 170, y, 300, control_height))
+                page.controls.append(self._field_control(field, 170, y, 300, control_height, style))
                 y += row_height
         if not compact:
             y += 10
@@ -653,7 +653,9 @@ class FormExpert(ExpertWizard):
         return page
 
     @staticmethod
-    def _field_control(field, x: int, y: int, width: int, height: int) -> FormControl:
+    def _field_control(
+        field, x: int, y: int, width: int, height: int, style: dict[str, Any] | None = None
+    ) -> FormControl:
         kind = "field"
         if field.type == "memo":
             kind = "memo"
@@ -665,6 +667,7 @@ class FormExpert(ExpertWizard):
             kind = "date"
         elif field.lookup:
             kind = "combo"
+        style = style or {}
         return FormControl(
             id=new_id(),
             kind=kind,
@@ -673,5 +676,9 @@ class FormExpert(ExpertWizard):
             y=y,
             w=width,
             h=max(48, height + 24) if kind == "memo" else height,
+            font_name=str(style.get("font_name", "")),
+            font_size=int(style.get("font_size", 10) or 10),
+            bold=bool(style.get("bold", False)),
+            forecolor=str(style.get("forecolor", "")),
             lookup=field.lookup,
         )
