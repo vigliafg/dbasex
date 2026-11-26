@@ -166,7 +166,9 @@ class ReportPreviewDialog(QDialog):
         self.index = min(self.index, max(0, len(self.pages) - 1))
         self.total_label.setText(f"Totale: {len(self.pages)}")
         self._render_pages()
-        self.info.setText(f"{self.spec.title or self.spec.name} — {len(self.pages)} pagina" + ("e" if len(self.pages) != 1 else ""))
+        count = len(self.pages)
+        label = "pagina" if count == 1 else "pagine"
+        self.info.setText(f"{self.spec.title or self.spec.name} — {count} {label}")
 
     def _render_pages(self) -> None:
         single = self.single_button.isChecked()

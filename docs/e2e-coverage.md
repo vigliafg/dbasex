@@ -2,10 +2,10 @@
 
 Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 
-- Scenari registrati: **77**
+- Scenari registrati: **107**
 - Feature di fase 1: **111/111**
-- Feature di fase 2: **237/296**
-- Feature di fase 3: **237/360**
+- Feature di fase 2: **369/369**
+- Feature di fase 3: **369/433**
 
 ## Fase 1 — coperta
 
@@ -197,10 +197,27 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `LBL-ALIGN-CENTER` | labels | 2 |
 | `LBL-ALIGN-LEFT` | labels | 2 |
 | `LBL-ALIGN-RIGHT` | labels | 2 |
+| `LBL-CUSTOM` | labels | 2 |
+| `LBL-FIELD-INSERT` | labels | 2 |
+| `LBL-FILTER` | labels | 2 |
+| `LBL-GRID` | labels | 2 |
+| `LBL-MARGINS` | labels | 2 |
+| `LBL-NEW` | labels | 2 |
+| `LBL-OFFSET` | labels | 2 |
+| `LBL-ORDER` | labels | 2 |
+| `LBL-PAGES` | labels | 2 |
+| `LBL-PDF` | labels | 2 |
+| `LBL-PRESET` | labels | 2 |
 | `LBL-PRESET-A4_52X30` | labels | 2 |
 | `LBL-PRESET-A4_70X37` | labels | 2 |
 | `LBL-PRESET-AVERY5160` | labels | 2 |
 | `LBL-PRESET-AVERY5163` | labels | 2 |
+| `LBL-PREVIEW` | labels | 2 |
+| `LBL-SAVE-REOPEN` | labels | 2 |
+| `LBL-SELECTION` | labels | 2 |
+| `LBL-STYLE` | labels | 2 |
+| `LBL-TEMPLATE-EXPR` | labels | 2 |
+| `LBL-TEMPLATE-FIELD` | labels | 2 |
 | `QRY-AGG-AVG` | queries | 2 |
 | `QRY-AGG-COUNT` | queries | 2 |
 | `QRY-AGG-MAX` | queries | 2 |
@@ -260,6 +277,7 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `QRY-SQL-PARAMS` | queries | 2 |
 | `QRY-SQL-PREVIEW` | queries | 2 |
 | `QRY-VALIDATE` | queries | 2 |
+| `REP-ALIGN-CONTROL` | reports | 2 |
 | `REP-BAND-DETAIL` | reports | 2 |
 | `REP-BAND-GROUP_FOOTER` | reports | 2 |
 | `REP-BAND-GROUP_HEADER` | reports | 2 |
@@ -267,9 +285,16 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `REP-BAND-PAGE_HEADER` | reports | 2 |
 | `REP-BAND-SUMMARY` | reports | 2 |
 | `REP-BAND-TITLE` | reports | 2 |
+| `REP-BANDS-DRAG` | reports | 2 |
+| `REP-BANDS-HEIGHT` | reports | 2 |
+| `REP-BANDS-ORDER` | reports | 2 |
+| `REP-BANDS-VISIBLE` | reports | 2 |
+| `REP-CHART-BAND` | reports | 2 |
 | `REP-CHART-BAR` | reports | 2 |
+| `REP-CHART-CATEGORY` | reports | 2 |
 | `REP-CHART-LINE` | reports | 2 |
 | `REP-CHART-PIE` | reports | 2 |
+| `REP-CHART-VALUE` | reports | 2 |
 | `REP-CONTROL-CHART` | reports | 2 |
 | `REP-CONTROL-EXPR` | reports | 2 |
 | `REP-CONTROL-FIELD` | reports | 2 |
@@ -278,6 +303,40 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `REP-CONTROL-RECT` | reports | 2 |
 | `REP-CONTROL-TEXT` | reports | 2 |
 | `REP-CONTROL-TOTAL` | reports | 2 |
+| `REP-EDIT-TEXT` | reports | 2 |
+| `REP-EXPERT` | reports | 2 |
+| `REP-EXPERT-GROUP` | reports | 2 |
+| `REP-EXPERT-LAYOUTS` | reports | 2 |
+| `REP-EXPERT-SORT` | reports | 2 |
+| `REP-EXPRESSION` | reports | 2 |
+| `REP-FIELD-PREVIEW` | reports | 2 |
+| `REP-FILTER` | reports | 2 |
+| `REP-FORMAT-ALIGN` | reports | 2 |
+| `REP-FORMAT-BORDER` | reports | 2 |
+| `REP-FORMAT-COLOR` | reports | 2 |
+| `REP-FORMAT-FONT` | reports | 2 |
+| `REP-FORMAT-STYLE` | reports | 2 |
+| `REP-GROUP` | reports | 2 |
+| `REP-INSERT-FIELD` | reports | 2 |
+| `REP-LEGACY` | reports | 2 |
+| `REP-NEW` | reports | 2 |
+| `REP-PDF` | reports | 2 |
+| `REP-PREVIEW-FIT` | reports | 2 |
+| `REP-PREVIEW-PAGES` | reports | 2 |
+| `REP-PREVIEW-SINGLE` | reports | 2 |
+| `REP-PREVIEW-ZOOM` | reports | 2 |
+| `REP-PRINT` | reports | 2 |
+| `REP-QUERY` | reports | 2 |
+| `REP-ROUNDTRIP` | reports | 2 |
+| `REP-SORT` | reports | 2 |
+| `REP-SOURCE-QUERY` | reports | 2 |
+| `REP-SOURCE-TABLE` | reports | 2 |
+| `REP-TOTAL-AVG` | reports | 2 |
+| `REP-TOTAL-COUNT` | reports | 2 |
+| `REP-TOTAL-MAX` | reports | 2 |
+| `REP-TOTAL-MIN` | reports | 2 |
+| `REP-TOTAL-SUM` | reports | 2 |
+| `REP-ZOOM` | reports | 2 |
 | `SCR-ACTION-ASK` | scripts | 2 |
 | `SCR-ACTION-BEEP` | scripts | 2 |
 | `SCR-ACTION-BEGIN_TRANSACTION` | scripts | 2 |
@@ -312,6 +371,20 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `SCR-ACTION-SQL` | scripts | 2 |
 | `SCR-ACTION-STATUS` | scripts | 2 |
 | `SCR-ACTION-UNSET_GLOBAL` | scripts | 2 |
+| `SCR-ARGS-DIALOG` | scripts | 2 |
+| `SCR-FORM-EVENT` | scripts | 2 |
+| `SCR-LEGACY` | scripts | 2 |
+| `SCR-LINE-NUMBERS` | scripts | 2 |
+| `SCR-LOG` | scripts | 2 |
+| `SCR-PARAMS` | scripts | 2 |
+| `SCR-PICKER` | scripts | 2 |
+| `SCR-PICKER-CATEGORIES` | scripts | 2 |
+| `SCR-PICKER-DESCRIPTION` | scripts | 2 |
+| `SCR-PICKER-SEARCH` | scripts | 2 |
+| `SCR-RUN` | scripts | 2 |
+| `SCR-SAVE-REOPEN` | scripts | 2 |
+| `SCR-SOURCE-TEXT` | scripts | 2 |
+| `SCR-SYNTAX` | scripts | 2 |
 | `MENU-ACTION-OPEN_FORM` | menus | 3 |
 | `MENU-ACTION-OPEN_REPORT` | menus | 3 |
 | `MENU-ACTION-QUIT` | menus | 3 |

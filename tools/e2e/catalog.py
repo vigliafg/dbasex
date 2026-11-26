@@ -308,6 +308,92 @@ for _id, (_area, _label) in _MANUAL_QUERY_FORM.items():
 
 
 # --------------------------------------------------------------------------- #
+# Catalogo manuale della fase 2 — report, etichette e script (E5)
+# --------------------------------------------------------------------------- #
+_MANUAL_REPORT_LABEL_SCRIPT: dict[str, tuple[str, str]] = {
+    # Report
+    "REP-NEW": ("reports", "Nuovo report"),
+    "REP-SOURCE-TABLE": ("reports", "Report da tabella"),
+    "REP-SOURCE-QUERY": ("reports", "Report da query"),
+    "REP-FILTER": ("reports", "Filtro del report"),
+    "REP-BANDS-VISIBLE": ("reports", "Visibilità delle bande"),
+    "REP-BANDS-ORDER": ("reports", "Ordine delle bande"),
+    "REP-BANDS-HEIGHT": ("reports", "Altezza delle bande"),
+    "REP-BANDS-DRAG": ("reports", "Delimitatori trascinabili"),
+    "REP-INSERT-FIELD": ("reports", "Insert Database Field"),
+    "REP-FIELD-PREVIEW": ("reports", "Anteprima dati del campo"),
+    "REP-EDIT-TEXT": ("reports", "Edit Text Field"),
+    "REP-EXPRESSION": ("reports", "Espressione nel dettaglio"),
+    "REP-SORT": ("reports", "Record Sort Order"),
+    "REP-GROUP": ("reports", "Gruppi header e footer"),
+    "REP-TOTAL-SUM": ("reports", "Totale somma"),
+    "REP-TOTAL-COUNT": ("reports", "Totale conteggio"),
+    "REP-TOTAL-AVG": ("reports", "Totale media"),
+    "REP-TOTAL-MIN": ("reports", "Totale minimo"),
+    "REP-TOTAL-MAX": ("reports", "Totale massimo"),
+    "REP-CHART-CATEGORY": ("reports", "Categoria del grafico"),
+    "REP-CHART-VALUE": ("reports", "Valore del grafico"),
+    "REP-CHART-BAND": ("reports", "Banda del grafico"),
+    "REP-FORMAT-FONT": ("reports", "Font del controllo"),
+    "REP-FORMAT-STYLE": ("reports", "Grassetto, corsivo e sottolineato"),
+    "REP-FORMAT-ALIGN": ("reports", "Allineamento del controllo"),
+    "REP-FORMAT-BORDER": ("reports", "Bordo del controllo"),
+    "REP-FORMAT-COLOR": ("reports", "Colore del testo"),
+    "REP-ALIGN-CONTROL": ("reports", "Allinea nella banda"),
+    "REP-ZOOM": ("reports", "Zoom del designer"),
+    "REP-PREVIEW-PAGES": ("reports", "Anteprima multi-pagina"),
+    "REP-PREVIEW-SINGLE": ("reports", "Una pagina per volta"),
+    "REP-PREVIEW-FIT": ("reports", "Fit width"),
+    "REP-PREVIEW-ZOOM": ("reports", "Zoom persistente"),
+    "REP-PRINT": ("reports", "Stampa mock"),
+    "REP-PDF": ("reports", "Export PDF"),
+    "REP-QUERY": ("reports", "Report su query"),
+    "REP-ROUNDTRIP": ("reports", "Round-trip del report"),
+    "REP-LEGACY": ("reports", "Compatibilità JSON legacy"),
+    "REP-EXPERT": ("reports", "Report Expert"),
+    "REP-EXPERT-LAYOUTS": ("reports", "Layout dell'esperto"),
+    "REP-EXPERT-GROUP": ("reports", "Gruppo e totali dell'esperto"),
+    "REP-EXPERT-SORT": ("reports", "Ordinamento dell'esperto"),
+    # Etichette
+    "LBL-NEW": ("labels", "Nuova etichetta"),
+    "LBL-PRESET": ("labels", "Preset del foglio"),
+    "LBL-CUSTOM": ("labels", "Formato personalizzato"),
+    "LBL-GRID": ("labels", "Griglia colonne e righe"),
+    "LBL-MARGINS": ("labels", "Margini e distanze"),
+    "LBL-TEMPLATE-FIELD": ("labels", "Campo [campo] nel modello"),
+    "LBL-TEMPLATE-EXPR": ("labels", "Espressione {{...}} nel modello"),
+    "LBL-FIELD-INSERT": ("labels", "Inserimento campo nel modello"),
+    "LBL-STYLE": ("labels", "Font, grassetto, bordo e colore"),
+    "LBL-FILTER": ("labels", "Filtro del mail merge"),
+    "LBL-ORDER": ("labels", "Ordinamento del mail merge"),
+    "LBL-SELECTION": ("labels", "Selezione dei record"),
+    "LBL-OFFSET": ("labels", "Etichette da saltare"),
+    "LBL-PREVIEW": ("labels", "Anteprima multi-foglio"),
+    "LBL-PAGES": ("labels", "Pagine del foglio"),
+    "LBL-PDF": ("labels", "PDF delle etichette"),
+    "LBL-SAVE-REOPEN": ("labels", "Salvataggio e riapertura"),
+    # Script
+    "SCR-SOURCE-TEXT": ("scripts", "Sorgente e azioni"),
+    "SCR-LINE-NUMBERS": ("scripts", "Numeri di riga"),
+    "SCR-SYNTAX": ("scripts", "Evidenziazione della sintassi"),
+    "SCR-LOG": ("scripts", "Log di esecuzione"),
+    "SCR-PICKER": ("scripts", "Step Picker"),
+    "SCR-PICKER-CATEGORIES": ("scripts", "Categorie dello Step Picker"),
+    "SCR-PICKER-SEARCH": ("scripts", "Ricerca nello Step Picker"),
+    "SCR-PICKER-DESCRIPTION": ("scripts", "Descrizioni delle azioni"),
+    "SCR-PARAMS": ("scripts", "Parametri dichiarati"),
+    "SCR-ARGS-DIALOG": ("scripts", "Dialogo argomenti"),
+    "SCR-RUN": ("scripts", "Esecuzione dal Program Editor"),
+    "SCR-SAVE-REOPEN": ("scripts", "Salvataggio e riapertura"),
+    "SCR-LEGACY": ("scripts", "Compatibilità script legacy"),
+    "SCR-FORM-EVENT": ("scripts", "Script da evento form"),
+}
+
+for _id, (_area, _label) in _MANUAL_REPORT_LABEL_SCRIPT.items():
+    add(_id, _area, _label, 2)
+
+
+# --------------------------------------------------------------------------- #
 # Validazione e copertura
 # --------------------------------------------------------------------------- #
 @dataclass(frozen=True)

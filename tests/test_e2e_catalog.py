@@ -85,3 +85,13 @@ def test_query_and_form_features_are_covered() -> None:
     missing = sorted(required - declared)
     assert required
     assert missing == []
+
+
+def test_phase_two_coverage_is_complete() -> None:
+    """E5 chiude il catalogo della fase 2: report, etichette e script."""
+
+    scenarios = load()
+    result = coverage(scenarios, phase=2)
+    assert result.required > 0
+    assert result.missing == ()
+    assert result.percent == 100.0

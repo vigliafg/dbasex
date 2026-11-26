@@ -595,7 +595,7 @@ class FieldDataDialog(QDialog):
                     f'SELECT DISTINCT "{field}" AS value FROM "{name}" '
                     f'WHERE "{field}" IS NOT NULL LIMIT 50'
                 )
-                values = [str(row.get("value")) for row in rows]
+                values = [str(row["value"]) for row in rows]
             except Exception:  # pragma: no cover - difensivo
                 values = []
         for value in values:
