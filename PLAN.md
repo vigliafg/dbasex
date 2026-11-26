@@ -1009,3 +1009,11 @@ resta la superficie di modifica delle relazioni.
 | 0.8.0 — O9 Vista Lista e release | `[x]` completata (2026-11-22) — versione 0.8.0 | **F** |
 | 0.9.0 — O10 Automazione | `[x]` completata (2026-11-22) | — |
 | 0.9.0 — O11 QA e release | `[x]` completata (2026-11-22) — versione 0.9.0 | **G** |
+
+## 17. Piano E2E intensivo (2026-11-26)
+
+Piano dedicato: [`PLAN-E2E.md`](PLAN-E2E.md). Obiettivo: **133 workflow E2E** granulari, catalogo
+delle funzioni derivato dal codice e gate di copertura. Stato: E1 (harness 2.0), E2 (tabelle) ed
+E3 (Browse, import, ER, manutenzione) completate; Checkpoint A raggiunto con **59 scenari** e
+**654 controlli** verdi. E4–E6 (query, form, report, etichette, script, shell, journey e
+prestazioni) restano da eseguire dopo il comando `continua`.

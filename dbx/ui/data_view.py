@@ -570,6 +570,7 @@ class DataView(QWidget):
     def _sync_selection(self) -> None:
         index = self.rowset.index
         if index < 0 or index >= self.grid.rowCount():
+            self._update_nav_buttons()
             return
         column = max(0, self.grid.currentColumn())
         self._loading = True

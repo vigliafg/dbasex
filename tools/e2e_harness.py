@@ -387,6 +387,27 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="",
         help="Esegue solo gli scenari indicati, separati da virgola",
     )
+    parser.add_argument(
+        "--area",
+        default="",
+        help="Esegue solo le aree indicate (project,tables,browse,data,...)",
+    )
+    parser.add_argument(
+        "--feature",
+        default="",
+        help="Esegue gli scenari che dichiarano una feature (glob ammessi, virgola)",
+    )
+    parser.add_argument(
+        "--require-coverage",
+        action="store_true",
+        help="Fallisce se il catalogo della fase non è coperto al 100%%",
+    )
+    parser.add_argument(
+        "--coverage-phase",
+        type=int,
+        default=1,
+        help="Fase del catalogo da verificare (default 1)",
+    )
     parser.add_argument("--skip-pytest", action="store_true", help="Non esegue pytest")
     parser.add_argument("--skip-smoke", action="store_true", help="Non esegue lo smoke")
     parser.add_argument(
@@ -449,7 +470,13 @@ def main(argv: list[str] | None = None) -> int:
     os.environ["QT_QPA_PLATFORM"] = args.platform
 
     try:
-        from e2e_scenarios import SCENARIOS, HarnessContext, ScenarioFailure
+        from e2e_scenarios import SCENARIOS as LEGACY_SCENARIOS, HarnessContext, ScenarioFailure
+        from e2e.registry import load as load_new_scenarios
+        from e2e.context import E2EContext
+        from e2e.catalog import coverage as coverage_of, validate_scenarios
+
+        NEW_SCENARIOS = load_new_scenarios()
+        SCENARIOS = list(LEGACY_SCENARIOS) + list(NEW_SCENARIOS)
     except Exception:
         traceback.print_exc()
         print("ERRORE: impossibile importare gli scenari E2E", file=sys.stderr)
@@ -460,10 +487,28 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"ERRORE: {exc}", file=sys.stderr)
         return EXIT_USAGE
+    if args.area:
+        wanted_areas = {item.strip() for item in args.area.split(",") if item.strip()}
+        selected = [item for item in selected if getattr(item, "area", "") in wanted_areas]
+    if args.feature:
+        import fnmatch
+
+        patterns = [item.strip().upper() for item in args.feature.split(",") if item.strip()]
+        selected = [
+            item
+            for item in selected
+            if any(
+                fnmatch.fnmatch(feature.upper(), pattern)
+                for feature in getattr(item, "features", ())
+                for pattern in patterns
+            )
+        ]
     if args.list:
         print("Scenari E2E disponibili:")
         for item in SCENARIOS:
-            print(f"  {item.name:<20} {item.title}")
+            area = getattr(item, "area", "legacy")
+            features = len(getattr(item, "features", ()))
+            print(f"  {item.name:<26} [{area:<8}] {features:>2} feature  {item.title}")
         return EXIT_OK
     if not selected:
         print("ERRORE: nessuno scenario selezionato", file=sys.stderr)
@@ -564,7 +609,7 @@ def main(argv: list[str] | None = None) -> int:
         log.close()
         return EXIT_USAGE
 
-    ctx = HarnessContext(output=output, qapp=app, screenshots_enabled=screenshots)
+    ctx = E2EContext(output=output, qapp=app, screenshots_enabled=screenshots)
     ctx.keep = args.keep
     scenario_results: list[ScenarioResult] = []
     overall_started = time.perf_counter()
@@ -579,6 +624,14 @@ def main(argv: list[str] | None = None) -> int:
             with ctx.auto_dialogs():
                 with _time_limit(args.timeout):
                     definition.function(ctx)
+            minimum = int(getattr(definition, "min_checks", 0) or 0)
+            passed_checks = sum(1 for check in ctx.checks if check["status"] == "pass")
+            if minimum and passed_checks < minimum:
+                ctx.check(
+                    False,
+                    "numero minimo di controlli",
+                    f"attesi almeno {minimum}, ottenuti {passed_checks}",
+                )
             status = "pass"
         except ScenarioFailure as exc:
             status = "fail"
@@ -628,6 +681,31 @@ def main(argv: list[str] | None = None) -> int:
     elapsed = time.perf_counter() - overall_started
     log.write("")
     log.write(f"Scenari completati in {elapsed:.2f} s")
+
+    catalog_coverage = coverage_of(NEW_SCENARIOS, args.coverage_phase)
+    catalog_errors = validate_scenarios(NEW_SCENARIOS)
+    coverage_status = "pass"
+    if catalog_errors or (args.require_coverage and catalog_coverage.missing):
+        coverage_status = "fail"
+    coverage_summary = (
+        f"{catalog_coverage.covered}/{catalog_coverage.required} feature "
+        f"({catalog_coverage.percent:.0f}%)"
+    )
+    if catalog_errors:
+        coverage_summary += f" · {len(catalog_errors)} errori di catalogo"
+    stages.append(
+        StageResult(
+            "coverage",
+            "Copertura funzioni E2E",
+            coverage_status,
+            0.0,
+            coverage_summary,
+        )
+    )
+    log.write(f"[coverage] {coverage_summary}")
+    for error in catalog_errors[:20]:
+        log.write(f"        {error}")
+
     finished = _now()
     report_path, md_path, report = _write_reports(
         output,
@@ -644,6 +722,18 @@ def main(argv: list[str] | None = None) -> int:
             "keep": args.keep,
             "fail_fast": args.fail_fast,
             "only": args.only,
+            "area": args.area,
+            "feature": args.feature,
+            "coverage_phase": args.coverage_phase,
+            "require_coverage": args.require_coverage,
+            "coverage": {
+                "phase": catalog_coverage.phase,
+                "required": catalog_coverage.required,
+                "covered": catalog_coverage.covered,
+                "percent": round(catalog_coverage.percent, 1),
+                "missing": list(catalog_coverage.missing[:50]),
+                "errors": catalog_errors[:50],
+            },
             "timeout_s": args.timeout,
         },
         stages,

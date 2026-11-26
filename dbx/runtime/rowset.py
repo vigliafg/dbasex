@@ -127,6 +127,18 @@ class Rowset:
         """Risolve serie, date automatiche ed espressioni auto-enter."""
         result = dict(values)
         base = self.table.new_record()
+        if creating:
+            # I default dichiarati nella struttura valgono per i campi che
+            # l'utente non ha proprio fornito (non per un valore vuoto esplicito).
+            for field in self.table.stored_fields:
+                if (
+                    field.name not in result
+                    and field.default != ""
+                    and not field.increment
+                    and not field.auto_date
+                    and not field.auto_enter
+                ):
+                    result[field.name] = base.get(field.name)
         base.update(result)
         # Prima incrementi e date, così le espressioni auto-enter possono leggerli.
         for field in self.table.stored_fields:

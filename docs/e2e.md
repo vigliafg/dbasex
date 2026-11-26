@@ -4,8 +4,12 @@
 
 1. la **suite pytest** completa;
 2. lo **smoke headless** (`python -m dbx --smoke`);
-3. dieci **scenari E2E** funzionali e quattro **workflow realistici** su progetti temporanei
+3. i **14 scenari storici** e i **45 scenari granulari E2E 2.0** (E1–E3), su progetti temporanei
    isolati, con interfaccia Qt offscreen.
+
+Stato attuale: **59 scenari, 654 controlli, 39 screenshot**; catalogo di fase 1 **111/111 feature**
+(100%). Il piano completo, fino a 133 workflow, è in [`PLAN-E2E.md`](../PLAN-E2E.md); la matrice
+generata è in [`e2e-coverage.md`](e2e-coverage.md).
 
 Non usa pytest per gli scenari: ogni controllo ha un nome, un esito e un tempo, e il risultato
 finale è disponibile in JSON e Markdown. I dialoghi modali sono neutralizzati, quindi il harness non
@@ -78,6 +82,10 @@ python tools/e2e_harness.py --only workflow_nuova_applicazione,workflow_chiusura
 |---|---|
 | `--output DIR` | Cartella risultati (default `build/e2e/<timestamp>`) |
 | `--only a,b` | Esegue solo gli scenari indicati |
+| `--area project,tables` | Esegue solo le aree indicate |
+| `--feature TB-FIELD-*` | Esegue gli scenari che coprono le feature (glob ammessi) |
+| `--require-coverage` | Fallisce se il catalogo della fase non è coperto al 100% |
+| `--coverage-phase N` | Fase del catalogo da verificare (default 1) |
 | `--skip-pytest` | Salta la suite pytest |
 | `--skip-smoke` | Salta lo smoke headless |
 | `--no-screenshots` | Non salva le schermate |
@@ -143,13 +151,17 @@ La cartella `build/e2e-ci` viene pubblicata come artifact. La suite pytest inclu
 
 ## Aggiungere uno scenario
 
-In `tools/e2e_scenarios.py`:
+Per gli scenari E2E 2.0, in `tools/e2e/scenarios/`:
 
-1. scrivere `def scenario_nome(ctx: HarnessContext) -> None:`;
-2. usare `ctx.new_project()` o `ctx.demo_project()`;
-3. verificare con `ctx.check(condizione, "descrizione", "dettaglio opzionale")`;
-4. salvare schermate con `ctx.capture(widget, "nome-file", (larghezza, altezza))`;
-5. aggiungere `ScenarioDefinition("nome", "Titolo", scenario_nome)` a `SCENARIOS`.
+1. scrivere una funzione decorata con `@scenario("nome", "Titolo", "area", features=(...))`;
+2. usare `ctx.new_project()` o le fixture di `tools/e2e/fixtures.py`;
+3. esercitare il widget/dialogo reale e verificare con `ctx.check` / `ctx.check_close`;
+4. dichiarare `min_checks` e `budget_s` coerenti con il flusso;
+5. fare round-trip con `ctx.reopen(project)` se l'artefatto è persistente;
+6. salvare schermate con `ctx.capture(widget, "nome-file", (larghezza, altezza))`;
+7. aggiungere gli ID delle feature al catalogo se sono nuove.
+
+I 14 scenari storici restano in `tools/e2e_scenarios.py` e sono mantenuti come alias.
 
 Il contesto chiude i progetti e cancella i file temporanei anche in caso di eccezione. Un
 controllo fallito solleva `ScenarioFailure`; il runner registra il punto esatto e prosegue con gli
