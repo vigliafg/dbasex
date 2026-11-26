@@ -1709,3 +1709,52 @@
 - **Screenshot:** `15-database-designer.png` rigenerato con card a 168 px.
 - **Problemi aperti:** gli spazi sono ammessi solo interni e singoli; non sono previsti nomi con doppi spazi o spazi iniziali/finali.
 - **Prossimo passo:** nessuno; in attesa di nuove richieste.
+
+### 2026-11-26 — E2E 2.0 — E1 Harness, catalogo e copertura
+- **Stato:** completata
+- **Branch/commit:** `main`; commit E2E 2.0 E1–E3 (questo commit).
+- **Obiettivo:** introdurre l'harness granulare, il catalogo delle funzioni derivato dal codice e il gate di copertura, mantenendo i 14 scenari storici.
+- **File toccati:** `tools/e2e/` (nuovo: `context.py`, `ui.py`, `fixtures.py`, `catalog.py`, `registry.py`, `scenarios/`), `tools/e2e_harness.py`, `tools/e2e_coverage.py`, `tests/test_e2e_catalog.py`, `docs/e2e.md`, `docs/e2e-coverage.md`, `PLAN-E2E.md`, `PLAN.md`, `CHANGELOG.md`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - Il contesto granulare estende `HarnessContext` invece di riscriverlo: i 14 scenari legacy restano invariati e condividono dialoghi, screenshot e pulizia.
+  - Il catalogo deriva 284 feature da costanti e AST (tipi, operatori, controlli, bande, preset, azioni script, menu, Navigator, `QAction`); la fase 1 ne richiede 111 e le copre tutte.
+  - Il gate `--require-coverage` e il controllo `min_checks` sono attivi; il parallelismo a worker è rimandato a E6 per non introdurre instabilità mentre si scrivono gli scenari.
+  - La copertura misura le feature **dichiarate** dagli scenari e verificate dai controlli; non instrumenta ancora l'esecuzione dei singoli `QAction`.
+- **Test:** 576 passed; smoke OK; harness 59/59 scenari, 654/654 controlli, 43 screenshot, copertura 111/111 (100%).
+- **Screenshot:** generati gli scatti per progetto, tabelle, Browse, import ed ER; rendering canonici `01`–`37` rigenerati.
+- **Problemi aperti:** worker paralleli e ripetizione deterministica non ancora implementati; fasi 2–3 del catalogo scoperte per definizione.
+- **Prossimo passo:** E2 — scenari tabelle e struttura.
+
+### 2026-11-26 — E2E 2.0 — E2 Tabelle e struttura
+- **Stato:** completata
+- **Branch/commit:** `main`; commit E2E 2.0 E1–E3 (questo commit).
+- **Obiettivo:** coprire Table Builder, tutti i tipi e le opzioni di campo, indici, relazioni, migrazioni e Table Expert.
+- **File toccati:** `tools/e2e/scenarios/s10_tables.py`; `dbx/runtime/rowset.py` (default in inserimento); test e documentazione E2E.
+- **Scenari:** B01–B13 (13 workflow): nuova tabella, 9 tipi, attributi, obbligatorietà condizionale, regole, calcolati, auto-enter, Scelta statica e dinamica, dominio/maschere, indici e 4 `ON DELETE`, migrazione con backup/Save As/stampa, Table Expert.
+- **Scelte/deviazioni:** i default dei campi ora si applicano in `Rowset.insert` quando il campo non è fornito; un valore vuoto esplicito resta esplicito. Il campo legacy `lookup` è verificato nella compatibilità e non come opzione nuova, perché la lettura lo migra in Scelta.
+- **Test:** area tabelle 13/13, 103 controlli.
+- **Screenshot:** `table-new-minimal`, `table-all-types`, `table-expert`.
+- **Problemi aperti:** nessun blocco funzionale.
+- **Prossimo passo:** E3 — Browse, import, ER e manutenzione.
+
+### 2026-11-26 — E2E 2.0 — E3 Browse, import, ER e manutenzione
+- **Stato:** completata
+- **Branch/commit:** `main`; commit E2E 2.0 E1–E3 (questo commit).
+- **Obiettivo:** coprire CRUD e validazione in griglia, Find/Replace, ricerche salvate, import/export CSV, Database Designer, rinomina/duplicazione/compattazione e riapplica regole.
+- **File toccati:** `tools/e2e/scenarios/s20_browse.py`, `s30_data_ops.py`; `dbx/ui/data_view.py` (pulsanti di navigazione su tabella vuota); documentazione E2E.
+- **Scenari:** C01–C12 e D01–D12 (24 workflow), inclusi tutti gli operatori Find, AND/OR/Ometti, sostituzione con maiuscole, preset e export CSV, PNG/SVG ER, relazione dal canvas e record storici.
+- **Scelte/deviazioni:** la verifica dei report dopo la rinomina controlla che restino leggibili, perché i report demo non referenziano direttamente la tabella rinominata; la copertura dei riferimenti report è rimandata agli scenari report di E5.
+- **Test:** area Browse 12/12 (86 controlli), area dati 12/12 (96 controlli).
+- **Screenshot:** `browse-crud`, `browse-find`, `data-import-mapping`, `data-er-diagram` e rendering canonici rigenerati.
+- **Problemi aperti:** il `re_evaluate` segnala gli avvisi storici solo nel riepilogo, come già noto.
+- **Prossimo passo:** Checkpoint A.
+
+## CHECKPOINT A — E2E 2.0 (2026-11-26)
+
+- **Stato ondate:** E1, E2, E3 completate. E4–E6 da eseguire.
+- **Scenari:** 59/59 verdi (14 storici + 45 granulari), 654 controlli, 43 screenshot.
+- **Copertura:** 111/111 feature di fase 1 (100%); fasi 2–3 scoperte come previsto.
+- **Test eseguiti:** `576 passed`; smoke headless `SMOKE OK`; harness completo PASS in 90,3 s con gate copertura; rendering canonici rigenerati.
+- **Bug corretti durante il collaudo:** default dei campi applicati in inserimento quando il campo è assente; pulsanti di navigazione aggiornati su tabella vuota.
+- **Decisioni rimandate:** parallelismo `--workers`, `--repeat` e instrumentazione runtime delle feature sono in E6; nessuna decisione bloccante per l'utente.
+- **RIPRESA:** dopo `continua`, leggere `PLAN.md`, `PLAN-E2E.md` e questo diario, controllare `git status`/`git log`, e ripartire da **E4 — Query e Form (E01–E15, F01–F17)**. Non ripetere E1–E3.

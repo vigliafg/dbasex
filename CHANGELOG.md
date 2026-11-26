@@ -58,8 +58,27 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
 - Il vecchio `lookup` viene letto come `choice` con sorgente tabella; `auto_serial` viene letto come
   `increment="records"` e riscritto con il solo campo nuovo.
 
+### Aggiunto — E2E 2.0 (E1–E3)
+
+- **Harness granulare** `tools/e2e/`: contesto esteso, fixture deterministiche, helper Qt,
+  catalogo delle funzioni e report con copertura. I 14 scenari storici restano come alias.
+- **45 nuovi workflow** per progetto, Table Structure, Browse/validazione, import CSV, Database
+  Designer e manutenzione, con round-trip di persistenza e screenshot per ambiente.
+- **Catalogo funzioni** derivato da tipi campo, operatori, controlli, bande, preset, azioni script,
+  menu, Navigator e `QAction` della shell; `tests/test_e2e_catalog.py` impedisce che un'opzione
+  resti senza scenario.
+- **Gate di copertura** `--require-coverage`, filtri `--area` e `--feature`, controllo del numero
+  minimo di controlli per scenario.
+- **Matrice generata** in [`docs/e2e-coverage.md`](docs/e2e-coverage.md) da
+  `tools/e2e_coverage.py`.
+- **Piano completo** in [`PLAN-E2E.md`](PLAN-E2E.md): 133 workflow, con E1–E3 completate.
+
 ### Corretto
 
+- **Default dei campi in inserimento**: `Rowset.insert` applica il default dichiarato quando il
+  campo non è proprio fornito, senza sovrascrivere un valore vuoto esplicito.
+- **Navigazione su tabella vuota**: i pulsanti primo/precedente/successivo/ultimo vengono
+  aggiornati anche quando la Browse non ha record.
 - Chiusura delle schede con il pulsante **[x]** della tab bar: `EditorHost` chiamava
   `QWidget.close` con l’argomento della scheda, provocando un `TypeError`; ora usa `close_tab` e la
   scheda si chiude regolarmente.
