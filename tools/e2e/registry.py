@@ -61,6 +61,6 @@ def scenario(
 def load() -> list[ScenarioDefinition]:
     """Importa i moduli degli scenari e restituisce il registro ordinato."""
 
-    from .scenarios import s00_foundation, s10_tables, s20_browse, s30_data_ops, s40_queries, s50_forms, s60_reports_labels, s70_scripts  # noqa: F401
+    from .scenarios import s00_foundation, s10_tables, s20_browse, s30_data_ops, s40_queries, s50_forms, s60_reports_labels, s70_scripts, s80_shell, s90_journeys  # noqa: F401
 
     return sorted(SCENARIOS, key=lambda item: (item.area, item.name))

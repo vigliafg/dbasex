@@ -2,10 +2,10 @@
 
 Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 
-- Scenari registrati: **107**
+- Scenari registrati: **133**
 - Feature di fase 1: **111/111**
 - Feature di fase 2: **369/369**
-- Feature di fase 3: **369/433**
+- Feature di fase 3: **505/505**
 
 ## Fase 1 — coperta
 
@@ -14,12 +14,12 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `DV-CALCULATED` | browse | Calcolati in sola lettura | `brw-04-calculated-readonly`, `tbl-06-calculated` |
 | `DV-CHOICE` | browse | Editor Scelta | `brw-03-editors` |
 | `DV-COLUMNS` | browse | Larghezza colonne persistente | `brw-10-columns-options` |
-| `DV-CRUD` | browse | CRUD nella griglia | `brw-01-crud-navigation`, `brw-11-record-dialogs` |
+| `DV-CRUD` | browse | CRUD nella griglia | `brw-01-crud-navigation`, `brw-11-record-dialogs`, `jrn-02-sportello` |
 | `DV-DELETE` | browse | Eliminazione record | `brw-11-record-dialogs` |
 | `DV-EDIT-CELL` | browse | Editing in-place | `brw-01-crud-navigation`, `brw-02-validation-cell`, `brw-03-editors` |
 | `DV-EMPTY` | browse | Tabella vuota | `brw-12-empty-boundary-refresh` |
 | `DV-FILTER` | browse | Filtro rapido | `brw-09-sort-filter-status` |
-| `DV-FIND` | browse | Find mode | `brw-05-find-operators`, `brw-06-find-dialog`, `brw-08-saved-finds` |
+| `DV-FIND` | browse | Find mode | `brw-05-find-operators`, `brw-06-find-dialog`, `brw-08-saved-finds`, `jrn-02-sportello` |
 | `DV-FIND-AND` | browse | Criteri AND | `brw-05-find-operators`, `brw-06-find-dialog` |
 | `DV-FIND-OMIT` | browse | Criterio Ometti | `brw-05-find-operators` |
 | `DV-FIND-OR` | browse | Criteri OR | `brw-05-find-operators` |
@@ -35,12 +35,12 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `DV-VALIDATION` | browse | Validazione per cella | `brw-02-validation-cell` |
 | `CSV-CALCULATED` | data | Calcolati in import | `dat-02-csv-mapping` |
 | `CSV-CLEAR-BACKUP` | data | Svuotamento con backup | `dat-04-csv-clear-backup` |
-| `CSV-DETECT-DELIM` | data | Rilevamento delimitatore | `dat-01-csv-detect` |
+| `CSV-DETECT-DELIM` | data | Rilevamento delimitatore | `dat-01-csv-detect`, `jrn-03-import` |
 | `CSV-DETECT-ENCODING` | data | Rilevamento codifica | `dat-01-csv-detect` |
-| `CSV-EXPORT` | data | Export CSV | `dat-05-csv-export` |
+| `CSV-EXPORT` | data | Export CSV | `dat-05-csv-export`, `jrn-03-import` |
 | `CSV-EXPORT-CALC` | data | Export dei calcolati | `dat-05-csv-export` |
 | `CSV-HEADER` | data | Gestione intestazione | `dat-01-csv-detect`, `dat-02-csv-mapping` |
-| `CSV-MAPPING` | data | Mappatura colonne | `dat-02-csv-mapping`, `dat-03-csv-rejects` |
+| `CSV-MAPPING` | data | Mappatura colonne | `dat-02-csv-mapping`, `dat-03-csv-rejects`, `jrn-03-import` |
 | `CSV-REJECTS` | data | Scarti di import | `dat-03-csv-rejects`, `dat-04-csv-clear-backup` |
 | `CSV-TYPES` | data | Conversione tipi | `dat-02-csv-mapping` |
 | `ER-CARD` | data | Card tabella compatta | `dat-06-er-diagram`, `dat-08-er-schema-edit` |
@@ -52,19 +52,19 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `ER-SCHEMA-EDIT` | data | Modifica schema dal diagramma | `dat-08-er-schema-edit` |
 | `ER-VIEW` | data | Vista schema ER | `dat-06-er-diagram`, `dat-08-er-schema-edit` |
 | `ER-ZOOM` | data | Zoom diagramma | `dat-06-er-diagram` |
-| `MNT-BACKUP` | data | Backup | `dat-04-csv-clear-backup`, `dat-09-rename-refs`, `dat-11-maintenance` |
-| `MNT-COMPACT` | data | Compattazione | `dat-11-maintenance` |
+| `MNT-BACKUP` | data | Backup | `dat-04-csv-clear-backup`, `dat-09-rename-refs`, `dat-11-maintenance`, `jrn-04-closing` |
+| `MNT-COMPACT` | data | Compattazione | `dat-11-maintenance`, `jrn-04-closing` |
 | `MNT-DUPLICATE` | data | Duplicazione oggetti | `dat-10-duplicate` |
 | `MNT-DUPLICATE-DATA` | data | Duplicazione tabella con dati | `dat-10-duplicate` |
 | `MNT-INTEGRITY` | data | Verifica integrità | `dat-11-maintenance` |
-| `MNT-REEVALUATE` | data | Riapplica regole | `dat-12-reevaluate` |
+| `MNT-REEVALUATE` | data | Riapplica regole | `dat-12-reevaluate`, `jrn-03-import` |
 | `MNT-RENAME-REFS` | data | Rinomina con riferimenti | `dat-09-rename-refs` |
 | `PROJ-CLI` | project | Avvio da riga di comando | `proj-06-cli` |
-| `PROJ-COMPAT` | project | Compatibilità artefatti legacy | `proj-04-legacy` |
+| `PROJ-COMPAT` | project | Compatibilità artefatti legacy | `jrn-07-legacy`, `proj-04-legacy` |
 | `PROJ-DEMO` | project | Progetto demo | `proj-02-demo` |
 | `PROJ-NEW` | project | Nuovo progetto vuoto | `proj-01-new-empty` |
 | `PROJ-RECENT` | project | Progetti recenti | `proj-08-recent` |
-| `PROJ-SAVE` | project | Salvataggio e riapertura | `proj-01-new-empty`, `proj-02-demo`, `proj-03-settings`, `proj-05-save-reopen` |
+| `PROJ-SAVE` | project | Salvataggio e riapertura | `jrn-06-restart`, `proj-01-new-empty`, `proj-02-demo`, `proj-03-settings`, `proj-05-save-reopen` |
 | `PROJ-SETTINGS` | project | Impostazioni progetto | `proj-03-settings` |
 | `PROJ-THEME` | project | Temi Aurora/Silver/Dark | `proj-07-themes` |
 | `TB-ADD-RECORDS` | tables | Aggiunta record dalla struttura | `tbl-12-migration-saveas` |
@@ -385,11 +385,58 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `SCR-SAVE-REOPEN` | scripts | 2 |
 | `SCR-SOURCE-TEXT` | scripts | 2 |
 | `SCR-SYNTAX` | scripts | 2 |
+| `JOURNEY-1N` | journey | 3 |
+| `JOURNEY-CLOSING` | journey | 3 |
+| `JOURNEY-IMPORT` | journey | 3 |
+| `JOURNEY-LEGACY` | journey | 3 |
+| `JOURNEY-NEWAPP` | journey | 3 |
+| `JOURNEY-RESTART` | journey | 3 |
+| `JOURNEY-SPORTELLO` | journey | 3 |
 | `MENU-ACTION-OPEN_FORM` | menus | 3 |
 | `MENU-ACTION-OPEN_REPORT` | menus | 3 |
 | `MENU-ACTION-QUIT` | menus | 3 |
 | `MENU-ACTION-RUN_SCRIPT` | menus | 3 |
 | `MENU-ACTION-SEPARATOR` | menus | 3 |
+| `MENU-ACTION5` | menus | 3 |
+| `MENU-BUILDER` | menus | 3 |
+| `MENU-FILTER-TARGET` | menus | 3 |
+| `MENU-PREVIEW` | menus | 3 |
+| `MENU-RUNTIME` | menus | 3 |
+| `MENU-SEPARATORS` | menus | 3 |
+| `BUILD-CONTENT` | project | 3 |
+| `BUILD-FOLDER` | project | 3 |
+| `BUILD-REOPEN` | project | 3 |
+| `BUILD-ZIP` | project | 3 |
+| `PROJECT-EDITOR` | project | 3 |
+| `PROJECT-EDITOR-SAVE` | project | 3 |
+| `PROJECT-SETTINGS` | project | 3 |
+| `PROJECT-VALIDATE` | project | 3 |
+| `PROJECT-VALIDATE-MISSING` | project | 3 |
+| `RUNNER-CLOSE` | project | 3 |
+| `RUNNER-F5` | project | 3 |
+| `RUNNER-FORM` | project | 3 |
+| `RUNNER-MENU` | project | 3 |
+| `DETERMINISM` | quality | 3 |
+| `DOCS-COVERAGE` | quality | 3 |
+| `PERF-BROWSE` | quality | 3 |
+| `PERF-FORM100` | quality | 3 |
+| `PERF-PDF` | quality | 3 |
+| `PERF-QUERY` | quality | 3 |
+| `PERF-REPORT` | quality | 3 |
+| `PERF-REPORT200` | quality | 3 |
+| `PERF-TABLE50` | quality | 3 |
+| `ABOUT` | shell | 3 |
+| `CMD-CLEAR` | shell | 3 |
+| `CMD-EXPR` | shell | 3 |
+| `CMD-HELP` | shell | 3 |
+| `CMD-HISTORY` | shell | 3 |
+| `CMD-RECORD` | shell | 3 |
+| `CMD-TABLES` | shell | 3 |
+| `CMD-USE` | shell | 3 |
+| `EDIT-CROSS` | shell | 3 |
+| `EDIT-DELETE` | shell | 3 |
+| `EDIT-UNDO-REDO` | shell | 3 |
+| `HELP-QUICK` | shell | 3 |
 | `NAV-CATEGORY-ALL` | shell | 3 |
 | `NAV-CATEGORY-CATALOGS` | shell | 3 |
 | `NAV-CATEGORY-CUSTOM` | shell | 3 |
@@ -403,6 +450,12 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `NAV-CATEGORY-SCRIPTS` | shell | 3 |
 | `NAV-CATEGORY-SOUNDS` | shell | 3 |
 | `NAV-CATEGORY-TABLES` | shell | 3 |
+| `NAV-CONTEXT` | shell | 3 |
+| `NAV-COUNT` | shell | 3 |
+| `NAV-DISABLED` | shell | 3 |
+| `NAV-FILTER` | shell | 3 |
+| `NAV-REFRESH` | shell | 3 |
+| `NAV-UNTITLED` | shell | 3 |
 | `SHELL-ACTION-AGGIORNA-NAVIGATOR` | shell | 3 |
 | `SHELL-ACTION-ALLINEA` | shell | 3 |
 | `SHELL-ACTION-ANNULLA` | shell | 3 |
@@ -449,3 +502,22 @@ Generato da `tools/e2e_coverage.py`. Non modificare a mano.
 | `SHELL-ACTION-VALIDA-PROGETTO` | shell | 3 |
 | `SHELL-ACTION-VERIFICA-INTEGRITÀ` | shell | 3 |
 | `SHELL-ACTION-ZOOM-100` | shell | 3 |
+| `SHELL-ACTIONS` | shell | 3 |
+| `SHELL-ACTIVATE` | shell | 3 |
+| `SHELL-CLOSE` | shell | 3 |
+| `SHELL-CLOSE-ALL` | shell | 3 |
+| `SHELL-DIRTY` | shell | 3 |
+| `SHELL-MENUS` | shell | 3 |
+| `SHELL-SAFE` | shell | 3 |
+| `SHELL-TABS` | shell | 3 |
+| `SHORTCUTS` | shell | 3 |
+| `SPEEDBAR` | shell | 3 |
+| `STATUS-BAR` | shell | 3 |
+| `THEME` | shell | 3 |
+| `TOGGLE` | shell | 3 |
+| `TOOLTIPS` | shell | 3 |
+| `VERSION` | shell | 3 |
+| `ZOOM-IN` | shell | 3 |
+| `ZOOM-OUT` | shell | 3 |
+| `ZOOM-PERSIST` | shell | 3 |
+| `ZOOM-RESET` | shell | 3 |

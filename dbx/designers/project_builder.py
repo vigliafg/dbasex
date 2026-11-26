@@ -209,7 +209,9 @@ def build_project(project: Project, target: Path, make_zip: bool = True) -> Path
     base.joinpath("data").mkdir()
     project.db.con.commit()
     if project.database_file.exists():
-        shutil.copy2(project.database_file, base / "data" / project.database_file.name)
+        # WAL può contenere le ultime scritture: una copia del solo file
+        # principale produrrebbe una build vuota. Usa il backup SQLite.
+        project.db.backup_to(base / "data" / project.database_file.name)
     shutil.copy2(project.manifest_path, base / "project.dbx.json")
     (base / "LEGGIMI.txt").write_text(
         "Applicazione dBX\n\n"

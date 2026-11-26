@@ -95,3 +95,13 @@ def test_phase_two_coverage_is_complete() -> None:
     assert result.required > 0
     assert result.missing == ()
     assert result.percent == 100.0
+
+
+def test_phase_three_coverage_is_complete() -> None:
+    """E6 chiude il catalogo: shell, menu, progetto, journey e qualità."""
+
+    scenarios = load()
+    result = coverage(scenarios, phase=3)
+    assert result.required > 0
+    assert result.missing == ()
+    assert result.percent == 100.0

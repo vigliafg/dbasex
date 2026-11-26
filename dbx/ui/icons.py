@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Callable
 
 from PyQt6.QtCore import QPointF, QRectF, QSize, Qt
-from PyQt6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap, QPolygonF
+from PyQt6.QtGui import QAction, QColor, QIcon, QKeySequence, QPainter, QPixmap, QPolygonF
 from PyQt6.QtWidgets import QApplication, QDialogButtonBox, QPushButton, QWidget
 
 from . import design
@@ -507,6 +507,10 @@ def make_action(
         action.setProperty("dbx_icon", name)
     action.setCheckable(checkable)
     if shortcut:
+        if isinstance(shortcut, QKeySequence.StandardKey):
+            shortcut = QKeySequence(shortcut)
+        elif isinstance(shortcut, str):
+            shortcut = QKeySequence(shortcut)
         action.setShortcut(shortcut)
     action.setToolTip(tooltip or text)
     action.setStatusTip(tooltip or text)

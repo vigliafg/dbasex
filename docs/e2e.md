@@ -4,11 +4,11 @@
 
 1. la **suite pytest** completa;
 2. lo **smoke headless** (`python -m dbx --smoke`);
-3. i **14 scenari storici** e i **107 scenari granulari E2E 2.0** (E1–E5), su progetti temporanei
+3. i **14 scenari storici** e i **133 scenari granulari E2E 2.0** (E1–E6), su progetti temporanei
    isolati, con interfaccia Qt offscreen.
 
-Stato attuale: **121 scenari, 1.375 controlli, 55 screenshot**; catalogo di fase 1 **111/111 feature**
-e fase 2 **369/369** (100%). Il piano completo, fino a 133 workflow, è in
+Stato attuale: **147 scenari, 1.611 controlli, 60 screenshot**; catalogo **505/505 feature**
+(100%), con fasi 1, 2 e 3 complete. Il piano completo, fino a 133 workflow, è in
 [`PLAN-E2E.md`](../PLAN-E2E.md); la matrice generata è in [`e2e-coverage.md`](e2e-coverage.md).
 
 Non usa pytest per gli scenari: ogni controllo ha un nome, un esito e un tempo, e il risultato

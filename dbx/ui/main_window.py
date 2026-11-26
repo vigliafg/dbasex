@@ -390,7 +390,7 @@ class MainWindow(QMainWindow):
 
     def _build_window_actions(self) -> None:
         self.act_close_window = icons.make_action(
-            "Chiudi scheda", "chiudi", self, QKeySequence.StandardKey.Close
+            "Chiudi scheda", "chiudi", self, QKeySequence("Ctrl+W")
         )
         self.act_close_all = icons.make_action("Chiudi tutte le schede", "annulla", self)
         self.act_close_window.triggered.connect(self.editors.close_current)
@@ -1521,7 +1521,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Integrità database: {result}", 5000)
 
     def _active_table_name(self) -> str:
-        editor = self.editors.current_editor() if hasattr(self, "editors") else None
+        editor = editor_widget(self.editors.current_editor()) if hasattr(self, "editors") else None
         table = getattr(editor, "table", None)
         return str(getattr(table, "name", "") or "")
 
@@ -1749,14 +1749,14 @@ class MainWindow(QMainWindow):
         self.statusBar().setVisible(visible)
 
     def _zoom(self, factor: float) -> None:
-        editor = self.editors.current_editor()
+        editor = editor_widget(self.editors.current_editor())
         setter = getattr(editor, "set_zoom", None)
         zoom = getattr(editor, "zoom", None)
         if callable(setter) and isinstance(zoom, (int, float)):
             setter(float(zoom) * factor)
 
     def _zoom_reset(self) -> None:
-        editor = self.editors.current_editor()
+        editor = editor_widget(self.editors.current_editor())
         setter = getattr(editor, "set_zoom", None)
         baseline = getattr(editor, "baseline", None)
         if callable(setter):
@@ -1766,13 +1766,13 @@ class MainWindow(QMainWindow):
                 setter(1.0)
 
     def print_current(self) -> None:
-        editor = self.editors.current_editor()
+        editor = editor_widget(self.editors.current_editor())
         printer = getattr(editor, "print_pages", None)
         if callable(printer):
             printer()
 
     def _dispatch_editor(self, method: str) -> None:
-        editor = self.editors.current_editor()
+        editor = editor_widget(self.editors.current_editor())
         function = getattr(editor, method, None)
         if callable(function):
             function()
@@ -1919,7 +1919,7 @@ class MainWindow(QMainWindow):
         ):
             if action is not None:
                 action.setEnabled(enabled)
-        editor = self.editors.current_editor() if hasattr(self, "editors") else None
+        editor = editor_widget(self.editors.current_editor()) if hasattr(self, "editors") else None
         if getattr(self, "act_print", None) is not None:
             self.act_print.setEnabled(enabled and callable(getattr(editor, "print_pages", None)))
         if getattr(self, "act_zoom_in", None) is not None:

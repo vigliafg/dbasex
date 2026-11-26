@@ -394,6 +394,95 @@ for _id, (_area, _label) in _MANUAL_REPORT_LABEL_SCRIPT.items():
 
 
 # --------------------------------------------------------------------------- #
+# Catalogo manuale della fase 3 — shell, progetto, journey e qualità (E6)
+# --------------------------------------------------------------------------- #
+_MANUAL_SHELL: dict[str, tuple[str, str]] = {
+    # Navigator
+    "NAV-COUNT": ("shell", "Conteggi del Navigator"),
+    "NAV-FILTER": ("shell", "Filtro del Navigator"),
+    "NAV-UNTITLED": ("shell", "Voce [Untitled]"),
+    "NAV-CONTEXT": ("shell", "Menu contestuale del Navigator"),
+    "NAV-REFRESH": ("shell", "Aggiornamento del Navigator"),
+    "NAV-DISABLED": ("shell", "Categorie disabilitate"),
+    # Command Window
+    "CMD-HELP": ("shell", "Comando HELP"),
+    "CMD-TABLES": ("shell", "Comando TABELLE"),
+    "CMD-USE": ("shell", "Comando USE"),
+    "CMD-RECORD": ("shell", "Comando RECORD"),
+    "CMD-CLEAR": ("shell", "Comando CLEAR"),
+    "CMD-EXPR": ("shell", "Espressioni nella Command Window"),
+    "CMD-HISTORY": ("shell", "Cronologia dei comandi"),
+    # Shell a schede
+    "SHELL-TABS": ("shell", "Schede documento"),
+    "SHELL-ACTIVATE": ("shell", "Attivazione delle schede"),
+    "SHELL-CLOSE": ("shell", "Chiusura scheda"),
+    "SHELL-CLOSE-ALL": ("shell", "Chiudi tutte le schede"),
+    "SHELL-DIRTY": ("shell", "Conferma modifiche non salvate"),
+    "SHELL-MENUS": ("shell", "Otto menu principali"),
+    "SHELL-ACTIONS": ("shell", "Azioni dei menu"),
+    "SHELL-SAFE": ("shell", "Esecuzione sicura delle azioni"),
+    "SPEEDBAR": ("shell", "SpeedBar"),
+    "TOOLTIPS": ("shell", "Tooltip delle azioni"),
+    "TOGGLE": ("shell", "Mostra e nascondi barre"),
+    "STATUS-BAR": ("shell", "Barra di stato"),
+    "EDIT-CROSS": ("shell", "Copia e incolla tra editor"),
+    "EDIT-UNDO-REDO": ("shell", "Annulla e ripeti nella shell"),
+    "EDIT-DELETE": ("shell", "Elimina nella shell"),
+    "ZOOM-IN": ("shell", "Aumenta zoom"),
+    "ZOOM-OUT": ("shell", "Riduci zoom"),
+    "ZOOM-RESET": ("shell", "Zoom 100%"),
+    "ZOOM-PERSIST": ("shell", "Zoom persistente"),
+    "SHORTCUTS": ("shell", "Scorciatoie documentate"),
+    "HELP-QUICK": ("shell", "Guida rapida"),
+    "ABOUT": ("shell", "Informazioni su dBX"),
+    "THEME": ("shell", "Tema della shell"),
+    "VERSION": ("shell", "Versione nella barra di stato"),
+    # Menu Designer e runtime
+    "MENU-BUILDER": ("menus", "Menu Designer"),
+    "MENU-SEPARATORS": ("menus", "Separatori del menu"),
+    "MENU-ACTION5": ("menus", "Cinque azioni di menu"),
+    "MENU-FILTER-TARGET": ("menus", "Destinazioni filtrate"),
+    "MENU-PREVIEW": ("menus", "Anteprima del menu"),
+    "MENU-RUNTIME": ("menus", "Runtime del menu"),
+    # Project Editor e build
+    "PROJECT-EDITOR": ("project", "Project Editor"),
+    "PROJECT-SETTINGS": ("project", "Impostazioni del progetto"),
+    "PROJECT-EDITOR-SAVE": ("project", "Salvataggio impostazioni"),
+    "PROJECT-VALIDATE": ("project", "Validazione del progetto"),
+    "PROJECT-VALIDATE-MISSING": ("project", "Riferimenti mancanti"),
+    "BUILD-FOLDER": ("project", "Build in cartella"),
+    "BUILD-ZIP": ("project", "Build ZIP"),
+    "BUILD-CONTENT": ("project", "Contenuto della build"),
+    "BUILD-REOPEN": ("project", "Riapertura della build"),
+    "RUNNER-F5": ("project", "F5 esegue il progetto"),
+    "RUNNER-FORM": ("project", "Form principale nel runner"),
+    "RUNNER-MENU": ("project", "Menu nel runner"),
+    "RUNNER-CLOSE": ("project", "Chiusura del runner"),
+    # Journey
+    "JOURNEY-NEWAPP": ("journey", "Nuova applicazione completa"),
+    "JOURNEY-SPORTELLO": ("journey", "Sportello"),
+    "JOURNEY-IMPORT": ("journey", "Import e bonifica"),
+    "JOURNEY-CLOSING": ("journey", "Chiusura mensile"),
+    "JOURNEY-1N": ("journey", "Due tabelle uno-a-molti"),
+    "JOURNEY-RESTART": ("journey", "Sessione lunga e riavvio"),
+    "JOURNEY-LEGACY": ("journey", "Progetto legacy"),
+    # Prestazioni e qualità
+    "PERF-BROWSE": ("quality", "Prestazioni Browse 10k"),
+    "PERF-QUERY": ("quality", "Prestazioni query 10k"),
+    "PERF-REPORT": ("quality", "Prestazioni report 10k"),
+    "PERF-PDF": ("quality", "Prestazioni PDF"),
+    "PERF-FORM100": ("quality", "Form con 100 controlli"),
+    "PERF-TABLE50": ("quality", "Tabella con 50 campi"),
+    "PERF-REPORT200": ("quality", "Report con 200 controlli"),
+    "DETERMINISM": ("quality", "Determinismo degli scenari"),
+    "DOCS-COVERAGE": ("quality", "Documentazione e matrice di copertura"),
+}
+
+for _id, (_area, _label) in _MANUAL_SHELL.items():
+    add(_id, _area, _label, 3)
+
+
+# --------------------------------------------------------------------------- #
 # Validazione e copertura
 # --------------------------------------------------------------------------- #
 @dataclass(frozen=True)
