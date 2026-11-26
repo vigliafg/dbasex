@@ -87,8 +87,29 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
 - **Catalogo fase 2**: 75 nuove feature manuali di query e form, oltre a operatori, aggregati,
   join, ordinamenti, controlli, pulsanti ed eventi derivati dal motore.
 
+### Aggiunto — E2E 2.0 (E5)
+
+- **13 workflow report**: nuovo report da tabella o query, sette bande con visibilità/ordine/
+  altezze/delimitatori, Insert Database Field con anteprima dati, Edit Text ed espressioni,
+  Record Sort Order, gruppi e cinque totali, grafici barre/linee/torta, toolbar di formattazione,
+  anteprima multi-pagina con fit e zoom, stampa mock, PDF, report su query, round-trip e Report
+  Expert.
+- **5 workflow etichette**: quattro preset e formato personalizzato, griglia e margini, modello
+  `[campo]` e `{{espressione}}`, filtro/ordinamento, salto etichette, anteprima multi-foglio, PDF,
+  salvataggio e riapertura.
+- **12 workflow script**: sorgente e numeri di riga, Step Picker con dieci categorie e ricerca,
+  controllo di flusso, tabelle e navigazione, CRUD, transazioni, variabili locali e globali,
+  parametri e argomenti, azioni UI, integrazione con form/query/report, SQL e chiamate, round-trip
+  e script da evento form.
+- **Catalogo fase 2 completo**: 369/369 feature verificate, comprese bande, controlli report,
+  grafici, preset etichetta, allineamenti e tutte le 34 azioni MiniScript.
+
 ### Corretto
 
+- **Browse Field Data**: l'anteprima dei valori distinti di una tabella restituiva sempre un elenco
+  vuoto perché leggeva `row.get("value")` da una `sqlite3.Row`; ora usa l'accesso per chiave.
+- **Riepilogo pagine**: l'anteprima di report ed etichette scriveva «2 paginae»; ora usa
+  «pagina»/«pagine» in base al numero.
 - **COUNT(*) nel Query Designer**: scegliere `Conteggio` su tutti i record azzerava la tabella
   dell'aggregato e rendeva la query invalida; ora la tabella viene conservata.
 - **Stile del Form Expert**: font, dimensione, grassetto e colore del testo si applicano anche ai

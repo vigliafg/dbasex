@@ -1773,3 +1773,18 @@
 - **Screenshot:** `query-designer`, `query-qbe`, `query-results`, `crosstab`, `form-designer`, `form-runtime`, `form-list`; rendering canonici `01`–`37` rigenerati.
 - **Problemi aperti:** restano 59 feature di fase 2 (report, etichette, script) e le feature di fase 3; saranno coperte da E5 ed E6.
 - **Prossimo passo:** E5 — Report, etichette e script (G01–G13, H01–H05, I01–I12), poi E6 e Checkpoint B.
+
+### 2026-11-26 — E2E 2.0 — E5 Report, etichette e script
+- **Stato:** completata
+- **Branch/commit:** `main`; commit E2E 2.0 E5 (questo commit).
+- **Obiettivo:** coprire Report Designer ed Expert, anteprima/stampa/PDF, Label Designer e mail merge, Program Editor, Step Picker, motore MiniScript e integrazione con form e progetto.
+- **File toccati:** `tools/e2e/scenarios/s60_reports_labels.py` (G01–G13, H01–H05), `tools/e2e/scenarios/s70_scripts.py` (I01–I12), `tools/e2e/registry.py`, `tools/e2e/catalog.py`, `tests/test_e2e_catalog.py`, `dbx/designers/report_builder.py`, `dbx/ui/report_preview.py`, `docs/e2e-coverage.md`, `docs/e2e.md`, `README.md`, `PLAN.md`, `PLAN-E2E.md`, `CHANGELOG.md`.
+- **Scenari:** G01–G13 (13), H01–H05 (5), I01–I12 (12): bande, campi, testo, ordinamento, gruppi e cinque totali, tre grafici, formattazione, anteprima multi-pagina, stampa/PDF, report su query, round-trip, Report Expert; preset etichette, modello con campi ed espressioni, filtro/ordine, salto pagine, PDF e persistenza; tutte le 34 azioni MiniScript, Step Picker, parametri, transazioni, variabili globali, SQL/call e script da evento form.
+- **Scelte/deviazioni:** i dialoghi del designer sono esercitati direttamente (API pubblica) e i controlli vengono inseriti con `_insert`, così il test copre dati, geometria e rendering senza bloccarsi su finestre modali. La stampa usa `QPrintDialog` mockato e `render_to_printer` spiato; il PDF è generato davvero.
+- **Bug corretti durante il collaudo:**
+  - `FieldDataDialog` leggeva `row.get("value")` da `sqlite3.Row`, quindi “Browse Field Data” restituiva sempre un elenco vuoto per le tabelle; ora usa l'accesso per chiave.
+  - il riepilogo dell'anteprima scriveva «2 paginae»; ora distingue «pagina» e «pagine».
+- **Test:** 578 passed; smoke OK; harness completo 121/121 scenari, 1.375/1.375 controlli, 55 screenshot; gate fase 2 369/369 (100%); fase 1 invariata 111/111.
+- **Screenshot:** `report-designer`, `report-preview`, `label-designer`, `label-preview`, `script-editor`; rendering canonici `01`–`37` rigenerati.
+- **Problemi aperti:** resta E6 (shell, menu, progetto, journey, prestazioni e determinismo) prima del Checkpoint B.
+- **Prossimo passo:** E6 — Shell, menu, progetto, journey e qualità (J01–J16, K01–K10), poi Checkpoint B.
