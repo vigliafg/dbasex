@@ -104,8 +104,27 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
 - **Catalogo fase 2 completo**: 369/369 feature verificate, comprese bande, controlli report,
   grafici, preset etichetta, allineamenti e tutte le 34 azioni MiniScript.
 
+### Aggiunto — E2E 2.0 (E6)
+
+- **16 workflow shell e progetto**: Navigator con categorie e contesto, Command Window, schede,
+  otto menu e azioni, SpeedBar e barra di stato, clipboard tra editor, zoom, scorciatoie, guida,
+  tema, Menu Designer e runtime, Project Editor, validazione, build e Project Runner.
+- **10 journey realistici**: nuova applicazione completa, sportello, import/bonifica, chiusura
+  mensile, relazione uno-a-molti, sessione lunga e riavvio, progetto legacy, prestazioni 10k righe,
+  form con 100 controlli/tabella con 50 campi/report con 200 controlli e distribuzione su copia.
+- **Catalogo fase 3 completo**: 505/505 feature, comprese 13 categorie Navigator, azioni dei menu
+  della shell, 5 azioni Menu Designer e migrazioni legacy.
+
 ### Corretto
 
+- **Scorciatoie standard della shell**: le azioni create con `QKeySequence.StandardKey` non
+  ricevevano la scorciatoia (`Ctrl+N/O/S`, annulla, taglia, copia, incolla, elimina); ora vengono
+  convertite in `QKeySequence`. `Chiudi scheda` usa esplicitamente `Ctrl+W`, coerente con la guida.
+- **Zoom nelle anteprime**: le azioni Aumenta/Riduci/Zoom 100% non raggiungevano i dialoghi ospitati
+  nell'area documenti; ora la shell scompone `DialogEditor` prima di cercare `set_zoom`,
+  `print_pages`, `align_selection` e `distribute_selection`.
+- **Build distribuibile con WAL**: la build copiava solo il file SQLite principale e poteva
+  produrre un database vuoto se le scritture erano ancora nel WAL; ora usa il backup SQLite.
 - **Browse Field Data**: l'anteprima dei valori distinti di una tabella restituiva sempre un elenco
   vuoto perché leggeva `row.get("value")` da una `sqlite3.Row`; ora usa l'accesso per chiave.
 - **Riepilogo pagine**: l'anteprima di report ed etichette scriveva «2 paginae»; ora usa

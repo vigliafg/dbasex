@@ -1788,3 +1788,28 @@
 - **Screenshot:** `report-designer`, `report-preview`, `label-designer`, `label-preview`, `script-editor`; rendering canonici `01`–`37` rigenerati.
 - **Problemi aperti:** resta E6 (shell, menu, progetto, journey, prestazioni e determinismo) prima del Checkpoint B.
 - **Prossimo passo:** E6 — Shell, menu, progetto, journey e qualità (J01–J16, K01–K10), poi Checkpoint B.
+
+### 2026-11-26 — E2E 2.0 — E6 Shell, menu, progetto, journey e qualità
+- **Stato:** completata
+- **Branch/commit:** `main`; commit E2E 2.0 E6 (questo commit).
+- **Obiettivo:** coprire Navigator, Command Window, shell a schede, menu, SpeedBar e stato, clipboard/zoom/scorciatoie, Menu Designer e runtime, Project Editor, validazione, build, Project Runner; aggiungere i journey realistici, la compatibilità legacy e le verifiche di prestazioni/determinismo.
+- **File toccati:** `tools/e2e/scenarios/s80_shell.py` (J01–J16), `tools/e2e/scenarios/s90_journeys.py` (K01–K10), `tools/e2e/registry.py`, `tools/e2e/catalog.py`, `tests/test_e2e_catalog.py`, `dbx/ui/icons.py`, `dbx/ui/main_window.py`, `dbx/designers/project_builder.py`, `docs/e2e-coverage.md`, `docs/e2e.md`, `README.md`, `PLAN.md`, `PLAN-E2E.md`, `CHANGELOG.md`.
+- **Scenari:** J01–J16 (Navigator e contesto, Command Window, schede e dirty, otto menu e azioni, barra di stato, edit tra editor, zoom, scorciatoie, guida/tema, Menu Designer/runtime, Project Editor, validazione, build, runner) e K01–K10 (nuova applicazione, sportello, import/bonifica, chiusura mensile, 1:N, riavvio, legacy, 10k righe, UI 100/50/200, distribuzione su copia).
+- **Bug corretti durante il collaudo:**
+  - le azioni create con `QKeySequence.StandardKey` non registravano la scorciatoia (`Ctrl+N/O/S`, annulla, taglia, copia, incolla, elimina); `icons.make_action` ora converte enum e stringhe in `QKeySequence`, e `Chiudi scheda` usa `Ctrl+W` come documentato;
+  - zoom, stampa, allinea e distribuisci non raggiungevano i dialoghi dentro `DialogEditor`; la shell ora usa `editor_widget` prima di cercare i metodi;
+  - la build distribuibile copiava solo il file SQLite principale e con WAL poteva produrre un database vuoto; ora usa `Database.backup_to`.
+- **Test:** 579 passed; smoke OK; harness completo 147/147 scenari, 1.611/1.611 controlli, 60 screenshot; copertura 505/505 feature (100%). Determinismo verificato con tre run completi consecutivi: 147/147 e 1.611/1.611 in tutti.
+- **Screenshot:** `shell-desktop`, `shell-navigator`, `menu-designer`, `project-editor`, `shell-runner`; rendering canonici `01`–`37` rigenerati.
+- **Problemi aperti:** nessun blocco funzionale. Restano fuori scope le fasi successive (comportamenti errati dell'utente, concorrenza, pixel-diff) già dichiarate in `PLAN-E2E.md`.
+- **Prossimo passo:** nessuno; piano E2E concluso.
+
+## CHECKPOINT B — E2E 2.0 (2026-11-26)
+
+- **Stato ondate:** E1, E2, E3, E4, E5 ed E6 completate. **Piano E2E concluso.**
+- **Scenari:** 147/147 verdi (14 storici + 133 granulari), 1.611 controlli, 60 screenshot.
+- **Copertura:** 505/505 feature (100%), fasi 1–3 complete.
+- **Test eseguiti:** `579 passed`; smoke headless `SMOKE OK`; harness completo PASS in 189,1 s con gate copertura fase 3; due run di conferma PASS con gli stessi conteggi (147/1.611).
+- **Bug corretti durante il collaudo:** default dei campi in inserimento; navigazione Browse su tabella vuota; COUNT(*) nel Query Designer; stile dei campi nel Form Expert; Browse Field Data vuoto; pluralizzazione «paginae»; scorciatoie standard della shell; zoom nei dialoghi; build con WAL.
+- **Decisioni rimandate:** parallelismo `--workers`, `--repeat` e instrumentazione runtime delle feature restano miglioramenti opzionali, non blocchi; la fase 2 (usi errati/dati corrotti/concorrenza) è un piano separato.
+- **RIPRESA:** nessuna ondata successiva. Se si riprende il lavoro, leggere `PLAN-E2E.md` e questo diario e trattare E2E 2.0 come baseline verde; non ripetere E1–E6.
