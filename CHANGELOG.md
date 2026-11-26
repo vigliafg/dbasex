@@ -73,8 +73,26 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
   `tools/e2e_coverage.py`.
 - **Piano completo** in [`PLAN-E2E.md`](PLAN-E2E.md): 133 workflow, con E1–E3 completate.
 
+### Aggiunto — E2E 2.0 (E4)
+
+- **32 nuovi workflow** per Query Designer guidato, join INNER/LEFT suggeriti dalle FK, tutti i 14
+  operatori, gruppi AND/OR, ordinamento multiplo, GROUP BY con cinque aggregati, anteprima SQL
+  parametrizzata, salvataggio/rinomina/rifiuto, QBE (query image, example element, intervalli,
+  jolly, vuoti, righe OR), Query Results, Crosstab e Query Expert.
+- **32 nuovi workflow** per Form Expert a cinque passi e varianti, palette con i dodici controlli,
+  Palette Field con etichetta automatica, griglia/snap/maniglie/tastiera, clipboard e undo/redo,
+  allineamento/distribuzione/ordine Z, pagine, Object Inspector, eventi controllo e form, metodi,
+  runtime CRUD/navigazione/validazione, otto pulsanti azione, Vista Lista, portale, form su query e
+  compatibilità JSON legacy.
+- **Catalogo fase 2**: 75 nuove feature manuali di query e form, oltre a operatori, aggregati,
+  join, ordinamenti, controlli, pulsanti ed eventi derivati dal motore.
+
 ### Corretto
 
+- **COUNT(*) nel Query Designer**: scegliere `Conteggio` su tutti i record azzerava la tabella
+  dell'aggregato e rendeva la query invalida; ora la tabella viene conservata.
+- **Stile del Form Expert**: font, dimensione, grassetto e colore del testo si applicano anche ai
+  controlli dei campi, non solo alle etichette.
 - **Default dei campi in inserimento**: `Rowset.insert` applica il default dichiarato quando il
   campo non è proprio fornito, senza sovrascrivere un valore vuoto esplicito.
 - **Navigazione su tabella vuota**: i pulsanti primo/precedente/successivo/ultimo vengono

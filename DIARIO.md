@@ -1758,3 +1758,18 @@
 - **Bug corretti durante il collaudo:** default dei campi applicati in inserimento quando il campo è assente; pulsanti di navigazione aggiornati su tabella vuota.
 - **Decisioni rimandate:** parallelismo `--workers`, `--repeat` e instrumentazione runtime delle feature sono in E6; nessuna decisione bloccante per l'utente.
 - **RIPRESA:** dopo `continua`, leggere `PLAN.md`, `PLAN-E2E.md` e questo diario, controllare `git status`/`git log`, e ripartire da **E4 — Query e Form (E01–E15, F01–F17)**. Non ripetere E1–E3.
+
+### 2026-11-26 — E2E 2.0 — E4 Query e Form
+- **Stato:** completata
+- **Branch/commit:** `main`; commit E2E 2.0 E4 (questo commit).
+- **Obiettivo:** coprire Query Designer guidato e QBE, operatori e gruppi, aggregati, SQL, salvataggio, Query Results, Crosstab e Query Expert; Form Expert, Form Designer, Inspector, eventi, runtime, Vista Lista, portale e form su query.
+- **File toccati:** `tools/e2e/scenarios/s40_queries.py` (E01–E15), `tools/e2e/scenarios/s50_forms.py` (F01–F17), `tools/e2e/registry.py`, `tools/e2e/catalog.py`, `tests/test_e2e_catalog.py`, `dbx/designers/query_builder.py`, `dbx/designers/form_expert.py`, `docs/e2e-coverage.md`, `docs/e2e.md`, `README.md`, `PLAN.md`, `PLAN-E2E.md`, `CHANGELOG.md`.
+- **Scenari:** E01–E15 e F01–F17 (32 workflow), inclusi i 14 operatori anche da QBE, example element con avvisi, between/like/vuoti, righe OR, cinque aggregati, export CSV, Crosstab con totali e casi limite, Query Expert; dodici controlli form, eventi controllo e form, otto pulsanti runtime, portale con ordine/filtro, form su query in sola lettura, round-trip e JSON legacy.
+- **Scelte/deviazioni:** gli scenari usano i widget reali (`QueryDesignerWidget`, `QbePanel`, `CrosstabDialog`, `FormDesignerWidget`, `FormExpert`, `FormRuntime`); le API di `core` restano per fixture e verifica. I metodi `save`/`close` del form sono verificati come dati persistiti e ispezionabili, perché il runtime non esegue un linguaggio di scripting (come dichiara l'Inspector).
+- **Bug corretti durante il collaudo:**
+  - `QueryDesignerWidget._collect_aggregates` perdeva la tabella quando si sceglieva `Conteggio` su tutti i record, rendendo la query invalida; ora conserva la tabella precedente o la base.
+  - `FormExpert._field_control` non applicava font, dimensione, grassetto e colore ai controlli dei campi; ora lo stile scelto vale anche per i valori.
+- **Test:** 577 passed; smoke OK; harness completo 91/91 scenari, 1.071/1.071 controlli, 50 screenshot, gate fase 1 111/111 (100%); copertura fase 2 237/296 con query e form completi.
+- **Screenshot:** `query-designer`, `query-qbe`, `query-results`, `crosstab`, `form-designer`, `form-runtime`, `form-list`; rendering canonici `01`–`37` rigenerati.
+- **Problemi aperti:** restano 59 feature di fase 2 (report, etichette, script) e le feature di fase 3; saranno coperte da E5 ed E6.
+- **Prossimo passo:** E5 — Report, etichette e script (G01–G13, H01–H05, I01–I12), poi E6 e Checkpoint B.
