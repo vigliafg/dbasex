@@ -1015,3 +1015,16 @@ resta la superficie di modifica delle relazioni.
 Piano dedicato: [`PLAN-E2E.md`](PLAN-E2E.md). Obiettivo: **133 workflow E2E** granulari, catalogo
 delle funzioni derivato dal codice e gate di copertura. Stato: E1–E6 completate; **147 scenari** (14 storici + 133 granulari) e **1.611 controlli** verdi,
 catalogo **505/505 feature** (100%) e Checkpoint B raggiunto. Il piano E2E è concluso.
+
+### Release 0.10.0 (2026-11-27)
+
+La release 0.10.0 raccoglie l'estensione **validazione dei campi** (`PLAN-VALIDAZIONE.md`) e il
+collaudo **E2E 2.0** (`PLAN-E2E.md`). I progetti 0.9 si aprono senza migrazione. La release è
+distribuita su tre piattaforme:
+
+- workflow `.github/workflows/release.yml`: gate di release, `sdist` + wheel, bundle PyInstaller
+  Linux x86_64, Windows x86_64 e macOS arm64, `SHA256SUMS` e GitHub Release sul tag `v*`;
+- `tools/release_check.py` e `tests/test_release.py` impongono la coerenza tra versione, changelog,
+  note di rilascio e tag;
+- criteri go/no-go e procedura di taglio in [`docs/release-readiness.md`](docs/release-readiness.md);
+- note pubbliche in [`docs/release-0.10.0.md`](docs/release-0.10.0.md).

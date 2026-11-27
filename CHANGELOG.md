@@ -3,13 +3,16 @@
 Tutte le modifiche rilevanti di dBX. Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/)
 e il progetto usa [Semantic Versioning](https://semver.org/lang/it/).
 
-## [Non rilasciato]
+## [0.10.0] — 2026-11-27
 
-Estensione della **validazione dei campi** descritta in
-[`PLAN-VALIDAZIONE.md`](PLAN-VALIDAZIONE.md): regole sul dato condivise da griglia, form, import e
-script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazione.
+Release della **validazione dei campi** e del **collaudo E2E 2.0**. Regole sul dato condivise da
+griglia, form, import e script, issue strutturate per la UI, e una rete di sicurezza end-to-end con
+133 nuovi workflow e il 100% delle funzioni coperte. I progetti 0.9 si aprono senza migrazione.
 
-### Aggiunto
+### Aggiunto — Validazione
+
+Estensione descritta in [`PLAN-VALIDAZIONE.md`](PLAN-VALIDAZIONE.md): regole sul dato condivise da
+griglia, form, import e script, con issue strutturate per la UI.
 
 - **Issue strutturate**: `Rowset` restituisce `ValidationIssue` con campo, codice e severità;
   `ValidationError` estende `RowsetError` e conserva l'elenco delle issue per la UI.
@@ -114,6 +117,17 @@ script, con issue strutturate per la UI. I progetti 0.9 si aprono senza migrazio
   form con 100 controlli/tabella con 50 campi/report con 200 controlli e distribuzione su copia.
 - **Catalogo fase 3 completo**: 505/505 feature, comprese 13 categorie Navigator, azioni dei menu
   della shell, 5 azioni Menu Designer e migrazioni legacy.
+
+### Aggiunto — Release 0.10.0
+
+- **Workflow di release** `.github/workflows/release.yml`: gate completo, `sdist` + wheel, bundle
+  PyInstaller per Linux x86_64, Windows x86_64 e macOS arm64, checksum `SHA256SUMS` e GitHub
+  Release automatica sul tag `v*`. La modalità `dry_run` costruisce e verifica senza pubblicare.
+- **Verifica di release** `tools/release_check.py`: versione coerente tra `pyproject.toml`, pacchetto,
+  changelog, note di rilascio e tag; test di coerenza in `tests/test_release.py`.
+- **Note e checklist**: `docs/release-0.10.0.md` e `docs/release-readiness.md` con criteri go/no-go,
+  decisioni di packaging e procedura di taglio.
+- Extra opzionale `.[release]` con `build` e `pyinstaller`, richiesto solo dalla CI di release.
 
 ### Corretto
 

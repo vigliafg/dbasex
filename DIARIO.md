@@ -1813,3 +1813,22 @@
 - **Bug corretti durante il collaudo:** default dei campi in inserimento; navigazione Browse su tabella vuota; COUNT(*) nel Query Designer; stile dei campi nel Form Expert; Browse Field Data vuoto; pluralizzazione «paginae»; scorciatoie standard della shell; zoom nei dialoghi; build con WAL.
 - **Decisioni rimandate:** parallelismo `--workers`, `--repeat` e instrumentazione runtime delle feature restano miglioramenti opzionali, non blocchi; la fase 2 (usi errati/dati corrotti/concorrenza) è un piano separato.
 - **RIPRESA:** nessuna ondata successiva. Se si riprende il lavoro, leggere `PLAN-E2E.md` e questo diario e trattare E2E 2.0 come baseline verde; non ripetere E1–E6.
+
+### 2026-11-27 — Release 0.10.0 — Gate di lancio, packaging multipiattaforma e taglio
+- **Stato:** completata; pronta per il tag `v0.10.0` (pubblicazione delegata al workflow di release).
+- **Branch/commit:** `main`; commit di release 0.10.0.
+- **Obiettivo:** completare l'handoff del 2026-11-26 (gate P0, decisioni P1, checklist P3) e predisporre il rilascio 0.10.0 su Linux, Windows e macOS.
+- **File toccati:** `pyproject.toml`, `dbx/__init__.py`, `tests/test_ui_shell.py`, `tests/test_release.py` (nuovo), `tools/release_check.py` (nuovo), `.github/workflows/release.yml` (nuovo), `CHANGELOG.md`, `README.md`, `PLAN.md`, `PLAN-E2E.md`, `docs/qa-0.10.md` (nuovo), `docs/release-0.10.0.md` (nuovo), `docs/release-readiness.md` (nuovo), `docs/ui-parity.md`, `docs/reference/dbx-ui/README.md`, rendering `01`, `02`, `04`, `10`, `13`, `26`, `27`, `28`, `HANDOFF.md`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - **Versione `0.10.0`:** `pyproject.toml` e `dbx/__init__.py` allineati; il changelog passa da `[Non rilasciato]` a `[0.10.0] — 2026-11-27` e include la sezione della release.
+  - **Piattaforme:** Linux x86_64, Windows x86_64 e macOS arm64 per i bundle autonomi; `sdist` e wheel universali come percorso primario di installazione. Scelta coerente con la richiesta “su tutte le piattaforme”.
+  - **PyInstaller:** resta opzionale a runtime e diventa requisito solo nel workflow di release tramite l'extra `.[release]`; i bundle dell'applicazione non vanno confusi con l'helper del Project Builder.
+  - **Workflow `Release`:** su tag `v*` esegue il gate (versione, pytest, smoke, harness E2E con copertura fase 3), costruisce pacchetto Python e tre bundle, calcola `SHA256SUMS` e pubblica la GitHub Release con le note di `docs/release-0.10.0.md`. L'input `dry_run` permette di verificare le build su tutti i runner senza pubblicare.
+  - **Gate di versione:** `tools/release_check.py` e `tests/test_release.py` impongono la coerenza tra `pyproject.toml`, pacchetto, changelog, note di rilascio e tag; un tag errato viene rifiutato.
+  - **Fase 2 del collaudo:** resta un piano separato e non bloccante, come già deciso nell'handoff.
+  - **Firma dei bundle:** fuori scope 0.10.0; documentati gli avvisi SmartScreen e Gatekeeper.
+  - **Nessuna modifica a `core/` o `runtime/`:** la release consolida il comportamento già collaudato.
+- **Test:** `584 passed` (erano 579, più i 5 test di release); smoke headless `SMOKE OK`; harness completo `PASS` con 147/147 scenari, 1.611/1.611 controlli, 505/505 feature (100%) e 60 screenshot; `python tools/release_check.py --tag v0.10.0` verde; catture Dark e Aurora OK.
+- **Screenshot:** rendering canonici rigenerati; cambiano `01`, `02`, `04`, `10`, `13`, `26`, `27` e `28` per la versione 0.10.0 nella barra di stato o nel titolo. La serie resta `01`–`37`.
+- **Problemi aperti:** restano le verifiche manuali non automatizzabili (stampa fisica, dialoghi nativi Windows/macOS, HiDPI reale, build del progetto riaperta) elencate in `docs/release-readiness.md`; i bundle non sono firmati. Nessun blocco funzionale o di gate.
+- **Prossimo passo:** creare il tag annotato `v0.10.0` e fare push per avviare il workflow `Release`; dopo la pubblicazione verificare gli artefatti e `SHA256SUMS` sulla pagina della release.

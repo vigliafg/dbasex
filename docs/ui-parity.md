@@ -1,6 +1,6 @@
-# Stato di parità UI — dBX 0.9 vs dBASE 5.5
+# Stato di parità UI — dBX 0.10 vs dBASE 5.5
 
-Aggiornato: 2026-11-22 (release 0.9.0)
+Aggiornato: 2026-11-27 (release 0.10.0)
 
 Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente ma da rifinire;
 `fuori scope` = escluso dalla 0.3 per decisione di piano; `mancante` = non implementato.
@@ -51,6 +51,8 @@ Legenda: `fatto` = struttura e chrome coerenti; `parziale` = struttura presente 
 - `27-table-calculated.png` mostra la proprietà Calcolato del Table Structure, con
   i campi Maiuscole/Maschera, il combo Incremento e il gruppo Dominio numerico;
   `28-browse-calculated.png` mostra totale e serie calcolati nella Browse.
+- La 0.10.0 rilascia la validazione dei campi (Scelta, dominio numerico, maschere, incremento) e il
+  collaudo E2E 2.0; nessuna finestra nuova, rifiniture a Table Structure e Navigator.
 - La 0.9.0 introduce parametri script, variabili globali e transazioni esplicite.
 - La 0.8.0 introduce etichette/mail merge, grafici nei report, vista Lista e portali.
 - La 0.7.0 introduce campi calcolati virtuali, auto-enter, aggregati `GROUP BY` e Crosstab

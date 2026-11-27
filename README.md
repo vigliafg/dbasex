@@ -1,6 +1,6 @@
 # dBX — personal database in stile dBASE 5.5
 
-**Versione 0.9.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
+**Versione 0.10.0** — dBX è un personal database desktop multipiattaforma scritto in **Python + PyQt6**
 con motore **SQLite**, ispirato a *dBASE 5.5 for Windows* (Borland). Riunisce in un'unica applicazione
 i costruttori visivi che resero celebre dBASE: tabelle, form, report, script, menu e progetto.
 L'interfaccia usa il tema **Aurora**: zone colorate con gradienti, menu con icona e descrizione,
@@ -21,10 +21,12 @@ filtro/ordinamento e stampa o PDF su più fogli, **grafici** barre/linee/torta n
 La 0.9 aggiunge **automazione**: parametri dichiarati per gli script, variabili globali persistite
 nel progetto e transazioni esplicite con avvio, conferma e annullamento.
 
-L'estensione **validazione** aggiunge regole sul dato condivise da griglia, form, import e script:
-issue strutturate per campo, obbligatorietà condizionale, campo **Scelta** statico o da tabella,
-**dominio numerico**, maschere e normalizzazione delle maiuscole, **incremento** all'inserimento o a
-ogni modifica e il comando **Riapplica regole di campo**. I progetti 0.9 si aprono senza migrazione.
+La 0.10 consolida e rilascia l'estensione **validazione**: regole sul dato condivise da griglia, form,
+import e script, con issue strutturate per campo, obbligatorietà condizionale, campo **Scelta**
+statico o da tabella, **dominio numerico**, maschere e normalizzazione delle maiuscole, **incremento**
+all'inserimento o a ogni modifica e il comando **Riapplica regole di campo**. La stessa release chiude
+il collaudo **E2E 2.0**: 147 scenari, 1.611 controlli e 505/505 funzioni coperte. I progetti 0.9 si
+aprono senza migrazione.
 
 ## Funzioni
 
@@ -70,6 +72,22 @@ pip install -e ".[dev]"     # test e lint
 ```
 
 Richiede Python 3.10+ e PyQt6 6.10.2 (versione fissata per riproducibilità della CI).
+
+### Pacchetti di release
+
+Ogni tag `v*` avvia `.github/workflows/release.yml`, che verifica la versione, esegue pytest, smoke
+e harness E2E, costruisce `sdist` + wheel e un bundle PyInstaller per piattaforma, poi pubblica la
+GitHub Release con `SHA256SUMS`:
+
+| Piattaforma | File |
+|---|---|
+| Linux x86_64 | `dbx-0.10.0-linux-x86_64.tar.gz` |
+| Windows x86_64 | `dbx-0.10.0-windows-x86_64.zip` |
+| macOS arm64 | `dbx-0.10.0-macos-arm64.tar.gz` |
+
+I bundle non sono firmati: SmartScreen su Windows e Gatekeeper su macOS possono chiedere conferma.
+Il percorso primario resta `pip install dbx-0.10.0-py3-none-any.whl`. Dettagli, criteri go/no-go e
+procedura di taglio in [`docs/release-readiness.md`](docs/release-readiness.md).
 
 ## Avvio
 
@@ -295,8 +313,10 @@ collaudo sono in `docs/qa-0.2.md`, `docs/qa-0.3.md`, `docs/qa-0.4.md`, `docs/qa-
   ricarica il record dal database ma non annulla una scrittura già confermata.
 - La build del Project Editor è sincrona e non mostra una barra di avanzamento.
 - Import `.DBF` legacy e campi calcolati persistenti sono previsti dopo la 1.0.
-- Bundle PyInstaller: helper incluso (`designers/project_builder.package_with_pyinstaller`),
-  richiede `pip install pyinstaller`.
+- Bundle PyInstaller: l'helper del Project Builder
+  (`designers/project_builder.package_with_pyinstaller`) crea l'eseguibile di un progetto e richiede
+  `pip install pyinstaller`; i bundle dell'applicazione per Linux, Windows e macOS sono prodotti dalla
+  CI di release.
 
 ## Licenza
 

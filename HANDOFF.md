@@ -1,178 +1,134 @@
-# Handoff — dBX, 26 novembre 2026
+# Handoff — dBX, 27 novembre 2026
 
 ## Stato della sessione
 
 - **Branch:** `main`
-- **Ultimo commit:** `a831634` — E2E: chiude il Checkpoint B con diario e rendering
-- **Push:** completato su `origin/main`
-- **Working tree:** pulito
-- **Checkpoint:** **B raggiunto**; campagna E2E 2.0 conclusa.
+- **Versione:** `0.10.0` (`pyproject.toml` e `dbx/__init__.py` allineati)
+- **Working tree:** commit di release in corso; tag `v0.10.0` non ancora creato
+- **Checkpoint:** **B E2E raggiunto** e campagna conclusa; release 0.10.0 pronta al taglio
+- **Gate automatico:** verde su Linux. Le verifiche manuali di `docs/release-readiness.md` restano
+  da spuntare sulla macchina di destinazione.
 
 ### Numeri finali
 
 | Metrica | Risultato |
 |---|---:|
-| Workflow granulari | **133/133** |
-| Scenari harness totali | **147/147** (14 storici + 133 nuovi) |
-| Controlli nominati | **1.611/1.611** |
-| Feature del catalogo | **505/505 (100%)** |
-| pytest | **579 passed** |
+| pytest | **584 passed** |
 | Smoke headless | **SMOKE OK** |
-| Determinismo | **3 run consecutivi identici** |
+| Scenari E2E | **147/147** |
+| Controlli E2E | **1.611/1.611** |
+| Feature coperte | **505/505 (100%)** |
 | Screenshot E2E | **60** |
-| Durata harness completo | **189,1 s** |
+| Rendering canonici | **01–37**, Aurora + Dark |
+| `release_check.py --tag v0.10.0` | verde |
 
 ---
 
-## Cosa abbiamo fatto oggi
+## Cosa abbiamo completato oggi
 
-### E1–E3 — Harness e fondamenta (Checkpoint A)
+### P0 — Gate di lancio
 
-- Creato `tools/e2e/`: contesto esteso, fixture deterministiche, helper Qt, catalogo delle funzioni,
-  gate di copertura, filtri `--area`/`--feature`, controllo `min_checks`.
-- Coperti progetto, Table Builder, tutti i tipi campo, indici, relazioni, migrazioni, Browse,
-  validazione, Find/Replace, ricerche salvate, import/export CSV, Database Designer e manutenzione.
-- Aggiunti `PLAN-E2E.md`, `docs/e2e-coverage.md`, `tests/test_e2e_catalog.py`.
-
-### E4 — Query e form (32 workflow)
-
-- Query guidata, join INNER/LEFT suggeriti dalle FK, tutti i 14 operatori, gruppi AND/OR,
-  ordinamento multiplo, `GROUP BY` con cinque aggregati, SQL parametrizzato, salvataggio/rinomina.
-- QBE: query image, includi, tre righe criteri, example element, `between`, `like`, vuoti, righe OR.
-- Query Results, export CSV, Crosstab con totali e casi limite, Query Expert.
-- Form Expert a cinque passi e varianti, palette con 12 controlli, Palette Field, geometria,
-  clipboard/undo/redo, allineamento, pagine, Inspector, eventi, runtime, otto pulsanti, Vista Lista,
-  portale, form su query, round-trip e JSON legacy.
-
-### E5 — Report, etichette e script (30 workflow)
-
-- Report Designer: sette bande, Insert Field, Edit Text, espressioni, ordinamento, gruppi,
-  cinque totali, grafici barre/linee/torta, formattazione, anteprima multi-pagina, stampa, PDF,
-  report su query, round-trip e Report Expert.
-- Etichette: quattro preset, formato personalizzato, modello `[campo]`/`{{espressione}}`, filtro,
-  ordinamento, salto etichette, anteprima multi-foglio, PDF e persistenza.
-- Program Editor: tutte le 34 azioni MiniScript, Step Picker, parametri, transazioni, variabili
-  globali, SQL/call, integrazione con form/query/report e script da evento form.
-
-### E6 — Shell, progetto, journey e qualità (26 workflow)
-
-- Navigator, Command Window, schede, otto menu, SpeedBar/status bar, clipboard tra editor, zoom,
-  scorciatoie, guida/tema/versione, Menu Designer e runtime, Project Editor, validazione, build e
-  Project Runner.
-- Journey: nuova applicazione, sportello, import/bonifica, chiusura mensile, 1:N, riavvio, legacy,
-  10.000 righe, form 100 controlli/tabella 50 campi/report 200 controlli, distribuzione su copia.
-
-### Difetti reali trovati e corretti (9)
-
-| # | Difetto | Correzione |
-|---:|---|---|
-| 1 | Default dei campi persi in `Rowset.insert` | default applicato quando il campo è assente |
-| 2 | Pulsanti di navigazione attivi su tabella vuota | stato aggiornato anche con zero record |
-| 3 | `COUNT(*)` nel Query Designer perdeva la tabella | tabella dell'aggregato conservata |
-| 4 | Form Expert non applicava font/stile ai campi | stile passato anche ai controlli |
-| 5 | “Browse Field Data” sempre vuoto | accesso corretto a `sqlite3.Row` |
-| 6 | Anteprima con “2 paginae” | pluralizzazione “pagina/pagine” |
-| 7 | Scorciatoie standard shell non registrate | conversione a `QKeySequence`; `Ctrl+W` esplicito |
-| 8 | Zoom/stampa/allinea non raggiungevano i dialoghi in scheda | unwrap `DialogEditor` |
-| 9 | Build con WAL poteva produrre DB vuoto | backup SQLite invece di copia file |
-
-### Documentazione aggiornata
-
-- `PLAN-E2E.md`, `PLAN.md`, `DIARIO.md` (con `CHECKPOINT B` e `RIPRESA`).
-- `docs/e2e.md`, `docs/e2e-coverage.md`, `README.md`, `CHANGELOG.md`.
-- Rendering canonici `01`–`37` rigenerati.
-
----
-
-## Cosa dobbiamo fare domani
-
-### P0 — Gate di lancio (prima di distribuire)
-
-- [ ] Eseguire su **macchina di destinazione**:
-  - `python -m pytest`
-  - `QT_QPA_PLATFORM=offscreen python -m dbx --smoke`
-  - `python tools/e2e_harness.py --require-coverage --coverage-phase 3`
-- [ ] Smoke manuale con un progetto reale:
-  - aprire, modificare e salvare un record;
-  - chiudere e riaprire il progetto;
-  - query, form, report, etichette, script e runner;
-  - esportare PDF di report ed etichette;
-  - provare la stampa fisica su almeno una stampante;
-  - creare una build e riaprire la copia distribuita.
-- [ ] Backup dei progetti reali prima della prima apertura.
-- [ ] Verificare tema `silver` e `dark` sulle schermate reali.
+- [x] `python -m pytest` → 584 passed.
+- [x] `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` → SMOKE OK.
+- [x] `python tools/e2e_harness.py --require-coverage --coverage-phase 3` → PASS 147/147,
+  1.611 controlli, 505/505 feature.
+- [x] `python tools/capture_ui.py` e `--theme dark` → rendering `01`–`37` rigenerati, Aurora
+  ripristinata.
+- [x] `python -m dbx --version` → `DBX 0.10.0`.
+- [ ] Stampa fisica e dialoghi nativi Windows/macOS: richiedono la macchina di destinazione.
 
 ### P1 — Piattaforme e packaging
 
-- [ ] Provare build/packaging su Windows e macOS, non solo Linux.
-- [ ] Verificare dialoghi nativi: file chooser, stampante, cartelle.
-- [ ] Verificare HiDPI e risoluzioni 1280×720 / 1920×1080.
-- [ ] Decidere se PyInstaller è requisito di release o optional.
+- [x] Deciso il modello di distribuzione: wheel/sdist come percorso primario, bundle PyInstaller
+  per Linux x86_64, Windows x86_64 e macOS arm64.
+- [x] Aggiunto `.github/workflows/release.yml`: gate, `sdist` + wheel, tre bundle, `SHA256SUMS`,
+  GitHub Release sul tag `v*`; input `dry_run` per provare le build senza pubblicare.
+- [x] PyInstaller reso requisito solo della CI tramite l'extra `.[release]`.
+- [x] Documentati gli avvisi dei bundle non firmati (SmartScreen e Gatekeeper).
+- [ ] Verificare file chooser, stampante e cartelle native su Windows e macOS reali.
 
-### P2 — Fase 2 del collaudo (errori e robustezza)
+### P2 — Fase 2 del collaudo
 
-- [ ] Input errati dell'utente su ogni editor.
-- [ ] Dialoghi annullati e operazioni interrotte.
-- [ ] JSON/artefatti corrotti e riferimenti mancanti.
-- [ ] Violazioni FK, duplicati, cancellazioni con dipendenze.
-- [ ] Concorrenza e apertura doppia del progetto.
-- [ ] Crash/recovery e integrità dopo interruzioni.
+- Decisione registrata: resta un piano separato, **non bloccante** per la 0.10.0.
 
-### P3 — Miglioramenti opzionali
+### P3 — Documentazione
 
-- [ ] Instrumentazione runtime delle feature (oltre la dichiarazione negli scenari).
-- [ ] `--workers` e `--repeat` per il harness.
-- [ ] Soak test e memoria oltre 10.000 righe.
-- [ ] Accessibilità e regressione visiva delle schermate.
-- [ ] Documento `docs/release-readiness.md` con checklist e criteri go/no-go.
+- [x] `docs/release-readiness.md` con criteri go/no-go, decisioni e procedura di taglio.
+- [x] `docs/qa-0.10.md` con gate, copertura e verifiche manuali residue.
+- [x] `docs/release-0.10.0.md` come note pubbliche della release.
+- [x] `CHANGELOG.md`, `README.md`, `PLAN.md`, `PLAN-E2E.md`, `docs/ui-parity.md` aggiornati.
 
 ---
 
-## Comandi utili
+## Procedura di taglio
 
 ```bash
-# Suite e smoke
+# Gate locale (già verde)
+python tools/release_check.py --tag v0.10.0
 python -m pytest
 QT_QPA_PLATFORM=offscreen python -m dbx --smoke
 
-# Harness completo con gate di copertura
-QT_QPA_PLATFORM=offscreen DBX_CONFIG_DIR=/tmp/opencode/dbx-e2e-config \
-  python tools/e2e_harness.py --require-coverage --coverage-phase 3
+# Prova delle build su tutti i runner senza pubblicare
+gh workflow run release.yml --ref main -f tag=v0.10.0 -f dry_run=true
+gh run watch
 
-# Solo un'area
-python tools/e2e_harness.py --area queries --skip-pytest --skip-smoke
+# Commit e push
+git add -A
+git commit -m "Rilascio 0.10.0: validazione dei campi e collaudo E2E"
+git push origin main
 
-# Rigenerare la matrice di copertura
-python tools/e2e_coverage.py
+# Tag annotato: avvia la pubblicazione
+git tag -a v0.10.0 -m "Rilascio 0.10.0: validazione dei campi e collaudo E2E"
+git push origin v0.10.0
 
-# Rigenerare i rendering canonici
-QT_QPA_PLATFORM=offscreen python tools/capture_ui.py
+# Verifica
+gh release view v0.10.0
+gh run list --workflow release.yml --limit 3
 ```
+
+La release pubblica:
+
+- `dbx-0.10.0-py3-none-any.whl` e `dbx-0.10.0.tar.gz`;
+- `dbx-0.10.0-linux-x86_64.tar.gz`;
+- `dbx-0.10.0-windows-x86_64.zip`;
+- `dbx-0.10.0-macos-arm64.tar.gz`;
+- `SHA256SUMS`.
+
+---
+
+## Verifiche manuali residue
+
+Elencate in `docs/release-readiness.md`:
+
+1. Progetto reale: aprire, modificare, salvare, chiudere e riaprire.
+2. Query, form, report, etichette, script e Project Runner.
+3. PDF di report ed etichette e stampa fisica.
+4. Build distribuibile e riapertura della copia.
+5. File chooser, stampante e cartelle native su Windows/macOS.
+6. HiDPI 125%/150%, 1280×720 e 1920×1080.
+7. Apertura dei bundle non firmati su Windows e macOS.
+8. Backup dei progetti reali prima della prima apertura con la 0.10.0.
 
 ---
 
 ## File chiave
 
-- `PLAN-E2E.md` — piano dei 133 workflow e criteri di accettazione.
-- `DIARIO.md` — cronologia E1–E6, `CHECKPOINT B`, `RIPRESA`.
-- `docs/e2e-coverage.md` — matrice feature → scenario.
-- `docs/e2e.md` — uso e architettura del harness.
-- `tools/e2e/` — contesto, fixture, catalogo, registry e scenari `s00`–`s90`.
-- `tools/e2e_harness.py` — runner.
-- `tests/test_e2e_catalog.py` — gate di coerenza e copertura.
-- `CHANGELOG.md` — difetti corretti e novità E2E 2.0.
+- `docs/release-readiness.md` — criteri go/no-go e procedura.
+- `docs/qa-0.10.md` — collaudo della release.
+- `docs/release-0.10.0.md` — note pubbliche.
+- `.github/workflows/release.yml` — build e pubblicazione multipiattaforma.
+- `tools/release_check.py` — coerenza versione/tag/changelog/note.
+- `CHANGELOG.md` — sezione `[0.10.0] — 2026-11-27`.
+- `DIARIO.md` — voce del 2026-11-27.
+- `PLAN-E2E.md` e `docs/e2e-coverage.md` — baseline E2E verde.
 
 ---
 
-## Ripresa della prossima sessione
+## Ripresa
 
-1. Leggere questo handoff, `DIARIO.md` (ultima voce e `CHECKPOINT B`) e `PLAN-E2E.md`.
-2. Controllare `git status` e `git log --oneline -5`.
-3. **Non ripetere E1–E6**: la baseline è verde.
-4. Partire dal **P0 — Gate di lancio** e chiedere all'utente:
-   - quale piattaforma è il target di lancio;
-   - se la stampa fisica è requisito;
-   - se autorizza la fase 2 (errori/robustezza) prima del rilascio.
-
-**Definition of done per domani:** gate P0 verde su macchina target, checklist manuale completata,
-eventuali problemi P1 registrati nel diario e decisione esplicita su fase 2 e packaging.
+1. Leggere questo handoff, la voce `2026-11-27` del diario e `docs/release-readiness.md`.
+2. Controllare `git status`, `git log --oneline -5` e l'eventuale tag `v0.10.0`.
+3. Se il tag non esiste: eseguire la *Procedura di taglio* qui sopra.
+4. Se il tag esiste: verificare `gh run list --workflow release.yml`, gli artefatti e `SHA256SUMS`.
+5. Non riaprire E1–E6 né le fasi 0–7 della validazione: sono baseline verde.
+6. La fase 2 (usi errati, dati corrotti, concorrenza) richiede un piano separato.

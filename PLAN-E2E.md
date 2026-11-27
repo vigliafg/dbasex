@@ -2,8 +2,8 @@
 
 **Data:** 2026-11-26
 **Esecuzione:** ondate E1–E6 con checkpoint A (fine E3) e B (fine E6)
-**Stato:** completato il 2026-11-26; E1–E6 eseguite, Checkpoint B raggiunto
-**Ambito:** collaudo end-to-end di dBX 0.9.0 + estensione validazione
+**Stato:** completato il 2026-11-26; E1–E6 eseguite, Checkpoint B raggiunto; incluso nella release 0.10.0
+**Ambito:** collaudo end-to-end di dBX 0.10.0 (validazione dei campi inclusa)
 **Obiettivo:** 100+ workflow distinti che simulano l'uso reale di ogni ambiente, builder e opzione, con verifica di funzionalità, persistenza ed efficienza.
 
 ---

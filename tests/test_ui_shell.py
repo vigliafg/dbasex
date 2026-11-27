@@ -173,7 +173,7 @@ def test_command_window_opens_in_one_tab(qapp, demo_project) -> None:
 def test_release_version_and_pinned_pyqt() -> None:
     from dbx.config import DEFAULT_CONFIG
 
-    assert __version__ == "0.9.0"
+    assert __version__ == "0.10.0"
     assert DEFAULT_CONFIG["theme"] == "aurora"
 
 

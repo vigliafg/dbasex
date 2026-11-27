@@ -1,0 +1,171 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag da pubblicare (es. v0.10.0)"
+        required: true
+      dry_run:
+        description: "Costruisci e verifica senza pubblicare la release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  QT_QPA_PLATFORM: offscreen
+
+jobs:
+  verify:
+    name: Gate di release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Librerie grafiche
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0
+      - name: Installa
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Versione coerente con il tag
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: python tools/release_check.py --tag "$RELEASE_TAG"
+      - name: Test headless
+        run: python -m pytest
+      - name: Smoke headless
+        run: python -m dbx --smoke
+      - name: Harness E2E completo
+        run: |
+          python tools/e2e_harness.py --skip-pytest --skip-smoke \
+            --require-coverage --coverage-phase 3 --output build/e2e-ci
+      - name: Artifact report E2E
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: build/e2e-ci
+          if-no-files-found: error
+
+  sdist:
+    name: Pacchetto Python
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Costruisci sdist e wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dbx-python-package
+          path: dist/*
+          if-no-files-found: error
+
+  standalone:
+    name: Eseguibile (${{ matrix.platform }})
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+          - os: windows-latest
+            platform: windows-x86_64
+          - os: macos-latest
+            platform: macos-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Librerie grafiche (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0
+      - name: Installa con PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[release]"
+      - name: Versione
+        id: version
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import pathlib, tomllib
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+          print(f"value={data['project']['version']}")
+          PY
+      - name: Costruisci il bundle
+        run: >
+          pyinstaller --noconfirm --clean --windowed --name dbx
+          --distpath dist/standalone
+          --workpath build/pyinstaller
+          --specpath build/pyinstaller
+          run_dbx.py
+      - name: Archivia (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          tar -czf "dbx-${{ steps.version.outputs.value }}-${{ matrix.platform }}.tar.gz" \
+            -C dist/standalone .
+      - name: Archivia (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/standalone/* `
+            -DestinationPath "dbx-${{ steps.version.outputs.value }}-${{ matrix.platform }}.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dbx-${{ matrix.platform }}
+          path: |
+            dbx-*.tar.gz
+            dbx-*.zip
+          if-no-files-found: error
+
+  publish:
+    name: Pubblica la release
+    if: ${{ !inputs.dry_run }}
+    needs: [verify, sdist, standalone]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dbx-*
+          path: artifacts
+          merge-multiple: true
+      - name: Versione
+        id: version
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import pathlib, tomllib
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+          print(f"value={data['project']['version']}")
+          PY
+      - name: Checksum
+        run: |
+          cd artifacts
+          find . -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          cat SHA256SUMS
+      - name: Crea la GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            --verify-tag \
+            --title "dBX ${{ steps.version.outputs.value }}" \
+            --notes-file "docs/release-${{ steps.version.outputs.value }}.md" \
+            artifacts/dbx-* artifacts/SHA256SUMS
