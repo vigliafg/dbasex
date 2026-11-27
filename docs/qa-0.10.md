@@ -25,6 +25,14 @@ bundle, senza pubblicare la release. La matrice `CI` resta invece rossa su `wind
 dalle modifiche 0.10.0: il bundle Windows si costruisce correttamente. Dettagli e rimando in
 [`docs/release-readiness.md`](release-readiness.md).
 
+## Pubblicazione
+
+Il tag annotato `v0.10.0` ha avviato il run `45968324760`: gate, `sdist` + wheel, bundle Linux,
+Windows e macOS e pubblicazione tutti verdi. La GitHub Release è disponibile su
+<https://github.com/vigliafg/dbasex/releases/tag/v0.10.0> con cinque artefatti più `SHA256SUMS`.
+Il checksum iniziale includeva per errore il proprio hash vuoto; il workflow è stato corretto e
+l'asset rigenerato. Wheel e sdist sono stati verificati con `sha256sum -c` dopo il download.
+
 Test dedicati alla release:
 
 - `tests/test_release.py`: versione allineata tra `pyproject.toml` e pacchetto, sezione del changelog,

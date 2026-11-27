@@ -1846,3 +1846,18 @@
 - **Screenshot:** invariati rispetto al commit di release.
 - **Problemi aperti:** `CI` Windows intermittente; verifiche manuali di stampa, dialoghi nativi e HiDPI ancora da spuntare; bundle non firmati.
 - **Prossimo passo:** creare il tag annotato `v0.10.0` e fare push per pubblicare la release; verificare gli artefatti e `SHA256SUMS`.
+
+### 2026-11-27 — Release 0.10.0 — Tag, pubblicazione e correzione checksum
+- **Stato:** completata. Release 0.10.0 pubblicata su GitHub per Linux, Windows e macOS.
+- **Branch/commit:** `main`; tag annotato `v0.10.0` su `e9b1a55`; run di release `45968324760`.
+- **Obiettivo:** creare il tag e pubblicare gli artefatti su tutte le piattaforme.
+- **File toccati:** `.github/workflows/release.yml`, `docs/release-readiness.md`, `docs/qa-0.10.md`, `HANDOFF.md`, `DIARIO.md`.
+- **Scelte/deviazioni:**
+  - **Tag:** `v0.10.0` creato su `e9b1a55` e pushato; il workflow `Release` ha eseguito gate, pacchetto Python, tre bundle e pubblicazione, tutti verdi in circa 5 minuti.
+  - **Artefatti:** wheel, sdist, bundle Linux x86_64, Windows x86_64 e macOS arm64, più `SHA256SUMS`.
+  - **Checksum:** il primo `SHA256SUMS` includeva il proprio hash vuoto perché la redirezione creava il file prima di `find`; il workflow ora esclude `SHA256SUMS` e l'asset della release è stato rigenerato senza la riga spuria. Wheel e sdist scaricati sono stati verificati con `sha256sum -c`.
+  - **Riserva Windows:** resta la CI Windows intermittente già documentata; il bundle Windows si costruisce e viene pubblicato regolarmente.
+- **Test:** run di release verde end-to-end; verifica checksum su wheel e sdist OK.
+- **Screenshot:** invariati.
+- **Problemi aperti:** CI Windows intermittente; verifiche manuali su macchina di destinazione (stampa fisica, dialoghi nativi, HiDPI) e firma dei bundle restano fuori scope 0.10.0.
+- **Prossimo passo:** nessuno per la release. Per una nuova attività leggere `HANDOFF.md` e `docs/release-readiness.md`.

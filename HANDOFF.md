@@ -4,11 +4,13 @@
 
 - **Branch:** `main`
 - **Versione:** `0.10.0` (`pyproject.toml` e `dbx/__init__.py` allineati)
-- **Working tree:** pulito; commit di release `1f4e933` e `a7cc458` pushati
-- **Checkpoint:** **B E2E raggiunto** e campagna conclusa; release 0.10.0 pronta al taglio
-- **Gate automatico:** verde su Linux e dry run di release verde su Linux/Windows/macOS. La CI
-  Windows resta intermittente (difetto pre-esistente); le verifiche manuali di
-  `docs/release-readiness.md` restano da spuntare sulla macchina di destinazione.
+- **Working tree:** pulito; tag `v0.10.0` su `e9b1a55`, release pubblicata
+- **Release:** <https://github.com/vigliafg/dbasex/releases/tag/v0.10.0>
+- **Checkpoint:** **B E2E raggiunto**, campagna conclusa e release 0.10.0 distribuita su Linux,
+  Windows e macOS.
+- **Gate automatico:** verde su Linux e dry run verde su tre piattaforme; run di release
+  `45968324760` verde. La CI Windows resta intermittente (difetto pre-esistente); le verifiche
+  manuali di `docs/release-readiness.md` restano da spuntare sulla macchina di destinazione.
 
 ### Numeri finali
 
@@ -93,6 +95,9 @@ gh release view v0.10.0
 gh run list --workflow release.yml --limit 3
 ```
 
+La procedura qui sopra è quella usata per la 0.10.0 ed è già stata eseguita: il tag `v0.10.0`
+esiste e la release è pubblicata. Usarla come riferimento per il prossimo taglio.
+
 La release pubblica:
 
 - `dbx-0.10.0-py3-none-any.whl` e `dbx-0.10.0.tar.gz`;
@@ -134,8 +139,9 @@ Elencate in `docs/release-readiness.md`:
 ## Ripresa
 
 1. Leggere questo handoff, la voce `2026-11-27` del diario e `docs/release-readiness.md`.
-2. Controllare `git status`, `git log --oneline -5` e l'eventuale tag `v0.10.0`.
-3. Se il tag non esiste: eseguire la *Procedura di taglio* qui sopra.
-4. Se il tag esiste: verificare `gh run list --workflow release.yml`, gli artefatti e `SHA256SUMS`.
+2. Controllare `git status`, `git log --oneline -5` e il tag `v0.10.0`.
+3. La release 0.10.0 è già pubblicata: non ripetere taglio e pubblicazione.
+4. Prossime attività possibili: stabilizzare la CI Windows intermittente, spuntare le verifiche
+   manuali di `docs/release-readiness.md`, oppure aprire un nuovo piano.
 5. Non riaprire E1–E6 né le fasi 0–7 della validazione: sono baseline verde.
 6. La fase 2 (usi errati, dati corrotti, concorrenza) richiede un piano separato.
