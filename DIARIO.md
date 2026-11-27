@@ -1832,3 +1832,17 @@
 - **Screenshot:** rendering canonici rigenerati; cambiano `01`, `02`, `04`, `10`, `13`, `26`, `27` e `28` per la versione 0.10.0 nella barra di stato o nel titolo. La serie resta `01`–`37`.
 - **Problemi aperti:** restano le verifiche manuali non automatizzabili (stampa fisica, dialoghi nativi Windows/macOS, HiDPI reale, build del progetto riaperta) elencate in `docs/release-readiness.md`; i bundle non sono firmati. Nessun blocco funzionale o di gate.
 - **Prossimo passo:** creare il tag annotato `v0.10.0` e fare push per avviare il workflow `Release`; dopo la pubblicazione verificare gli artefatti e `SHA256SUMS` sulla pagina della release.
+
+### 2026-11-27 — Release 0.10.0 — Dry run multipiattaforma e indagine CI Windows
+- **Stato:** completata l'indagine; release pronta al tag, con una riserva documentata sulla CI Windows.
+- **Branch/commit:** `main`; commit `1f4e933` e `a7cc458`.
+- **Obiettivo:** verificare i bundle di release su tutti i runner senza pubblicare e chiarire la CI Windows rossa.
+- **File toccati:** `.github/workflows/ci.yml`, `docs/release-readiness.md`, `docs/qa-0.10.md`, `DIARIO.md`, `HANDOFF.md`.
+- **Scelte/deviazioni:**
+  - **Dry run:** `gh workflow run release.yml --ref main -f tag=v0.10.0 -f dry_run=true` (run `45962616155`) ha eseguito gate, `sdist` + wheel e i bundle Linux x86_64, Windows x86_64 e macOS arm64; il job di pubblicazione è stato saltato come previsto. La modalità `dry_run` resta nello workflow per i tagli successivi.
+  - **CI Windows:** la matrice `CI` fallisce in modo intermittente su `windows-latest` con `KeyboardInterrupt` durante `sqlite3.Connection.close()`, dopo circa 20 secondi e in test diversi a ogni run. Il difetto è pre-esistente (presente dal 2026-11-25 anche su commit senza modifiche 0.10.0) e non blocca la costruzione del bundle Windows. Aggiunto `--full-trace` alla CI per rendere diagnosticabile la prossima occorrenza; la stabilizzazione è rimandata a una sessione dedicata.
+  - **Decisione:** non mascherare il `KeyboardInterrupt` nel motore e non indebolire i test; la release procede con la riserva esplicita e le verifiche manuali su Windows/macOS restano a carico della macchina di destinazione.
+- **Test:** dry run di release verde su tre piattaforme; `tools/release_check.py --tag v0.10.0` verde; gate locale già verde (`584 passed`, smoke, harness 147/1.611/505).
+- **Screenshot:** invariati rispetto al commit di release.
+- **Problemi aperti:** `CI` Windows intermittente; verifiche manuali di stampa, dialoghi nativi e HiDPI ancora da spuntare; bundle non firmati.
+- **Prossimo passo:** creare il tag annotato `v0.10.0` e fare push per pubblicare la release; verificare gli artefatti e `SHA256SUMS`.

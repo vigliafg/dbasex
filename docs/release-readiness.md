@@ -11,10 +11,30 @@ Checklist go/no-go per la release 0.10.0. Aggiornata il 2026-11-27.
 | 3 | Smoke headless verde | `QT_QPA_PLATFORM=offscreen python -m dbx --smoke` | verde |
 | 4 | Harness E2E completo con gate di copertura fase 3 | `python tools/e2e_harness.py --require-coverage --coverage-phase 3` | verde |
 | 5 | Rendering canonici rigenerati | `python tools/capture_ui.py` | verde |
-| 6 | CI pytest + smoke su Linux, Windows e macOS | workflow `CI` | da verificare sul commit di release |
-| 7 | Pacchetto Python `sdist` + wheel | workflow `Release`, job `sdist` | da verificare sul tag |
-| 8 | Bundle autonomi Linux, Windows e macOS | workflow `Release`, job `standalone` | da verificare sul tag |
-| 9 | Release GitHub con note, artefatti e `SHA256SUMS` | workflow `Release`, job `publish` | da verificare sul tag |
+| 6 | CI pytest + smoke su Linux, Windows e macOS | workflow `CI` | Linux/macOS verdi; Windows intermittente (vedi sotto) |
+| 7 | Pacchetto Python `sdist` + wheel | workflow `Release`, job `sdist` | verde in dry run |
+| 8 | Bundle autonomi Linux, Windows e macOS | workflow `Release`, job `standalone` | verde in dry run |
+| 9 | Release GitHub con note, artefatti e `SHA256SUMS` | workflow `Release`, job `publish` | da eseguire sul tag |
+
+## Esito dry run multipiattaforma (2026-11-27)
+
+Run GitHub Actions `45962616155` (`workflow_dispatch`, `dry_run=true`), concluso con successo:
+
+| Job | Esito |
+|---|---|
+| Gate di release (pytest, smoke, harness E2E) | success |
+| Pacchetto Python (`sdist` + wheel) | success |
+| Eseguibile Linux x86_64 | success |
+| Eseguibile Windows x86_64 | success |
+| Eseguibile macOS arm64 | success |
+| Pubblica la release | skipped (dry run) |
+
+**Nota Windows:** la matrice `CI` su `windows-latest` fallisce in modo intermittente con un
+`KeyboardInterrupt` durante `sqlite3.Connection.close()`, a circa 20 secondi dall'avvio e in test
+diversi. Il difetto è pre-esistente (presente dal 2026-11-25, anche su commit precedenti) e non
+dipende dalle modifiche 0.10.0: lo stesso bundle Windows viene costruito con successo. L'indagine è
+registrata nel diario; la release non è bloccata dai bundle, ma la CI Windows va stabilizzata in una
+sessione dedicata.
 
 ## Verifiche manuali sulla macchina di destinazione
 
@@ -52,11 +72,15 @@ QT_QPA_PLATFORM=offscreen python -m dbx --smoke
 QT_QPA_PLATFORM=offscreen DBX_CONFIG_DIR=/tmp/opencode/dbx-e2e-config \
   python tools/e2e_harness.py --require-coverage --coverage-phase 3
 
-# 2. Commit e push
+# 2. Dry run dei bundle (già verde il 2026-11-27, run 45962616155)
+gh workflow run release.yml --ref main -f tag=v0.10.0 -f dry_run=true
+gh run watch
+
+# 3. Commit e push
 git add -A && git commit -m "Rilascio 0.10.0: validazione dei campi e collaudo E2E"
 git push origin main
 
-# 3. Tag annotato e push: avvia il workflow Release
+# 4. Tag annotato e push: avvia il workflow Release
 git tag -a v0.10.0 -m "Rilascio 0.10.0: validazione dei campi e collaudo E2E"
 git push origin v0.10.0
 ```

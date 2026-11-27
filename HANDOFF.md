@@ -4,10 +4,11 @@
 
 - **Branch:** `main`
 - **Versione:** `0.10.0` (`pyproject.toml` e `dbx/__init__.py` allineati)
-- **Working tree:** commit di release in corso; tag `v0.10.0` non ancora creato
+- **Working tree:** pulito; commit di release `1f4e933` e `a7cc458` pushati
 - **Checkpoint:** **B E2E raggiunto** e campagna conclusa; release 0.10.0 pronta al taglio
-- **Gate automatico:** verde su Linux. Le verifiche manuali di `docs/release-readiness.md` restano
-  da spuntare sulla macchina di destinazione.
+- **Gate automatico:** verde su Linux e dry run di release verde su Linux/Windows/macOS. La CI
+  Windows resta intermittente (difetto pre-esistente); le verifiche manuali di
+  `docs/release-readiness.md` restano da spuntare sulla macchina di destinazione.
 
 ### Numeri finali
 
@@ -20,6 +21,7 @@
 | Feature coperte | **505/505 (100%)** |
 | Screenshot E2E | **60** |
 | Rendering canonici | **01–37**, Aurora + Dark |
+| Dry run di release | **verde** su Linux, Windows e macOS (run `45962616155`) |
 | `release_check.py --tag v0.10.0` | verde |
 
 ---
@@ -35,6 +37,7 @@
 - [x] `python tools/capture_ui.py` e `--theme dark` → rendering `01`–`37` rigenerati, Aurora
   ripristinata.
 - [x] `python -m dbx --version` → `DBX 0.10.0`.
+- [x] Dry run del workflow `Release`: gate, `sdist`/wheel e tre bundle verdi.
 - [ ] Stampa fisica e dialoghi nativi Windows/macOS: richiedono la macchina di destinazione.
 
 ### P1 — Piattaforme e packaging
@@ -43,9 +46,13 @@
   per Linux x86_64, Windows x86_64 e macOS arm64.
 - [x] Aggiunto `.github/workflows/release.yml`: gate, `sdist` + wheel, tre bundle, `SHA256SUMS`,
   GitHub Release sul tag `v*`; input `dry_run` per provare le build senza pubblicare.
+- [x] Dry run verde: pacchetto Python e bundle Linux, Windows e macOS costruiti e caricati.
 - [x] PyInstaller reso requisito solo della CI tramite l'extra `.[release]`.
 - [x] Documentati gli avvisi dei bundle non firmati (SmartScreen e Gatekeeper).
 - [ ] Verificare file chooser, stampante e cartelle native su Windows e macOS reali.
+- [ ] CI Windows: `KeyboardInterrupt` intermittente durante `sqlite3.Connection.close()`,
+  pre-esistente dal 2026-11-25; il bundle Windows si costruisce. Da stabilizzare in una sessione
+  dedicata, senza mascherare l'eccezione nel motore.
 
 ### P2 — Fase 2 del collaudo
 
@@ -68,7 +75,7 @@ python tools/release_check.py --tag v0.10.0
 python -m pytest
 QT_QPA_PLATFORM=offscreen python -m dbx --smoke
 
-# Prova delle build su tutti i runner senza pubblicare
+# Prova delle build su tutti i runner senza pubblicare (già verde il 2026-11-27)
 gh workflow run release.yml --ref main -f tag=v0.10.0 -f dry_run=true
 gh run watch
 

@@ -17,6 +17,13 @@ un gate end-to-end. I progetti 0.9 si aprono senza migrazione.
 | Harness E2E con copertura fase 3 | `python tools/e2e_harness.py --require-coverage --coverage-phase 3` | PASS · 147/147 scenari · 1.611/1.611 controlli · 505/505 feature |
 | Rendering Aurora | `python tools/capture_ui.py` | OK, serie `01`–`37` |
 | Rendering Dark | `python tools/capture_ui.py --theme dark` | OK, Aurora ripristinata dopo la cattura |
+| Dry run di release su tre piattaforme | `gh workflow run release.yml --ref main -f tag=v0.10.0 -f dry_run=true` | success: gate, sdist/wheel, bundle Linux/Windows/macOS |
+
+Il dry run (run `45962616155`) ha costruito e caricato come artifact il pacchetto Python e i tre
+bundle, senza pubblicare la release. La matrice `CI` resta invece rossa su `windows-latest` per un
+`KeyboardInterrupt` intermittente durante `sqlite3.Connection.close()`, pre-esistente e indipendente
+dalle modifiche 0.10.0: il bundle Windows si costruisce correttamente. Dettagli e rimando in
+[`docs/release-readiness.md`](release-readiness.md).
 
 Test dedicati alla release:
 
